@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import AuthSwitch from '@/components/ui/auth-switch';
 import { 
   IoChevronDown, 
   IoMenuOutline, 
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const dropdownTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -165,12 +167,13 @@ export default function Navbar() {
 
           {/* Desktop Right Actions: Login + Book a Demo */}
           <div className="hidden lg:flex items-center gap-3.5">
-            <a
-              href="#login"
-              className="px-4 py-2.5 text-[15px] font-medium text-slate-200 hover:text-tech_orange transition-colors duration-150"
+            <button
+              type="button"
+              onClick={() => setShowAuthModal(true)}
+              className="px-4 py-2.5 text-[15px] font-medium text-slate-200 hover:text-tech_orange transition-colors duration-150 cursor-pointer"
             >
               Login
-            </a>
+            </button>
             <a
               href="#demo"
               className="inline-flex items-center justify-center gap-2 px-5.5 py-3 rounded-xl text-[15px] font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-md shadow-tech_orange/25 border border-tech_orange-400/40 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
@@ -214,13 +217,16 @@ export default function Navbar() {
             </div>
 
             <div className="pt-3 border-t border-slate_dark-500 flex flex-col gap-2">
-              <a
-                href="#login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-2 rounded-lg text-center text-sm font-medium text-slate-200 hover:text-tech_orange hover:bg-slate_dark-400/50 transition-colors"
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowAuthModal(true);
+                }}
+                className="w-full py-2 rounded-lg text-center text-sm font-medium text-slate-200 hover:text-tech_orange hover:bg-slate_dark-400/50 transition-colors cursor-pointer"
               >
                 Login
-              </a>
+              </button>
               <a
                 href="#demo"
                 onClick={() => setMobileMenuOpen(false)}
@@ -234,6 +240,23 @@ export default function Navbar() {
         )}
 
       </div>
+
+      {/* Better Auth Live Interactive Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative max-w-md w-full">
+            <button
+              type="button"
+              onClick={() => setShowAuthModal(false)}
+              className="absolute -top-3 -right-3 z-30 w-8 h-8 rounded-full bg-slate_dark-400 border border-white/20 text-white flex items-center justify-center hover:bg-slate_dark-500 hover:text-tech_orange transition-colors cursor-pointer shadow-lg"
+              aria-label="Close modal"
+            >
+              <IoCloseOutline className="text-xl" />
+            </button>
+            <AuthSwitch onClose={() => setShowAuthModal(false)} />
+          </div>
+        </div>
+      )}
     </header>
   );
 }

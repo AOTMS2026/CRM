@@ -73,6 +73,19 @@ async def health_check():
         "cache": "redis-ready"
     }
 
+@app.get("/api/auth")
+@app.get("/api/auth/status")
+async def auth_status():
+    api_key = os.environ.get("BETTER_AUTH_API_KEY", "ba_1srxo579z8prokewgiqcwcwz8kjckpqt")
+    return {
+        "status": "ready",
+        "service": "Better Auth Gateway",
+        "api_key_configured": bool(api_key),
+        "endpoint": "/api/auth",
+        "dash_infra": "enabled",
+        "vercel_url": "https://crm-1-peach.vercel.app/api/auth"
+    }
+
 # -------------------------------------------------------------
 # 6. Realtime WebSocket Endpoint
 # -------------------------------------------------------------
