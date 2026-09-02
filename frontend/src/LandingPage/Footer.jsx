@@ -33,15 +33,20 @@ export default function Footer() {
               Enterprise-grade WhatsApp automation, multi-agent AI chatbots, and zero-ban broadcast engine built on FastAPI, Redis, Meilisearch, and React.
             </p>
 
-            {/* Nova System Status Pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full nova-pill text-xs font-mono font-semibold text-muted_teal">
-              <span className="w-2 h-2 rounded-full bg-muted_teal nova-led" />
-              <span>All Systems Operational (99.98% Uptime)</span>
-            </div>
+            {/* Nova System Status Pill - Live Render Backend */}
+            <a 
+              href="https://crm-fee1.onrender.com/health" 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full nova-pill text-xs font-mono font-semibold text-emerald-400 hover:text-white transition-colors"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Backend API Live (crm-fee1.onrender.com)</span>
+            </a>
 
             {/* Social Links */}
             <div className="flex items-center gap-3 pt-2">
-              <a href="#" className="w-9 h-9 rounded-xl nova-pill hover:bg-burnt_peach hover:text-prussian_blue-100 text-tan flex items-center justify-center transition-colors">
+              <a href="https://github.com/AOTMS2026/CRM" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-xl nova-pill hover:bg-burnt_peach hover:text-prussian_blue-100 text-tan flex items-center justify-center transition-colors">
                 <IoLogoGithub className="text-lg" />
               </a>
               <a href="#" className="w-9 h-9 rounded-xl nova-pill hover:bg-burnt_peach hover:text-prussian_blue-100 text-tan flex items-center justify-center transition-colors">
@@ -67,17 +72,17 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Architecture Links */}
+          {/* Live Architecture & API Links */}
           <div className="space-y-3">
             <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-tan-900">
-              Architecture
+              Live API & Architecture
             </h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-muted_teal transition-colors">FastAPI Async Engine</a></li>
-              <li><a href="#" className="hover:text-muted_teal transition-colors">Strawberry GraphQL</a></li>
-              <li><a href="#" className="hover:text-muted_teal transition-colors">Redis Leaky Bucket</a></li>
-              <li><a href="#" className="hover:text-muted_teal transition-colors">Meilisearch Index</a></li>
-              <li><a href="#" className="hover:text-muted_teal transition-colors">Boto3 S3 Pipelines</a></li>
+              <li><a href="https://crm-fee1.onrender.com/docs" target="_blank" rel="noreferrer" className="text-tech_orange hover:underline flex items-center gap-1.5 font-mono text-xs"><span>⚡ FastAPI Swagger Docs</span></a></li>
+              <li><a href="https://crm-fee1.onrender.com/graphql" target="_blank" rel="noreferrer" className="text-tech_blue-700 hover:underline flex items-center gap-1.5 font-mono text-xs"><span>🔮 Strawberry GraphQL API</span></a></li>
+              <li><a href="https://crm-fee1.onrender.com/health" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline flex items-center gap-1.5 font-mono text-xs"><span>💚 Health Check Endpoint</span></a></li>
+              <li><a href="#" className="hover:text-muted_teal transition-colors">Redis Leaky Bucket Pacing</a></li>
+              <li><a href="#" className="hover:text-muted_teal transition-colors">Meilisearch Instant Search</a></li>
             </ul>
           </div>
 
