@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import AuthSwitch from '@/components/ui/auth-switch';
 import { 
   IoChevronDown, 
   IoMenuOutline, 
@@ -9,14 +8,16 @@ import {
   IoChatbubblesOutline,
   IoGitNetworkOutline,
   IoShieldCheckmarkOutline,
-  IoStatsChartOutline
+  IoStatsChartOutline,
+  IoLogOutOutline,
+  IoPersonCircleOutline
 } from 'react-icons/io5';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const dropdownTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -26,6 +27,38 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Reactive User Profile Synchronization (7-day JWT Session)
+  useEffect(() => {
+    const syncUser = () => {
+      const stored = localStorage.getItem('crm_user');
+      const token = localStorage.getItem('crm_token');
+      if (stored && token) {
+        try {
+          setCurrentUser(JSON.parse(stored));
+        } catch (e) {
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    };
+
+    syncUser();
+    window.addEventListener('auth-change', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('auth-change', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('crm_token');
+    localStorage.removeItem('crm_user');
+    setCurrentUser(null);
+    window.dispatchEvent(new Event('auth-change'));
+  };
 
   const handleMouseEnter = (menu) => {
     if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
@@ -166,21 +199,48 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Desktop Right Actions: Login + Book a Demo Routing */}
+          {/* Desktop Right Actions: User Profile or Login/Signup */}
           <div className="hidden lg:flex items-center gap-3.5">
-            <Link
-              to="/login"
-              className="px-4 py-2.5 text-[15px] font-medium text-slate-200 hover:text-tech_orange transition-colors duration-150"
-            >
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className="inline-flex items-center justify-center gap-2 px-5.5 py-3 rounded-xl text-[15px] font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-md shadow-tech_orange/25 border border-tech_orange-400/40 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <span>Book a Demo</span>
-              <IoArrowForward className="text-sm" />
-            </Link>
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate_dark-400/90 border border-tech_blue/40 shadow-sm backdrop-blur-md">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-tech_orange to-tech_blue flex items-center justify-center text-xs font-black text-white shadow-md">
+                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="text-left pr-1">
+                    <div className="text-xs font-bold text-white leading-tight">{currentUser.name}</div>
+                    <div className="text-[10px] text-tech_orange font-medium truncate max-w-[120px]">
+                      {currentUser.company_name || 'Enterprise Admin'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-2.5 rounded-xl bg-slate_dark-400 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-white/10 hover:border-rose-500/40 transition-colors cursor-pointer"
+                  title="Sign Out"
+                >
+                  <IoLogOutOutline className="text-xl" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="px-4 py-2.5 text-[15px] font-medium text-slate-200 hover:text-tech_orange transition-colors duration-150"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="inline-flex items-center justify-center gap-2 px-5.5 py-3 rounded-xl text-[15px] font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-md shadow-tech_orange/25 border border-tech_orange-400/40 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  <span>Book a Demo</span>
+                  <IoArrowForward className="text-sm" />
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Hamburger Button */}
@@ -217,43 +277,52 @@ export default function Navbar() {
             </div>
 
             <div className="pt-3 border-t border-slate_dark-500 flex flex-col gap-2">
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-2 rounded-lg text-center text-sm font-medium text-slate-200 hover:text-tech_orange hover:bg-slate_dark-400/50 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-2.5 rounded-xl text-center text-sm font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-tech_orange/25"
-              >
-                <span>Book a Demo</span>
-                <IoArrowForward className="text-xs" />
-              </Link>
+              {currentUser ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate_dark-400 border border-white/10">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-tech_orange to-tech_blue flex items-center justify-center text-xs font-bold text-white">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">{currentUser.name}</div>
+                      <div className="text-xs text-tech_orange">{currentUser.company_name || 'Admin'}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full py-2 rounded-lg text-center text-sm font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-2 rounded-lg text-center text-sm font-medium text-slate-200 hover:text-tech_orange hover:bg-slate_dark-400/50 transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-2.5 rounded-xl text-center text-sm font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-tech_orange/25"
+                  >
+                    <span>Book a Demo</span>
+                    <IoArrowForward className="text-xs" />
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
 
       </div>
-
-      {/* Better Auth Live Interactive Modal */}
-      {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative max-w-md w-full">
-            <button
-              type="button"
-              onClick={() => setShowAuthModal(false)}
-              className="absolute -top-3 -right-3 z-30 w-8 h-8 rounded-full bg-slate_dark-400 border border-white/20 text-white flex items-center justify-center hover:bg-slate_dark-500 hover:text-tech_orange transition-colors cursor-pointer shadow-lg"
-              aria-label="Close modal"
-            >
-              <IoCloseOutline className="text-xl" />
-            </button>
-            <AuthSwitch onClose={() => setShowAuthModal(false)} />
-          </div>
-        </div>
-      )}
     </header>
   );
 }
