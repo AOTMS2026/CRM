@@ -385,7 +385,6 @@ export default function WhatsappMessage() {
                 ],
                 sample_values: ['John', 'AOTMS2026']
               });
-              setLocalImageName('');
               setShowCreateModal(true);
             }}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
