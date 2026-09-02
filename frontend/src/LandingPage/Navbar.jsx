@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   IoChevronDown, 
   IoMenuOutline, 
@@ -10,7 +10,11 @@ import {
   IoShieldCheckmarkOutline,
   IoStatsChartOutline,
   IoLogOutOutline,
-  IoPersonCircleOutline
+  IoPersonCircleOutline,
+  IoSpeedometerOutline,
+  IoPeopleOutline,
+  IoSparklesOutline,
+  IoBusinessOutline
 } from 'react-icons/io5';
 
 export default function Navbar() {
@@ -18,7 +22,10 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const dropdownTimeoutRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +33,17 @@ export default function Navbar() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Reactive User Profile Synchronization (7-day JWT Session)
@@ -57,6 +75,7 @@ export default function Navbar() {
     localStorage.removeItem('crm_token');
     localStorage.removeItem('crm_user');
     setCurrentUser(null);
+    setProfileDropdownOpen(false);
     window.dispatchEvent(new Event('auth-change'));
   };
 
@@ -199,30 +218,122 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Desktop Right Actions: User Profile or Login/Signup */}
+          {/* Desktop Right Actions: User Profile Dropdown or Login/Signup */}
           <div className="hidden lg:flex items-center gap-3.5">
             {currentUser ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate_dark-400/90 border border-tech_blue/40 shadow-sm backdrop-blur-md">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-tech_orange to-tech_blue flex items-center justify-center text-xs font-black text-white shadow-md">
-                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <div className="text-left pr-1">
-                    <div className="text-xs font-bold text-white leading-tight">{currentUser.name}</div>
-                    <div className="text-[10px] text-tech_orange font-medium truncate max-w-[120px]">
-                      {currentUser.company_name || 'Enterprise Admin'}
-                    </div>
-                  </div>
-                </div>
-
+              <div className="relative" ref={profileDropdownRef}>
+                {/* Clickable Profile Button with Color Theme Gradient Ring */}
                 <button
                   type="button"
-                  onClick={handleLogout}
-                  className="p-2.5 rounded-xl bg-slate_dark-400 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-white/10 hover:border-rose-500/40 transition-colors cursor-pointer"
-                  title="Sign Out"
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-full bg-slate_dark-400/90 hover:bg-slate_dark-400 border border-tech_blue/40 shadow-lg shadow-tech_orange/10 backdrop-blur-md transition-all cursor-pointer group"
+                  aria-expanded={profileDropdownOpen}
                 >
-                  <IoLogOutOutline className="text-xl" />
+                  {/* Glowing Profile Avatar Circle */}
+                  <div className="relative w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-tech_orange via-amber-400 to-tech_blue shadow-md group-hover:scale-105 transition-transform">
+                    <div className="w-full h-full rounded-full bg-slate_dark flex items-center justify-center text-xs font-black text-white">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    {/* Live Online Dot */}
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate_dark" />
+                  </div>
+
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-white group-hover:text-tech_orange transition-colors leading-tight">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate max-w-[110px]">
+                      {currentUser.company_name || 'AOTMS'}
+                    </div>
+                  </div>
+
+                  <IoChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
+
+                {/* Profile Circle Dropdown Menu */}
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-3 w-80 rounded-2xl bg-slate_dark-300/98 backdrop-blur-2xl border border-tech_blue/30 shadow-2xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                    
+                    {/* User Identity Header */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+                      <div className="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-tech_orange via-amber-400 to-tech_blue shadow-md shrink-0">
+                        <div className="w-full h-full rounded-full bg-slate_dark flex items-center justify-center text-sm font-black text-white">
+                          {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      </div>
+                      <div className="overflow-hidden">
+                        <div className="text-sm font-black text-white truncate">{currentUser.name}</div>
+                        <div className="text-xs text-slate-400 truncate font-mono">{currentUser.email}</div>
+                        <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-tech_orange/15 border border-tech_orange/30 text-tech_orange text-[10px] font-bold">
+                          <IoBusinessOutline className="w-3 h-3" />
+                          <span className="truncate max-w-[140px]">{currentUser.company_name || 'AOTMS Enterprise'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Session Validity Pill */}
+                    <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate_dark-400/80 border border-white/5 text-[11px]">
+                      <span className="text-slate-400 flex items-center gap-1.5 font-mono">
+                        <IoShieldCheckmarkOutline className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>7-Day JWT Session</span>
+                      </span>
+                      <span className="text-emerald-400 font-bold font-mono">Active</span>
+                    </div>
+
+                    {/* PRIMARY ACTION: REDIRECT TO DASHBOARD */}
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange text-white font-bold text-xs flex items-center justify-between shadow-lg shadow-tech_orange/30 border border-white/20 transition-all cursor-pointer group"
+                    >
+                      <span className="flex items-center gap-2">
+                        <IoSpeedometerOutline className="text-base text-white" />
+                        <span>Open CRM Dashboard</span>
+                      </span>
+                      <IoArrowForward className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+
+                    {/* Quick CRM Module Links */}
+                    <div className="pt-2 border-t border-white/10 space-y-1">
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center justify-between p-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate_dark-400/80 transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <IoPeopleOutline className="text-tech_blue" />
+                          <span>Team & Users</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">Manage</span>
+                      </Link>
+
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center justify-between p-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate_dark-400/80 transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <IoChatbubblesOutline className="text-emerald-400" />
+                          <span>WhatsApp Inbound</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-mono">Live</span>
+                      </Link>
+                    </div>
+
+                    {/* Sign Out Button */}
+                    <div className="pt-2 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs flex items-center justify-center gap-2 border border-rose-500/20 transition-colors cursor-pointer"
+                      >
+                        <IoLogOutOutline className="text-base" />
+                        <span>Sign Out from Workspace</span>
+                      </button>
+                    </div>
+
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -280,14 +391,27 @@ export default function Navbar() {
               {currentUser ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate_dark-400 border border-white/10">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-tech_orange to-tech_blue flex items-center justify-center text-xs font-bold text-white">
-                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-tech_orange via-amber-400 to-tech_blue">
+                      <div className="w-full h-full rounded-full bg-slate_dark flex items-center justify-center text-xs font-bold text-white">
+                        {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm font-bold text-white">{currentUser.name}</div>
-                      <div className="text-xs text-tech_orange">{currentUser.company_name || 'Admin'}</div>
+                      <div className="text-xs text-tech_orange">{currentUser.company_name || 'AOTMS'}</div>
                     </div>
                   </div>
+
+                  {/* Mobile Dashboard Link */}
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-tech_orange to-tech_orange-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-tech_orange/25"
+                  >
+                    <IoSpeedometerOutline className="text-base" />
+                    <span>Open CRM Dashboard</span>
+                  </Link>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -296,7 +420,7 @@ export default function Navbar() {
                     }}
                     className="w-full py-2 rounded-lg text-center text-sm font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors"
                   >
-                    Logout
+                    Sign Out
                   </button>
                 </div>
               ) : (
