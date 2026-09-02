@@ -1029,28 +1029,67 @@ export default function DashboardPage() {
 
                 </div>
 
-                {/* Webhook Endpoint Callout Box */}
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-800">Your Webhook Callback URL:</span>
-                    <span className="text-[11px] text-emerald-700 font-mono font-bold">Configure in Meta Developers</span>
+                {/* Webhook Endpoint Callout Box for Meta Developer Portal */}
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+                    <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-sky-600" />
+                      <span>Meta Developer Portal Webhook Verification Credentials</span>
+                    </span>
+                    <span className="text-[11px] text-emerald-700 font-mono font-bold bg-emerald-100/70 px-2 py-0.5 rounded-md border border-emerald-200">
+                      HTTP 200 Instant Response Ready
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value="https://crm-fee1.onrender.com/api/whatsapp/webhook"
-                      className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 select-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard("https://crm-fee1.onrender.com/api/whatsapp/webhook")}
-                      className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                    >
-                      {copiedWebhook ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedWebhook ? 'Copied!' : 'Copy URL'}</span>
-                    </button>
+
+                  {/* 1. Callback URL */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      1. Callback URL (Paste into Meta Dashboard)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value="https://crm-fee1.onrender.com/api/whatsapp/webhook"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-800 select-all font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard("https://crm-fee1.onrender.com/api/whatsapp/webhook")}
+                        className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedWebhook ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedWebhook ? 'Copied URL!' : 'Copy URL'}</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* 2. Verify Token */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      2. Verify Token (Paste into Meta Dashboard)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={whatsappForm.verifyToken || "aotms_meta_verify_secret_2026"}
+                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-mono text-emerald-700 select-all font-extrabold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(whatsappForm.verifyToken || "aotms_meta_verify_secret_2026")}
+                        className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Token</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    💡 In Meta for Developers &gt; WhatsApp &gt; Configuration &gt; Webhook &gt; Click <strong>Edit</strong>, paste the Callback URL and Verify Token, then click <strong>Verify and save</strong>.
+                  </p>
                 </div>
 
                 {/* Form Buttons */}

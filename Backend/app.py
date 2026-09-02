@@ -170,6 +170,8 @@ app.include_router(graphql_app, prefix="/graphql")
 # Mount Clean Architecture WhatsApp Meta Cloud Integration Router
 from whatsapp import whatsapp_router
 app.include_router(whatsapp_router, prefix="/api/integrations/whatsapp", tags=["whatsapp-integration"])
+app.include_router(whatsapp_router, prefix="/api/whatsapp", tags=["whatsapp-webhook-alias"])
+app.include_router(whatsapp_router, prefix="", tags=["whatsapp-direct-alias"])
 
 @app.get("/")
 def root():
@@ -183,7 +185,7 @@ def root():
 def health():
     return {
         "status": "healthy",
-        "database": "Neon PostgreSQL connected",
+        "database": "connected",
         "timestamp": datetime.datetime.now(timezone.utc).isoformat()
     }
 
