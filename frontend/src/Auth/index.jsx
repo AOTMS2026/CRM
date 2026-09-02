@@ -217,14 +217,21 @@ export default function AuthPage({ defaultMode = 'signin' }) {
               <div className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Full Name <span className="text-tech_orange">*</span>
+                    Full Name (String) <span className="text-tech_orange">*</span>
                   </label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder="e.g. Vikram Sharma"
-                      {...register('fullName', { required: 'Full name is required' })}
+                      {...register('fullName', { 
+                        required: 'Full Name is required',
+                        minLength: { value: 3, message: 'Must be at least 3 characters' },
+                        pattern: {
+                          value: /^[a-zA-Z\s]{3,50}$/,
+                          message: 'Only letters and spaces allowed (no numbers)'
+                        }
+                      })}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all"
                     />
                   </div>
@@ -240,7 +247,10 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                     <input
                       type="text"
                       placeholder="e.g. Apex Global Tech"
-                      {...register('companyName', { required: 'Company name is required' })}
+                      {...register('companyName', { 
+                        required: 'Company Name is required',
+                        minLength: { value: 2, message: 'Company Name must be at least 2 characters' }
+                      })}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all"
                     />
                   </div>
@@ -249,14 +259,20 @@ export default function AuthPage({ defaultMode = 'signin' }) {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    WhatsApp Business Phone <span className="text-tech_orange">*</span>
+                    WhatsApp Number (+91 10-Digit) <span className="text-tech_orange">*</span>
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="tel"
                       placeholder="+91 98765 43210"
-                      {...register('phone', { required: 'WhatsApp number is required' })}
+                      {...register('phone', { 
+                        required: 'WhatsApp phone number is required',
+                        pattern: {
+                          value: /^(?:\+91[\s-]?)?[6789]\d{9}$/,
+                          message: 'Must be a valid 10-digit Indian number (+91 9876543210)'
+                        }
+                      })}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all"
                     />
                   </div>
@@ -276,8 +292,11 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                       type="email"
                       placeholder="you@company.com"
                       {...register('email', { 
-                        required: 'Email address is required',
-                        pattern: { value: /^\S+@\S+$/i, message: 'Valid email required' }
+                        required: 'Work email is required',
+                        pattern: { 
+                          value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i, 
+                          message: 'Enter a valid corporate email (e.g. name@company.com)' 
+                        }
                       })}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_orange focus:ring-1 focus:ring-tech_orange transition-all"
                     />
@@ -287,7 +306,7 @@ export default function AuthPage({ defaultMode = 'signin' }) {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Password <span className="text-tech_orange">*</span>
+                    Password (8+ chars, A-Z, 0-9, symbol) <span className="text-tech_orange">*</span>
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -296,7 +315,11 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                       placeholder="••••••••••••"
                       {...register('password', { 
                         required: 'Password is required',
-                        minLength: { value: 6, message: 'At least 6 characters' }
+                        minLength: { value: 8, message: 'Password must be at least 8 characters' },
+                        pattern: {
+                          value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^~_\-+=])[A-Za-z\d@$!%*?&#^~_\-+=]{8,}$/,
+                          message: 'Include uppercase, lowercase, number, and special character'
+                        }
                       })}
                       className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_orange focus:ring-1 focus:ring-tech_orange transition-all"
                     />
@@ -321,7 +344,8 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••••••"
                       {...register('confirmPassword', { 
-                        required: 'Please confirm your password'
+                        required: 'Please confirm your password',
+                        validate: (val) => val === passwordValue || 'Passwords do not match'
                       })}
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_orange focus:ring-1 focus:ring-tech_orange transition-all"
                     />
@@ -345,7 +369,10 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                     placeholder="you@company.com"
                     {...register('email', { 
                       required: 'Email address is required',
-                      pattern: { value: /^\S+@\S+$/i, message: 'Enter a valid email address' }
+                      pattern: { 
+                        value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i, 
+                        message: 'Enter a valid email address' 
+                      }
                     })}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_orange focus:ring-1 focus:ring-tech_orange transition-all"
                   />
@@ -367,7 +394,10 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••••••"
-                    {...register('password', { required: 'Password is required' })}
+                    {...register('password', { 
+                      required: 'Password is required',
+                      minLength: { value: 6, message: 'Password must be at least 6 characters' }
+                    })}
                     className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_orange focus:ring-1 focus:ring-tech_orange transition-all"
                   />
                   <button
