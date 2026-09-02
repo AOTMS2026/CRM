@@ -21,10 +21,11 @@ class WhatsAppConfigResponse(BaseModel):
     masked_access_token: Optional[str] = None
 
 class TemplateButton(BaseModel):
-    type: str = "QUICK_REPLY" # "QUICK_REPLY", "URL", "PHONE_NUMBER"
+    type: str = "QUICK_REPLY" # "QUICK_REPLY", "PHONE_NUMBER", "WHATSAPP_CALL", "CONTACT", "URL"
     text: str
     url: Optional[str] = None
     phone_number: Optional[str] = None
+    contact_name: Optional[str] = None
 
 class CreateTemplateRequest(BaseModel):
     name: str = Field(..., description="Template name, lowercase with underscores, e.g. welcome_offer")

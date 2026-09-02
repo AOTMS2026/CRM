@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, 
   Plus, 
@@ -20,7 +20,11 @@ import {
   Send,
   UploadCloud,
   HelpCircle,
-  Smartphone
+  Smartphone,
+  UserCheck,
+  Link2,
+  FileUp,
+  FolderOpen
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
@@ -38,6 +42,13 @@ export default function WhatsappMessage() {
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
 
+  // Image Upload Type: 'file' (Local upload) or 'url' (Web URL)
+  const [imageUploadMode, setImageUploadMode] = useState('file');
+  const [dragActive, setDragActive] = useState(false);
+  const [localImageName, setLocalImageName] = useState('');
+  const [localImageSize, setLocalImageSize] = useState('');
+  const fileInputRef = useRef(null);
+
   // Create Template Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -49,8 +60,9 @@ export default function WhatsappMessage() {
     body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
     footer_text: 'Reply STOP to unsubscribe • AOTMS',
     buttons: [
-      { type: 'QUICK_REPLY', text: 'Claim Offer 🚀', url: '', phone_number: '' },
-      { type: 'URL', text: 'Visit Website', url: 'https://aotms.com', phone_number: '' }
+      { type: 'WHATSAPP_CALL', text: 'Call on WhatsApp', phone_number: '+919876543210', url: '', contact_name: '' },
+      { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+919876543210', url: '', contact_name: '' },
+      { type: 'CONTACT', text: 'Share Contact Info', phone_number: '+919876543210', url: '', contact_name: 'AOTMS Official' }
     ],
     sample_values: ['John', 'AOTMS2026']
   });
@@ -88,11 +100,58 @@ export default function WhatsappMessage() {
     fetchTemplates();
   }, []);
 
+  // Handle local image file upload & reading into base64 DataURL
+  const handleLocalImageFile = (file) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast("Please upload a valid image file (PNG, JPG, JPEG, WEBP).", "error");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image size exceeds 5MB limit. Please upload a smaller image.", "error");
+      return;
+    }
+
+    setLocalImageName(file.name);
+    setLocalImageSize((file.size / (1024 * 1024)).toFixed(2) + ' MB');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setFormData(prev => ({
+        ...prev,
+        header_image_url: e.target.result
+      }));
+      showToast(`Local image "${file.name}" loaded for template header!`, "success");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Drag & drop handlers
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleLocalImageFile(e.dataTransfer.files[0]);
+    }
+  };
+
   const handleCreateTemplate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
-    // Format template name to strictly lowercase + underscores
     const formattedName = formData.name.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
     if (!formattedName) {
       showToast("Please enter a valid template name (lowercase + underscores).", "error");
@@ -166,6 +225,7 @@ export default function WhatsappMessage() {
       buttons: parsedButtons,
       sample_values: ['Customer', 'AOTMS2026']
     });
+    setLocalImageName(tmpl.header_type === 'IMAGE' ? 'Existing Image' : '');
     setShowCreateModal(true);
   };
 
@@ -179,18 +239,40 @@ export default function WhatsappMessage() {
     }));
   };
 
+  // Button types configuration
+  const buttonTypeOptions = [
+    { type: 'PHONE_NUMBER', label: 'Call Phone Number', icon: Phone, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+    { type: 'WHATSAPP_CALL', label: 'Call on WhatsApp', icon: WhatsApp, color: 'text-emerald-700 bg-emerald-100/70 border-emerald-300' },
+    { type: 'CONTACT', label: 'Share Contact Info', icon: UserCheck, color: 'text-amber-700 bg-amber-50 border-amber-200' },
+    { type: 'CUSTOM', label: 'Custom', icon: Send, color: 'text-purple-700 bg-purple-50 border-purple-200' },
+    { type: 'URL', label: 'Website Link', icon: ExternalLink, color: 'text-sky-700 bg-sky-50 border-sky-200' }
+  ];
+
   const addButton = (type) => {
     if (formData.buttons.length >= 3) {
-      showToast("Maximum 3 buttons allowed per template by Meta.", "info");
+      showToast("Meta allows maximum 3 interactive buttons per message template.", "info");
       return;
     }
+
+    let defaultText = 'Custom Reply';
+    let defaultUrl = '';
+    let defaultPhone = '+919876543210';
+    let defaultContact = 'AOTMS Official';
+
+    if (type === 'PHONE_NUMBER') defaultText = 'Call Phone Number';
+    if (type === 'WHATSAPP_CALL') defaultText = 'Call on WhatsApp';
+    if (type === 'CONTACT') defaultText = 'Share Contact Info';
+    if (type === 'URL') { defaultText = 'Visit Website'; defaultUrl = 'https://aotms.com'; }
+    if (type === 'CUSTOM') defaultText = 'Yes, I am Interested';
+
     setFormData(prev => ({
       ...prev,
       buttons: [...prev.buttons, {
         type: type,
-        text: type === 'URL' ? 'Visit Website' : (type === 'PHONE_NUMBER' ? 'Call Support' : 'Quick Reply'),
-        url: type === 'URL' ? 'https://aotms.com' : '',
-        phone_number: type === 'PHONE_NUMBER' ? '+919876543210' : ''
+        text: defaultText,
+        url: defaultUrl,
+        phone_number: defaultPhone,
+        contact_name: defaultContact
       }]
     }));
   };
@@ -202,7 +284,6 @@ export default function WhatsappMessage() {
     }));
   };
 
-  // Render live sample text replacing {{1}}, {{2}} with preview sample values
   const renderPreviewBody = (text, samples = []) => {
     let output = text;
     (samples || []).forEach((val, idx) => {
@@ -250,7 +331,7 @@ export default function WhatsappMessage() {
                 Whatsapp_Messages & Meta Templates Studio
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Design official Meta WhatsApp message templates (Utility & Marketing), upload image headers, configure quick replies, and preview live messages.
+                Upload local images, configure interactive buttons (Call Phone Number, Call on WhatsApp, Share Contact Info), and create official Meta templates.
               </p>
             </div>
           </div>
@@ -280,11 +361,13 @@ export default function WhatsappMessage() {
                 body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
                 footer_text: 'Reply STOP to unsubscribe • AOTMS',
                 buttons: [
-                  { type: 'QUICK_REPLY', text: 'Claim Offer 🚀', url: '', phone_number: '' },
-                  { type: 'URL', text: 'Visit Website', url: 'https://aotms.com', phone_number: '' }
+                  { type: 'WHATSAPP_CALL', text: 'Call on WhatsApp', phone_number: '+919876543210', url: '', contact_name: '' },
+                  { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+919876543210', url: '', contact_name: '' },
+                  { type: 'CONTACT', text: 'Share Contact Info', phone_number: '+919876543210', url: '', contact_name: 'AOTMS Official' }
                 ],
                 sample_values: ['John', 'AOTMS2026']
               });
+              setLocalImageName('');
               setShowCreateModal(true);
             }}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
@@ -404,8 +487,10 @@ export default function WhatsappMessage() {
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {parsedButtons.map((btn, i) => (
                         <span key={i} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-semibold flex items-center gap-1 border border-slate-200">
-                          {btn.type === 'URL' ? <ExternalLink className="w-2.5 h-2.5 text-sky-600" /> :
+                          {btn.type === 'WHATSAPP_CALL' ? <WhatsApp className="w-3 h-3 text-emerald-600" /> :
                            btn.type === 'PHONE_NUMBER' ? <Phone className="w-2.5 h-2.5 text-emerald-600" /> :
+                           btn.type === 'CONTACT' ? <UserCheck className="w-2.5 h-2.5 text-amber-600" /> :
+                           btn.type === 'URL' ? <ExternalLink className="w-2.5 h-2.5 text-sky-600" /> :
                            <Send className="w-2.5 h-2.5 text-purple-600" />}
                           <span>{btn.text}</span>
                         </span>
@@ -469,10 +554,10 @@ export default function WhatsappMessage() {
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900">
-                    Create Message Template
+                    Create Message Template & Actions Studio
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Configure your template and preview live in realistic WhatsApp mode.
+                    Upload local images, configure action buttons (Call Phone Number, Call on WhatsApp, Share Contact Info, Custom), and preview live.
                   </p>
                 </div>
               </div>
@@ -508,7 +593,7 @@ export default function WhatsappMessage() {
                       }`}
                     >
                       <div className="text-xs font-extrabold">Marketing</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">Offers, welcome deals, product drops</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Offers, welcome deals, product launches</div>
                     </button>
 
                     <button
@@ -521,7 +606,7 @@ export default function WhatsappMessage() {
                       }`}
                     >
                       <div className="text-xs font-extrabold">Utility</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">Order updates, receipts, billing alerts</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Order receipts, transactional alerts, OTP</div>
                     </button>
                   </div>
                 </div>
@@ -535,12 +620,12 @@ export default function WhatsappMessage() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. welcome_offer_2026"
+                      placeholder="e.g. customer_welcome_offer"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
                       className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Lowercase letters and underscores only.</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Lowercase letters, numbers, and underscores only.</p>
                   </div>
 
                   <div>
@@ -560,49 +645,159 @@ export default function WhatsappMessage() {
                   </div>
                 </div>
 
-                {/* 3. Header Media Type */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-800">
-                    3. Header (Optional)
-                  </label>
-                  <div className="flex items-center gap-4">
-                    {['NONE', 'IMAGE', 'TEXT'].map((type) => (
-                      <label key={type} className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="header_type"
-                          value={type}
-                          checked={formData.header_type === type}
-                          onChange={() => setFormData({ ...formData, header_type: type })}
-                          className="accent-emerald-600"
-                        />
-                        <span className="font-semibold">{type === 'IMAGE' ? 'Image Upload' : type}</span>
-                      </label>
-                    ))}
+                {/* 3. Header Media Type & Local Image Upload */}
+                <div className="space-y-3 p-4 rounded-2xl bg-slate-50/70 border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-800">
+                      3. Header Media (Image Upload / Text)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      {['NONE', 'IMAGE', 'TEXT'].map((type) => (
+                        <label key={type} className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="header_type"
+                            value={type}
+                            checked={formData.header_type === type}
+                            onChange={() => setFormData({ ...formData, header_type: type })}
+                            className="accent-emerald-600"
+                          />
+                          <span className="font-semibold">{type === 'IMAGE' ? 'Image' : type}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
 
                   {formData.header_type === 'TEXT' && (
                     <input
                       type="text"
-                      placeholder="Enter header title text..."
+                      placeholder="Enter bold header title text..."
                       value={formData.header_text}
                       onChange={(e) => setFormData({ ...formData, header_text: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
                     />
                   )}
 
                   {formData.header_type === 'IMAGE' && (
-                    <div className="space-y-2">
-                      <input
-                        type="url"
-                        placeholder="Image URL (e.g. https://images.unsplash.com/...)"
-                        value={formData.header_image_url}
-                        onChange={(e) => setFormData({ ...formData, header_image_url: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
-                      />
-                      <p className="text-[10px] text-slate-400">
-                        Official Meta image format: 16:9 ratio, JPG/PNG under 5MB.
-                      </p>
+                    <div className="space-y-2.5">
+                      {/* Upload Mode Selector: Local Upload vs URL */}
+                      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                        <button
+                          type="button"
+                          onClick={() => setImageUploadMode('file')}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                            imageUploadMode === 'file' 
+                              ? 'bg-emerald-600 text-white' 
+                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                          }`}
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          <span>Local Image Upload</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setImageUploadMode('url')}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                            imageUploadMode === 'url' 
+                              ? 'bg-emerald-600 text-white' 
+                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                          }`}
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          <span>Web Image URL</span>
+                        </button>
+                      </div>
+
+                      {/* Local File Upload Drag & Drop Zone */}
+                      {imageUploadMode === 'file' ? (
+                        <div>
+                          <input 
+                            ref={fileInputRef}
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleLocalImageFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+
+                          <div
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`p-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-2 bg-white ${
+                              dragActive 
+                                ? 'border-emerald-500 bg-emerald-50/50' 
+                                : 'border-slate-300 hover:border-emerald-400 hover:bg-slate-50/50'
+                            }`}
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
+                              <FileUp className="w-5 h-5" />
+                            </div>
+
+                            {localImageName ? (
+                              <div className="space-y-0.5">
+                                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5 justify-center">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>{localImageName}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono">{localImageSize} • Click to change file</div>
+                              </div>
+                            ) : (
+                              <div className="space-y-0.5">
+                                <div className="text-xs font-bold text-slate-800">
+                                  Click to browse or drag & drop local image
+                                </div>
+                                <div className="text-[10px] text-slate-400">
+                                  Supports PNG, JPG, JPEG, WEBP (Max 5MB)
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <input
+                            type="url"
+                            placeholder="Paste image URL (e.g. https://images.unsplash.com/...)"
+                            value={formData.header_image_url}
+                            onChange={(e) => setFormData({ ...formData, header_image_url: e.target.value })}
+                            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                      )}
+
+                      {formData.header_image_url && (
+                        <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200">
+                          <img 
+                            src={formData.header_image_url} 
+                            alt="Header thumbnail" 
+                            className="w-12 h-10 object-cover rounded-lg border border-slate-200" 
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-bold text-slate-800 truncate">
+                              {localImageName || 'Header Image Loaded'}
+                            </div>
+                            <div className="text-[10px] text-emerald-600 font-semibold">Active in Live Preview</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, header_image_url: '' }));
+                              setLocalImageName('');
+                            }}
+                            className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
+                            title="Remove Image"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -616,7 +811,7 @@ export default function WhatsappMessage() {
                     <button
                       type="button"
                       onClick={addVariableToBody}
-                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 cursor-pointer flex items-center gap-1"
+                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 cursor-pointer flex items-center gap-1"
                     >
                       <Plus className="w-3 h-3" />
                       <span>Insert Variable</span>
@@ -631,7 +826,7 @@ export default function WhatsappMessage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-normal leading-relaxed"
                   />
                   <p className="text-[10px] text-slate-400">
-                    Use <code className="font-bold text-slate-700 font-mono">{'{{1}}'}</code>, <code className="font-bold text-slate-700 font-mono">{'{{2}}'}</code> for dynamic client parameters (Customer Name, Order ID).
+                    Use <code className="font-bold text-slate-700 font-mono">{'{{1}}'}</code>, <code className="font-bold text-slate-700 font-mono">{'{{2}}'}</code> for client variables (Name, Amount, Promo Code).
                   </p>
                 </div>
 
@@ -649,67 +844,140 @@ export default function WhatsappMessage() {
                   />
                 </div>
 
-                {/* 6. Interactive Action Buttons */}
-                <div className="space-y-2">
+                {/* 6. Interactive Action Buttons (Complete Flow) */}
+                <div className="space-y-3 p-4 rounded-2xl bg-slate-50/70 border border-slate-200">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-800">
-                      6. Interactive Buttons (Max 3)
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => addButton('QUICK_REPLY')}
-                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
-                      >
-                        + Quick Reply
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addButton('URL')}
-                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
-                      >
-                        + Website URL
-                      </button>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800">
+                        6. Interactive Action Buttons ({formData.buttons.length}/3)
+                      </label>
+                      <span className="text-[10px] text-slate-500">
+                        Select an action button to attach to the WhatsApp message:
+                      </span>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {formData.buttons.map((btn, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                        <span className="font-mono text-[10px] font-bold text-slate-400 w-4">{index + 1}.</span>
-                        <input
-                          type="text"
-                          placeholder="Button Text"
-                          value={btn.text}
-                          onChange={(e) => {
-                            const newBtns = [...formData.buttons];
-                            newBtns[index].text = e.target.value;
-                            setFormData({ ...formData, buttons: newBtns });
-                          }}
-                          className="flex-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-800"
-                        />
-                        {btn.type === 'URL' && (
-                          <input
-                            type="url"
-                            placeholder="https://aotms.com"
-                            value={btn.url}
-                            onChange={(e) => {
-                              const newBtns = [...formData.buttons];
-                              newBtns[index].url = e.target.value;
-                              setFormData({ ...formData, buttons: newBtns });
-                            }}
-                            className="flex-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700"
-                          />
-                        )}
+                  {/* Button Type Selector Strip */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {buttonTypeOptions.map((opt) => {
+                      const Icon = opt.icon;
+                      return (
                         <button
+                          key={opt.type}
                           type="button"
-                          onClick={() => removeButton(index)}
-                          className="text-slate-400 hover:text-rose-600 cursor-pointer p-1"
+                          onClick={() => addButton(opt.type)}
+                          disabled={formData.buttons.length >= 3}
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${opt.color} hover:shadow-xs`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Icon className="w-3.5 h-3.5" />
+                          <span>+ {opt.label}</span>
                         </button>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+
+                  {/* Buttons List Editor */}
+                  <div className="space-y-2.5 pt-1">
+                    {formData.buttons.map((btn, index) => {
+                      const opt = buttonTypeOptions.find(o => o.type === btn.type) || buttonTypeOptions[0];
+                      const Icon = opt.icon;
+
+                      return (
+                        <div key={index} className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 font-mono text-[10px] font-bold flex items-center justify-center">
+                                {index + 1}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 ${opt.color}`}>
+                                <Icon className="w-3 h-3" />
+                                <span>{opt.label}</span>
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => removeButton(index)}
+                              className="text-slate-400 hover:text-rose-600 cursor-pointer p-1 rounded hover:bg-rose-50"
+                              title="Delete Button"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Dynamic Button Inputs based on type */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Button Display Text</label>
+                              <input
+                                type="text"
+                                required
+                                value={btn.text}
+                                onChange={(e) => {
+                                  const newBtns = [...formData.buttons];
+                                  newBtns[index].text = e.target.value;
+                                  setFormData({ ...formData, buttons: newBtns });
+                                }}
+                                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500"
+                              />
+                            </div>
+
+                            {(btn.type === 'PHONE_NUMBER' || btn.type === 'WHATSAPP_CALL') && (
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                                  {btn.type === 'WHATSAPP_CALL' ? 'WhatsApp Phone Number' : 'Telephone Number'}
+                                </label>
+                                <input
+                                  type="tel"
+                                  placeholder="+919876543210"
+                                  value={btn.phone_number || ''}
+                                  onChange={(e) => {
+                                    const newBtns = [...formData.buttons];
+                                    newBtns[index].phone_number = e.target.value;
+                                    setFormData({ ...formData, buttons: newBtns });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                            )}
+
+                            {btn.type === 'CONTACT' && (
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Business Contact Name</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. AOTMS Support Desk"
+                                  value={btn.contact_name || ''}
+                                  onChange={(e) => {
+                                    const newBtns = [...formData.buttons];
+                                    newBtns[index].contact_name = e.target.value;
+                                    setFormData({ ...formData, buttons: newBtns });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                            )}
+
+                            {btn.type === 'URL' && (
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Website Link URL</label>
+                                <input
+                                  type="url"
+                                  placeholder="https://aotms.com"
+                                  value={btn.url || ''}
+                                  onChange={(e) => {
+                                    const newBtns = [...formData.buttons];
+                                    newBtns[index].url = e.target.value;
+                                    setFormData({ ...formData, buttons: newBtns });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -737,20 +1005,25 @@ export default function WhatsappMessage() {
                   </div>
 
                   {/* Chat Wallpaper Canvas */}
-                  <div className="p-4 bg-[#efeae2] flex-1 min-h-[360px] space-y-3">
+                  <div className="p-4 bg-[#efeae2] flex-1 min-h-[380px] space-y-3">
                     
                     {/* Message Bubble */}
                     <div className="bg-white rounded-2xl rounded-tl-none p-3 shadow-sm border border-slate-200/60 space-y-2 max-w-[95%]">
                       
-                      {/* Image Header Preview */}
+                      {/* Image Header Preview (Supports Local Image File Preview) */}
                       {formData.header_type === 'IMAGE' && formData.header_image_url && (
-                        <div className="rounded-xl overflow-hidden max-h-40 w-full bg-slate-100">
+                        <div className="rounded-xl overflow-hidden max-h-44 w-full bg-slate-100 relative group">
                           <img 
                             src={formData.header_image_url} 
                             alt="Header Preview" 
                             className="w-full h-full object-cover"
                             onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80"; }}
                           />
+                          {localImageName && (
+                            <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono backdrop-blur-xs">
+                              Local: {localImageName}
+                            </span>
+                          )}
                         </div>
                       )}
 
@@ -780,17 +1053,19 @@ export default function WhatsappMessage() {
                       </div>
                     </div>
 
-                    {/* Interactive Action Buttons Preview */}
+                    {/* Interactive Action Buttons Preview (Realistic WhatsApp Native View) */}
                     {formData.buttons && formData.buttons.length > 0 && (
                       <div className="space-y-1.5 max-w-[95%]">
                         {formData.buttons.map((btn, i) => (
                           <div 
                             key={i}
-                            className="p-2.5 rounded-xl bg-white/95 border border-slate-200 shadow-xs text-center text-xs font-bold text-sky-600 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="p-2.5 rounded-xl bg-white/95 border border-slate-200/80 shadow-xs text-center text-xs font-bold text-sky-600 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                           >
-                            {btn.type === 'URL' ? <ExternalLink className="w-3.5 h-3.5" /> : 
-                             btn.type === 'PHONE_NUMBER' ? <Phone className="w-3.5 h-3.5" /> : 
-                             <Send className="w-3.5 h-3.5" />}
+                            {btn.type === 'WHATSAPP_CALL' && <WhatsApp className="w-3.5 h-3.5 text-emerald-600" />}
+                            {btn.type === 'PHONE_NUMBER' && <Phone className="w-3.5 h-3.5 text-emerald-600" />}
+                            {btn.type === 'CONTACT' && <UserCheck className="w-3.5 h-3.5 text-amber-600" />}
+                            {btn.type === 'URL' && <ExternalLink className="w-3.5 h-3.5 text-sky-600" />}
+                            {btn.type === 'CUSTOM' && <Send className="w-3 h-3 text-purple-600" />}
                             <span>{btn.text}</span>
                           </div>
                         ))}

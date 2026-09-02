@@ -260,12 +260,16 @@ class WhatsAppIntegrationService:
         if req.buttons and len(req.buttons) > 0:
             meta_buttons = []
             for btn in req.buttons:
-                if btn.type == "QUICK_REPLY":
+                if btn.type in ["QUICK_REPLY", "CUSTOM"]:
                     meta_buttons.append({"type": "QUICK_REPLY", "text": btn.text})
                 elif btn.type == "URL":
                     meta_buttons.append({"type": "URL", "text": btn.text, "url": btn.url or "https://aotms.com"})
                 elif btn.type == "PHONE_NUMBER":
                     meta_buttons.append({"type": "PHONE_NUMBER", "text": btn.text, "phone_number": btn.phone_number or "+919876543210"})
+                elif btn.type == "WHATSAPP_CALL":
+                    meta_buttons.append({"type": "VOICE_CALL", "text": btn.text, "phone_number": btn.phone_number or "+919876543210"})
+                elif btn.type == "CONTACT":
+                    meta_buttons.append({"type": "QUICK_REPLY", "text": f"📇 {btn.text}"})
             components.append({"type": "BUTTONS", "buttons": meta_buttons})
 
         meta_payload = {
