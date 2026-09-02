@@ -53,6 +53,19 @@ async def list_whatsapp_templates():
             detail=f"Failed to fetch templates: {str(e)}"
         )
 
+@router.post("/templates/sync")
+@router.get("/templates/sync")
+async def sync_whatsapp_templates():
+    """Fetch all real templates from Meta WABA account and sync into platform database."""
+    try:
+        templates = await WhatsAppIntegrationService.sync_meta_templates()
+        return {"success": True, "count": len(templates), "templates": templates}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sync templates from Meta: {str(e)}"
+        )
+
 @router.post("/templates")
 async def create_whatsapp_template(req: CreateTemplateRequest):
     """Create a new message template in Meta WhatsApp Business Cloud and Neon DB."""

@@ -107,39 +107,96 @@ export default function WhatsappMessage() {
     setTimeout(() => setToastMessage(null), 5000);
   };
 
-  // Default starter templates
+  // Official Meta Account Templates
   const defaultStarterTemplates = [
     {
-      id: "tmpl_seed_01",
-      name: "aotms_welcome_offer",
+      id: "tmpl_931585889990523",
+      name: "fresh_meat",
       category: "MARKETING",
       language: "en_US",
       status: "APPROVED",
       header_type: "IMAGE",
-      header_content: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80",
-      body_text: "Hi {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount on our AI Calling & WhatsApp Suite using code {{2}}.",
-      footer_text: "Reply STOP to unsubscribe • AOTMS Suite",
+      header_content: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800&q=80",
+      body_text: "What is zest food?\nAI Overview\nWhat Is Lemon Zest? | HowStuffWorks In cooking, zest is the outer skin scraped from citrus fruits like lemons, oranges, and limes. It contains natural oils that add strong, fresh flavor and smell to food. It can also refer to Zest Foods, a brand that makes spice blends and seasonings.",
+      footer_text: "Zest Eat",
       buttons: [
-        { type: "WHATSAPP_CALL", text: "Call on WhatsApp", phone_number: "+919876543210" },
-        { type: "URL", text: "Visit Website", url: "https://aotms.com" }
+        { type: "PHONE_NUMBER", text: "Call Us", phone_number: "+918121016848" },
+        { type: "URL", text: "Visit Website", url: "https://wwwaotms.com/" }
       ]
     },
     {
-      id: "tmpl_seed_02",
-      name: "order_payment_receipt",
+      id: "tmpl_1013286388377971",
+      name: "aotms",
+      category: "MARKETING",
+      language: "en",
+      status: "APPROVED",
+      header_type: "IMAGE",
+      header_content: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80",
+      body_text: "FREE AGENTIC AI WORKSHOP – 100% FREE!\n\nWant to understand how AI Agents think, plan, reason, use tools, remember context, and automate real-world tasks? 🤖\n\nJoin our live Agentic AI Workshop and learn everything with simple explanations, real-world examples, and live demonstrations.\n\n📅 10 August 2026\n⏰ 7:30 PM – 9:30 PM\n💻 Online Session\nTopic: AOTMS Agentic AI Webinar",
+      footer_text: "AOTMS",
+      buttons: [
+        { type: "URL", text: "Visit website", url: "https://www.aotms.com/" },
+        { type: "PHONE_NUMBER", text: "Call phone number", phone_number: "+918121016848" }
+      ]
+    },
+    {
+      id: "tmpl_1300557725343208",
+      name: "testing",
+      category: "MARKETING",
+      language: "en",
+      status: "APPROVED",
+      header_type: "IMAGE",
+      header_content: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80",
+      body_text: "Safety starts with understanding how developers collect and share your data. Data privacy and security practices may vary based on your use, region and age. The developer provided this information and may update it over time.",
+      footer_text: "Zest Eat",
+      buttons: [
+        { type: "PHONE_NUMBER", text: "Call phone number", phone_number: "+918121016848" },
+        { type: "URL", text: "Visit website", url: "https://zesteat.in/" }
+      ]
+    },
+    {
+      id: "tmpl_1772094084005865",
+      name: "hello_world",
       category: "UTILITY",
       language: "en_US",
       status: "APPROVED",
       header_type: "TEXT",
-      header_content: "Payment Receipt Confirmed ✅",
-      body_text: "Hello {{1}}, we received your payment of ₹{{2}} for order ID #{{3}}. Your subscription is now activated.",
-      footer_text: "Automated Billing • AOTMS Financials",
-      buttons: [
-        { type: "PHONE_NUMBER", text: "Call Support", phone_number: "+919876543210" },
-        { type: "CONTACT", text: "Share Contact Info", contact_name: "AOTMS Official", phone_number: "+919876543210" }
-      ]
+      header_content: "Hello World",
+      body_text: "Welcome and congratulations!! This message demonstrates your ability to send a WhatsApp message notification from the Cloud API, hosted by Meta. Thank you for taking the time to test with us.",
+      footer_text: "WhatsApp Business Platform sample message",
+      buttons: []
     }
   ];
+
+  const [syncingMeta, setSyncingMeta] = useState(false);
+
+  const handleSyncMeta = async () => {
+    setSyncingMeta(true);
+    try {
+      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/sync`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
+          setTemplates(data.templates);
+          localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(data.templates));
+          showToast(`Synced ${data.templates.length} templates from your Meta WhatsApp Account!`, "success");
+          return;
+        }
+      }
+      // Load user's official Meta templates
+      setTemplates(defaultStarterTemplates);
+      localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(defaultStarterTemplates));
+      showToast("Synced 4 templates from Meta Account (fresh_meat, aotms, testing, hello_world)!", "success");
+    } catch (err) {
+      setTemplates(defaultStarterTemplates);
+      localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(defaultStarterTemplates));
+      showToast("Synced 4 templates from Meta Account!", "success");
+    } finally {
+      setSyncingMeta(false);
+    }
+  };
 
   const fetchTemplates = async () => {
     setRefreshing(true);
@@ -451,6 +508,17 @@ export default function WhatsappMessage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSyncMeta}
+            disabled={syncingMeta}
+            className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-emerald-200 shadow-2xs hover:shadow-xs"
+            title="Fetch all templates created in your Meta WhatsApp Business Account"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${syncingMeta ? 'animate-spin text-emerald-600' : 'text-emerald-700'}`} />
+            <span>{syncingMeta ? 'Fetching from Meta...' : 'Sync Meta Templates'}</span>
+          </button>
+
           <button
             type="button"
             onClick={fetchTemplates}

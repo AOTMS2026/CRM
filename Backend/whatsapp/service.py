@@ -343,61 +343,96 @@ class WhatsAppIntegrationService:
             conn.close()
 
     @classmethod
+    async def sync_meta_templates(cls) -> List[Dict[str, Any]]:
+        """Fetch all existing message templates from Meta WABA and sync into Neon DB."""
+        cls.init_tables()
+        conn = cls.get_db_connection()
+        creds = None
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT access_token, waba_id, graph_version FROM whatsapp_integrations ORDER BY updated_at DESC LIMIT 1")
+                creds = cur.fetchone()
+        finally:
+            conn.close()
+
+        if creds and creds.get("access_token") and creds.get("waba_id"):
+            meta_res = await MetaWhatsAppClient.get_templates(
+                access_token=creds["access_token"],
+                waba_id=creds["waba_id"],
+                graph_version=creds.get("graph_version", "v19.0")
+            )
+
+            if meta_res.get("success") and "templates" in meta_res:
+                conn = cls.get_db_connection()
+                try:
+                    with conn.cursor() as cur:
+                        for t in meta_res["templates"]:
+                            name = t.get("name")
+                            if not name:
+                                continue
+                            category = t.get("category", "MARKETING")
+                            language = t.get("language", "en")
+                            status = t.get("status", "APPROVED")
+                            meta_id = t.get("id")
+                            
+                            header_type = "NONE"
+                            header_content = None
+                            body_text = ""
+                            footer_text = None
+                            buttons = []
+
+                            for comp in t.get("components", []):
+                                c_type = comp.get("type")
+                                if c_type == "HEADER":
+                                    header_type = comp.get("format", "TEXT")
+                                    if header_type == "IMAGE":
+                                        handles = comp.get("example", {}).get("header_handle", [])
+                                        header_content = handles[0] if handles else "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80"
+                                    else:
+                                        header_content = comp.get("text")
+                                elif c_type == "BODY":
+                                    body_text = comp.get("text", "")
+                                elif c_type == "FOOTER":
+                                    footer_text = comp.get("text")
+                                elif c_type == "BUTTONS":
+                                    buttons = comp.get("buttons", [])
+
+                            tmpl_id = f"tmpl_{meta_id or name}"
+                            cur.execute("""
+                                INSERT INTO whatsapp_templates (
+                                    id, name, category, language, status, header_type,
+                                    header_content, body_text, footer_text, buttons, meta_template_id
+                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (name) DO UPDATE SET
+                                    category = EXCLUDED.category,
+                                    language = EXCLUDED.language,
+                                    status = EXCLUDED.status,
+                                    header_type = EXCLUDED.header_type,
+                                    header_content = EXCLUDED.header_content,
+                                    body_text = EXCLUDED.body_text,
+                                    footer_text = EXCLUDED.footer_text,
+                                    buttons = EXCLUDED.buttons,
+                                    meta_template_id = EXCLUDED.meta_template_id,
+                                    updated_at = CURRENT_TIMESTAMP;
+                            """, (
+                                tmpl_id, name, category, language, status, header_type,
+                                header_content, body_text, footer_text, json.dumps(buttons), meta_id
+                            ))
+                        conn.commit()
+                finally:
+                    conn.close()
+
+        return await cls.list_templates()
+
+    @classmethod
     async def list_templates(cls) -> List[Dict[str, Any]]:
-        """List all templates from Neon DB with default sample starter templates."""
+        """List all templates from Neon DB."""
         cls.init_tables()
         conn = cls.get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("SELECT * FROM whatsapp_templates ORDER BY created_at DESC")
                 rows = cur.fetchall()
-
-                # If database has no templates yet, seed standard Marketing & Utility starter templates
-                if not rows:
-                    seed_templates = [
-                        (
-                            "tmpl_seed_01",
-                            "aotms_welcome_offer",
-                            "MARKETING",
-                            "en_US",
-                            "APPROVED",
-                            "IMAGE",
-                            "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80",
-                            "Hi {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive 25% discount on our AI Calling & WhatsApp Automation Suite using code {{2}}.",
-                            "Reply STOP to unsubscribe • AOTMS Suite",
-                            json.dumps([
-                                {"type": "QUICK_REPLY", "text": "Claim Offer 🚀"},
-                                {"type": "URL", "text": "Visit Website", "url": "https://aotms.com"}
-                            ])
-                        ),
-                        (
-                            "tmpl_seed_02",
-                            "order_payment_receipt",
-                            "UTILITY",
-                            "en_US",
-                            "APPROVED",
-                            "TEXT",
-                            "Payment Receipt Confirmed ✅",
-                            "Hello {{1}}, we received your payment of ₹{{2}} for order ID #{{3}}. Your subscription is now activated.",
-                            "Automated Billing • AOTMS Financials",
-                            json.dumps([
-                                {"type": "QUICK_REPLY", "text": "View Invoice 📄"},
-                                {"type": "PHONE_NUMBER", "text": "Call Support", "phone_number": "+919876543210"}
-                            ])
-                        )
-                    ]
-                    for tmpl in seed_templates:
-                        cur.execute("""
-                            INSERT INTO whatsapp_templates (
-                                id, name, category, language, status, header_type, header_content, body_text, footer_text, buttons
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (name) DO NOTHING;
-                        """, tmpl)
-                    conn.commit()
-
-                    cur.execute("SELECT * FROM whatsapp_templates ORDER BY created_at DESC")
-                    rows = cur.fetchall()
-
                 return [dict(r) for r in rows]
         finally:
             conn.close()
