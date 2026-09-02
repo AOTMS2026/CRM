@@ -34,7 +34,9 @@ export default function AuthPage({ defaultMode = 'signin' }) {
     setLoading(true);
     setServerMessage(null);
 
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://crm-fee1.onrender.com";
+    const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+      ? 'http://127.0.0.1:8000'
+      : (import.meta.env.VITE_API_BASE_URL || "https://crm-fee1.onrender.com");
 
     try {
       if (isSignUp) {
