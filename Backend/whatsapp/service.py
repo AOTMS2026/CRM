@@ -2,6 +2,8 @@ import os
 import secrets
 import json
 import re
+import base64
+import httpx
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Optional, Dict, Any, List
@@ -236,15 +238,46 @@ class WhatsAppIntegrationService:
                 "text": req.header_text.strip()
             })
         elif req.header_type == "IMAGE":
-            # Valid sample media handle for Meta Cloud API image validation
-            sample_handle = "https://scontent.whatsapp.net/v/t61.29466-34/675497941_1013286391711304_5520202253338558258_n.jpg?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=0xtOeKeAM34Q7kNvwF0pSIv"
-            components.append({
-                "type": "HEADER",
-                "format": "IMAGE",
-                "example": {
-                    "header_handle": [sample_handle]
-                }
-            })
+            # Generate or extract image bytes
+            img_bytes = b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.\' \",#\x1c\x1c(7),01444\x1f\'9=82<.342\xff\xc0\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xc4\x00\x1f\x00\x00\x01\x05\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xbf\x00\xff\xd9'
+            if req.header_image_url and req.header_image_url.startswith("data:image"):
+                try:
+                    _, data = req.header_image_url.split(",", 1)
+                    img_bytes = base64.b64decode(data)
+                except Exception:
+                    pass
+            elif req.header_image_url and req.header_image_url.startswith("http"):
+                try:
+                    async with httpx.AsyncClient(timeout=10.0) as dl:
+                        resp = await dl.get(req.header_image_url)
+                        if resp.status_code == 200 and len(resp.content) > 0:
+                            img_bytes = resp.content
+                except Exception:
+                    pass
+
+            meta_handle = None
+            if integration and integration.get("access_token"):
+                meta_handle = await MetaWhatsAppClient.upload_media_sample(
+                    access_token=integration["access_token"],
+                    image_bytes=img_bytes,
+                    file_type="image/jpeg",
+                    app_id="1207473174896357",
+                    graph_version=integration.get("graph_version", "v19.0")
+                )
+
+            if meta_handle:
+                components.append({
+                    "type": "HEADER",
+                    "format": "IMAGE",
+                    "example": {
+                        "header_handle": [meta_handle]
+                    }
+                })
+            else:
+                components.append({
+                    "type": "HEADER",
+                    "format": "IMAGE"
+                })
 
         # 2. Body component
         clean_body = req.body_text.strip()

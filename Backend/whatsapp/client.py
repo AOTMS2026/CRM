@@ -54,6 +54,47 @@ class MetaWhatsAppClient:
             }
 
     @classmethod
+    async def upload_media_sample(
+        cls,
+        access_token: str,
+        image_bytes: bytes,
+        file_type: str = "image/jpeg",
+        app_id: str = "1207473174896357",
+        graph_version: str = "v19.0"
+    ) -> Optional[str]:
+        """
+        Upload sample media via Meta Resumable Upload API to get header_handle.
+        Required for creating templates with IMAGE/VIDEO/DOCUMENT headers.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                url1 = f"{cls.BASE_URL}/{graph_version}/{app_id}/uploads"
+                params = {
+                    "file_length": len(image_bytes),
+                    "file_type": file_type,
+                    "access_token": access_token.strip()
+                }
+                res1 = await client.post(url1, params=params)
+                if res1.status_code != 200:
+                    return None
+                upload_id = res1.json().get("id")
+                if not upload_id:
+                    return None
+
+                url2 = f"{cls.BASE_URL}/{graph_version}/{upload_id}"
+                headers = {
+                    "Authorization": f"OAuth {access_token.strip()}",
+                    "file_offset": "0",
+                    "Content-Type": "application/octet-stream"
+                }
+                res2 = await client.post(url2, headers=headers, content=image_bytes)
+                if res2.status_code == 200:
+                    return res2.json().get("h")
+                return None
+        except Exception:
+            return None
+
+    @classmethod
     async def create_template(
         cls,
         access_token: str,
