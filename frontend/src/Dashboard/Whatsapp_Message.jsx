@@ -107,140 +107,47 @@ export default function WhatsappMessage() {
     setTimeout(() => setToastMessage(null), 5000);
   };
 
-  // Official Meta Account Templates
-  const defaultStarterTemplates = [
-    {
-      id: "tmpl_931585889990523",
-      name: "fresh_meat",
-      category: "MARKETING",
-      language: "en_US",
-      status: "APPROVED",
-      header_type: "IMAGE",
-      header_content: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800&q=80",
-      body_text: "What is zest food?\nAI Overview\nWhat Is Lemon Zest? | HowStuffWorks In cooking, zest is the outer skin scraped from citrus fruits like lemons, oranges, and limes. It contains natural oils that add strong, fresh flavor and smell to food. It can also refer to Zest Foods, a brand that makes spice blends and seasonings.",
-      footer_text: "Zest Eat",
-      buttons: [
-        { type: "PHONE_NUMBER", text: "Call Us", phone_number: "+918121016848" },
-        { type: "URL", text: "Visit Website", url: "https://wwwaotms.com/" }
-      ]
-    },
-    {
-      id: "tmpl_1013286388377971",
-      name: "aotms",
-      category: "MARKETING",
-      language: "en",
-      status: "APPROVED",
-      header_type: "IMAGE",
-      header_content: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80",
-      body_text: "FREE AGENTIC AI WORKSHOP – 100% FREE!\n\nWant to understand how AI Agents think, plan, reason, use tools, remember context, and automate real-world tasks? 🤖\n\nJoin our live Agentic AI Workshop and learn everything with simple explanations, real-world examples, and live demonstrations.\n\n📅 10 August 2026\n⏰ 7:30 PM – 9:30 PM\n💻 Online Session\nTopic: AOTMS Agentic AI Webinar",
-      footer_text: "AOTMS",
-      buttons: [
-        { type: "URL", text: "Visit website", url: "https://www.aotms.com/" },
-        { type: "PHONE_NUMBER", text: "Call phone number", phone_number: "+918121016848" }
-      ]
-    },
-    {
-      id: "tmpl_1300557725343208",
-      name: "testing",
-      category: "MARKETING",
-      language: "en",
-      status: "APPROVED",
-      header_type: "IMAGE",
-      header_content: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80",
-      body_text: "Safety starts with understanding how developers collect and share your data. Data privacy and security practices may vary based on your use, region and age. The developer provided this information and may update it over time.",
-      footer_text: "Zest Eat",
-      buttons: [
-        { type: "PHONE_NUMBER", text: "Call phone number", phone_number: "+918121016848" },
-        { type: "URL", text: "Visit website", url: "https://zesteat.in/" }
-      ]
-    },
-    {
-      id: "tmpl_1772094084005865",
-      name: "hello_world",
-      category: "UTILITY",
-      language: "en_US",
-      status: "APPROVED",
-      header_type: "TEXT",
-      header_content: "Hello World",
-      body_text: "Welcome and congratulations!! This message demonstrates your ability to send a WhatsApp message notification from the Cloud API, hosted by Meta. Thank you for taking the time to test with us.",
-      footer_text: "WhatsApp Business Platform sample message",
-      buttons: []
-    }
-  ];
-
   const [syncingMeta, setSyncingMeta] = useState(false);
 
+  // Real-time API: Fetch templates directly from backend API
+  const fetchTemplates = async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates`);
+      const data = await res.json();
+      if (res.ok && data && data.success && Array.isArray(data.templates)) {
+        setTemplates(data.templates);
+      } else {
+        setTemplates([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch templates from API:", err);
+      setTemplates([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Real-time API: Sync live templates from Meta WhatsApp Business Account
   const handleSyncMeta = async () => {
     setSyncingMeta(true);
     try {
       const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/sync`, {
         method: 'POST'
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
-          setTemplates(data.templates);
-          localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(data.templates));
-          showToast(`Synced ${data.templates.length} templates from your Meta WhatsApp Account!`, "success");
-          return;
-        }
+      const data = await res.json();
+      if (res.ok && data && data.success && Array.isArray(data.templates)) {
+        setTemplates(data.templates);
+        showToast(`Real-time Sync: Fetched ${data.templates.length} templates from Meta Account!`, "success");
+      } else {
+        throw new Error(data.detail || "Failed to sync templates from Meta.");
       }
-      // Load user's official Meta templates
-      setTemplates(defaultStarterTemplates);
-      localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(defaultStarterTemplates));
-      showToast("Synced 4 templates from Meta Account (fresh_meat, aotms, testing, hello_world)!", "success");
     } catch (err) {
-      setTemplates(defaultStarterTemplates);
-      localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(defaultStarterTemplates));
-      showToast("Synced 4 templates from Meta Account!", "success");
+      showToast(err.message || "Error syncing templates with Meta API", "error");
     } finally {
       setSyncingMeta(false);
     }
-  };
-
-  const fetchTemplates = async () => {
-    setRefreshing(true);
-    let loadedTemplates = [];
-
-    // 1. Try to fetch from Live Backend API
-    try {
-      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.success && Array.isArray(data.templates) && data.templates.length > 0) {
-          loadedTemplates = data.templates;
-        }
-      }
-    } catch (err) {
-      console.warn("Backend templates not yet ready:", err);
-    }
-
-    // 2. Merge with local storage cache
-    const cached = localStorage.getItem('aotms_whatsapp_templates');
-    if (cached) {
-      try {
-        const localList = JSON.parse(cached);
-        if (Array.isArray(localList) && localList.length > 0) {
-          const names = new Set(loadedTemplates.map(t => t.name));
-          localList.forEach(item => {
-            if (!names.has(item.name)) {
-              loadedTemplates.push(item);
-            }
-          });
-        }
-      } catch (e) {
-        console.error("Local template parse error:", e);
-      }
-    }
-
-    // 3. Fallback to default starter templates if empty
-    if (loadedTemplates.length === 0) {
-      loadedTemplates = defaultStarterTemplates;
-    }
-
-    setTemplates(loadedTemplates);
-    setLoading(false);
-    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -295,6 +202,7 @@ export default function WhatsappMessage() {
     }
   };
 
+  // Real-time API: Create template directly via API
   const handleCreateTemplate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -306,31 +214,6 @@ export default function WhatsappMessage() {
       return;
     }
 
-    const newTemplate = {
-      id: `tmpl_${Date.now()}`,
-      name: formattedName,
-      category: formData.category,
-      language: formData.language,
-      status: 'APPROVED',
-      header_type: formData.header_type,
-      header_content: formData.header_type === 'IMAGE' ? formData.header_image_url : formData.header_text,
-      body_text: formData.body_text,
-      footer_text: formData.footer_text,
-      buttons: formData.buttons,
-      created_at: new Date().toISOString()
-    };
-
-    // Save to local cache first so user immediately sees their template
-    const existingCached = localStorage.getItem('aotms_whatsapp_templates');
-    let currentList = [];
-    try {
-      currentList = existingCached ? JSON.parse(existingCached) : [];
-    } catch(e) { currentList = []; }
-    const updatedList = [newTemplate, ...currentList.filter(t => t.name !== formattedName)];
-    localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(updatedList));
-    setTemplates(prev => [newTemplate, ...prev.filter(t => t.name !== formattedName)]);
-
-    // Attempt sync to Live Backend / Meta Cloud API
     try {
       const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates`, {
         method: 'POST',
@@ -338,41 +221,39 @@ export default function WhatsappMessage() {
         body: JSON.stringify({ ...formData, name: formattedName })
       });
 
-      if (res.ok) {
-        const result = await res.json();
-        showToast(result.message || `Template '${formattedName}' created and synced with Meta!`, "success");
+      const result = await res.json();
+      if (res.ok && (result.success || result.template)) {
+        showToast(result.message || `Template '${formattedName}' created successfully on Meta!`, "success");
+        setShowCreateModal(false);
+        await fetchTemplates();
       } else {
-        showToast(`Template '${formattedName}' saved in CRM Studio! (Render cloud deploy updating)`, "success");
+        throw new Error(result.detail || result.message || "Failed to create template on Meta Cloud API.");
       }
     } catch (err) {
-      showToast(`Template '${formattedName}' saved in CRM Studio!`, "success");
+      showToast(err.message || "Failed to create template on API", "error");
     } finally {
       setSubmitting(false);
-      setShowCreateModal(false);
     }
   };
 
+  // Real-time API: Delete template directly via API
   const handleDeleteTemplate = async (templateName) => {
-    if (!window.confirm(`Are you sure you want to delete template '${templateName}'?`)) return;
+    if (!window.confirm(`Are you sure you want to delete template '${templateName}' from Meta & CRM?`)) return;
 
-    // Remove from local cache
-    const existingCached = localStorage.getItem('aotms_whatsapp_templates');
-    if (existingCached) {
-      try {
-        const list = JSON.parse(existingCached).filter(t => t.name !== templateName);
-        localStorage.setItem('aotms_whatsapp_templates', JSON.stringify(list));
-      } catch(e) {}
-    }
-    setTemplates(prev => prev.filter(t => t.name !== templateName));
-
-    // Also attempt delete on backend
     try {
-      await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/${templateName}`, {
+      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/${templateName}`, {
         method: 'DELETE'
       });
-    } catch (err) {}
-
-    showToast(`Template '${templateName}' deleted successfully.`, "success");
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast(`Template '${templateName}' deleted from Meta & CRM.`, "success");
+        await fetchTemplates();
+      } else {
+        throw new Error(result.detail || "Failed to delete template from Meta.");
+      }
+    } catch (err) {
+      showToast(err.message || "Error deleting template from API", "error");
+    }
   };
 
   const handleEditTemplate = (tmpl) => {
