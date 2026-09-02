@@ -15,7 +15,8 @@ import {
   Sparkles,
   AlertCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronDown
 } from 'lucide-react';
 
 export default function AuthPage({ defaultMode = 'signin' }) {
@@ -223,10 +224,12 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="text"
+                      maxLength={50}
                       placeholder="e.g. Vikram Sharma"
                       {...register('fullName', { 
                         required: 'Full Name is required',
                         minLength: { value: 3, message: 'Must be at least 3 characters' },
+                        maxLength: { value: 50, message: 'Maximum 50 characters allowed' },
                         pattern: {
                           value: /^[a-zA-Z\s]{3,50}$/,
                           message: 'Only letters and spaces allowed (no numbers)'
@@ -240,19 +243,35 @@ export default function AuthPage({ defaultMode = 'signin' }) {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Company Name <span className="text-tech_orange">*</span>
+                    Company Name (AOTMS / Corporate) <span className="text-tech_orange">*</span>
                   </label>
                   <div className="relative">
-                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="e.g. Apex Global Tech"
-                      {...register('companyName', { 
-                        required: 'Company Name is required',
-                        minLength: { value: 2, message: 'Company Name must be at least 2 characters' }
-                      })}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all"
-                    />
+                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <select
+                      {...register('companyName', { required: 'Please select an organization' })}
+                      defaultValue="Academy of Tech Masters (AOTMS)"
+                      className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate_dark-400/90 border border-white/10 text-xs text-white focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="Academy of Tech Masters (AOTMS)" className="bg-slate_dark-300 text-white">
+                        Academy of Tech Masters (AOTMS)
+                      </option>
+                      <option value="AOTMS Enterprise Solutions" className="bg-slate_dark-300 text-white">
+                        AOTMS Enterprise Solutions
+                      </option>
+                      <option value="AOTMS AI & Automation Labs" className="bg-slate_dark-300 text-white">
+                        AOTMS AI & Automation Labs
+                      </option>
+                      <option value="AOTMS Cloud Technologies" className="bg-slate_dark-300 text-white">
+                        AOTMS Cloud Technologies
+                      </option>
+                      <option value="Apex Global Technologies" className="bg-slate_dark-300 text-white">
+                        Apex Global Technologies
+                      </option>
+                      <option value="Corporate Enterprise Partner" className="bg-slate_dark-300 text-white">
+                        Corporate Enterprise Partner
+                      </option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>
                   {errors.companyName && <p className="text-[11px] text-rose-400 mt-1">{errors.companyName.message}</p>}
                 </div>
@@ -265,9 +284,11 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="tel"
+                      maxLength={14}
                       placeholder="+91 98765 43210"
                       {...register('phone', { 
                         required: 'WhatsApp phone number is required',
+                        maxLength: { value: 14, message: 'Maximum 10-digit phone (+91)' },
                         pattern: {
                           value: /^(?:\+91[\s-]?)?[6789]\d{9}$/,
                           message: 'Must be a valid 10-digit Indian number (+91 9876543210)'
@@ -290,9 +311,11 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="email"
+                      maxLength={80}
                       placeholder="you@company.com"
                       {...register('email', { 
                         required: 'Work email is required',
+                        maxLength: { value: 80, message: 'Email cannot exceed 80 characters' },
                         pattern: { 
                           value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i, 
                           message: 'Enter a valid corporate email (e.g. name@company.com)' 
@@ -312,10 +335,12 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      maxLength={64}
                       placeholder="••••••••••••"
                       {...register('password', { 
                         required: 'Password is required',
                         minLength: { value: 8, message: 'Password must be at least 8 characters' },
+                        maxLength: { value: 64, message: 'Password cannot exceed 64 characters' },
                         pattern: {
                           value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^~_\-+=])[A-Za-z\d@$!%*?&#^~_\-+=]{8,}$/,
                           message: 'Include uppercase, lowercase, number, and special character'
@@ -342,6 +367,7 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      maxLength={64}
                       placeholder="••••••••••••"
                       {...register('confirmPassword', { 
                         required: 'Please confirm your password',
@@ -366,9 +392,11 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="email"
+                    maxLength={80}
                     placeholder="you@company.com"
                     {...register('email', { 
                       required: 'Email address is required',
+                      maxLength: { value: 80, message: 'Email cannot exceed 80 characters' },
                       pattern: { 
                         value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i, 
                         message: 'Enter a valid email address' 
@@ -393,10 +421,12 @@ export default function AuthPage({ defaultMode = 'signin' }) {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    maxLength={64}
                     placeholder="••••••••••••"
                     {...register('password', { 
                       required: 'Password is required',
-                      minLength: { value: 6, message: 'Password must be at least 6 characters' }
+                      minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                      maxLength: { value: 64, message: 'Password cannot exceed 64 characters' }
                     })}
                     className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate_dark-400/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-tech_orange focus:ring-1 focus:ring-tech_orange transition-all"
                   />
