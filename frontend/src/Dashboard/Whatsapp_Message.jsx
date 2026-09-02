@@ -48,6 +48,36 @@ export default function WhatsappMessage() {
   const [localImageName, setLocalImageName] = useState('');
   const [localImageSize, setLocalImageSize] = useState('');
   const fileInputRef = useRef(null);
+  const previewChatRef = useRef(null);
+  const previewModalChatRef = useRef(null);
+
+  // Automatic smooth scroll behavior when content or buttons change
+  useEffect(() => {
+    if (previewChatRef.current) {
+      const el = previewChatRef.current;
+      setTimeout(() => {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 50);
+    }
+  }, [
+    formData.buttons.length, 
+    formData.body_text, 
+    formData.header_image_url, 
+    formData.header_text, 
+    formData.header_type
+  ]);
+
+  // Scroll to top upon opening standalone preview
+  useEffect(() => {
+    if (previewTemplate && previewModalChatRef.current) {
+      setTimeout(() => {
+        previewModalChatRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 80);
+    }
+  }, [previewTemplate]);
 
   // Create Template Form State
   const [formData, setFormData] = useState({
@@ -984,11 +1014,11 @@ export default function WhatsappMessage() {
               </form>
 
               {/* RIGHT COLUMN: REALISTIC WHATSAPP PHONE PREVIEW (5 Cols) */}
-              <div className="lg:col-span-5 p-6 bg-slate-100/70 flex flex-col items-center justify-center overflow-y-auto">
-                <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col">
+              <div className="lg:col-span-5 p-6 bg-slate-100/70 flex flex-col items-center justify-start overflow-y-auto lg:sticky lg:top-0">
+                <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col relative max-h-[580px]">
                   
                   {/* WhatsApp Phone Mock Header */}
-                  <div className="bg-[#075e54] text-white p-3.5 flex items-center justify-between">
+                  <div className="bg-[#075e54] text-white p-3.5 flex items-center justify-between shrink-0 z-10 shadow-xs">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-emerald-400 text-emerald-950 font-black text-xs flex items-center justify-center shadow-xs">
                         A
@@ -1001,18 +1031,22 @@ export default function WhatsappMessage() {
                         <div className="text-[10px] text-emerald-100/80">Business Account</div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono bg-[#128c7e] px-2 py-0.5 rounded text-white">Live Preview</span>
+                    <span className="text-[10px] font-mono bg-[#128c7e] px-2 py-0.5 rounded text-white font-bold">Live Preview</span>
                   </div>
 
-                  {/* Chat Wallpaper Canvas */}
-                  <div className="p-4 bg-[#efeae2] flex-1 min-h-[380px] space-y-3">
+                  {/* Chat Wallpaper Canvas with Smooth Automatic Scrolling */}
+                  <div 
+                    ref={previewChatRef}
+                    className="p-4 bg-[#efeae2] flex-1 overflow-y-auto scroll-smooth space-y-3 scrollbar-thin scrollbar-thumb-slate-400/40 hover:scrollbar-thumb-slate-400"
+                    style={{ maxHeight: '460px' }}
+                  >
                     
                     {/* Message Bubble */}
                     <div className="bg-white rounded-2xl rounded-tl-none p-3 shadow-sm border border-slate-200/60 space-y-2 max-w-[95%]">
                       
                       {/* Image Header Preview (Supports Local Image File Preview) */}
                       {formData.header_type === 'IMAGE' && formData.header_image_url && (
-                        <div className="rounded-xl overflow-hidden max-h-44 w-full bg-slate-100 relative group">
+                        <div className="rounded-xl overflow-hidden max-h-48 w-full bg-slate-100 relative group">
                           <img 
                             src={formData.header_image_url} 
                             alt="Header Preview" 
@@ -1074,13 +1108,38 @@ export default function WhatsappMessage() {
 
                   </div>
 
+                  {/* Auto-scroll helper controls */}
+                  <div className="p-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[10px] font-mono text-slate-500 px-3 shrink-0">
+                    <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Auto-Scroll Active</span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        type="button" 
+                        onClick={() => previewChatRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="hover:text-slate-900 font-bold cursor-pointer"
+                      >
+                        Top ↑
+                      </button>
+                      <span>•</span>
+                      <button 
+                        type="button" 
+                        onClick={() => previewChatRef.current?.scrollTo({ top: previewChatRef.current.scrollHeight, behavior: 'smooth' })}
+                        className="hover:text-slate-900 font-bold cursor-pointer"
+                      >
+                        Bottom ↓
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
             </div>
 
             {/* Modal Bottom Action Footer */}
-            <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3">
+            <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
@@ -1105,13 +1164,13 @@ export default function WhatsappMessage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: STANDALONE CHAT PREVIEW POPUP                                    */}
+      {/* MODAL 2: STANDALONE CHAT PREVIEW POPUP (AUTOMATIC SCROLL SUPPORT)          */}
       {/* ========================================================================= */}
       {previewTemplate && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col animate-in zoom-in-95 duration-150">
+          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[88vh] animate-in zoom-in-95 duration-150">
             
-            <div className="bg-[#075e54] text-white p-4 flex items-center justify-between">
+            <div className="bg-[#075e54] text-white p-4 flex items-center justify-between shrink-0 shadow-xs">
               <div className="flex items-center gap-2.5">
                 <WhatsApp className="w-5 h-5 text-emerald-300" />
                 <div>
@@ -1127,10 +1186,15 @@ export default function WhatsappMessage() {
               </button>
             </div>
 
-            <div className="p-4 bg-[#efeae2] min-h-[320px] space-y-3">
+            {/* Scrollable chat canvas with smooth scrolling */}
+            <div 
+              ref={previewModalChatRef}
+              className="p-4 bg-[#efeae2] flex-1 overflow-y-auto scroll-smooth space-y-3 scrollbar-thin scrollbar-thumb-slate-400/40"
+              style={{ maxHeight: '460px' }}
+            >
               <div className="bg-white rounded-2xl rounded-tl-none p-3.5 shadow-sm border border-slate-200/60 space-y-2">
                 {previewTemplate.header_type === 'IMAGE' && previewTemplate.header_content && (
-                  <div className="rounded-xl overflow-hidden max-h-40 w-full bg-slate-100">
+                  <div className="rounded-xl overflow-hidden max-h-48 w-full bg-slate-100">
                     <img src={previewTemplate.header_content} alt="Header" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -1139,7 +1203,7 @@ export default function WhatsappMessage() {
                     {previewTemplate.header_content}
                   </h4>
                 )}
-                <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-line font-normal">
                   {renderPreviewBody(previewTemplate.body_text, ['Customer', 'AOTMS2026'])}
                 </p>
                 {previewTemplate.footer_text && (
@@ -1150,12 +1214,39 @@ export default function WhatsappMessage() {
                   <span className="text-sky-500 font-bold">✓✓</span>
                 </div>
               </div>
+
+              {/* Render buttons in standalone preview too */}
+              {(() => {
+                let pButtons = [];
+                try {
+                  pButtons = typeof previewTemplate.buttons === 'string' ? JSON.parse(previewTemplate.buttons) : (previewTemplate.buttons || []);
+                } catch(e) { pButtons = []; }
+
+                return pButtons.length > 0 ? (
+                  <div className="space-y-1.5 max-w-[95%]">
+                    {pButtons.map((btn, i) => (
+                      <div 
+                        key={i}
+                        className="p-2.5 rounded-xl bg-white/95 border border-slate-200/80 shadow-xs text-center text-xs font-bold text-sky-600 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {btn.type === 'WHATSAPP_CALL' && <WhatsApp className="w-3.5 h-3.5 text-emerald-600" />}
+                        {btn.type === 'PHONE_NUMBER' && <Phone className="w-3.5 h-3.5 text-emerald-600" />}
+                        {btn.type === 'CONTACT' && <UserCheck className="w-3.5 h-3.5 text-amber-600" />}
+                        {btn.type === 'URL' && <ExternalLink className="w-3.5 h-3.5 text-sky-600" />}
+                        {btn.type === 'CUSTOM' && <Send className="w-3 h-3 text-purple-600" />}
+                        <span>{btn.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </div>
 
-            <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <span className="text-[10px] text-slate-400 font-mono">Smooth Scrolling Active</span>
               <button
                 onClick={() => setPreviewTemplate(null)}
-                className="px-4 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs cursor-pointer"
+                className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs cursor-pointer transition-colors"
               >
                 Close Preview
               </button>
