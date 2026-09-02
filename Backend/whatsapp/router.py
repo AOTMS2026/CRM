@@ -43,15 +43,19 @@ def get_whatsapp_status():
 # -----------------------------------------------------------------------------
 @router.get("/templates")
 async def list_whatsapp_templates():
-    """Retrieve all message templates from Neon DB & Meta Cloud API."""
+    """Retrieve all message templates directly from Meta Cloud API and Neon DB."""
     try:
-        templates = await WhatsAppIntegrationService.list_templates()
+        templates = await WhatsAppIntegrationService.sync_meta_templates()
         return {"success": True, "templates": templates}
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch templates: {str(e)}"
-        )
+        try:
+            templates = await WhatsAppIntegrationService.list_templates()
+            return {"success": True, "templates": templates}
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to fetch templates from Meta API: {str(e)}"
+            )
 
 @router.post("/templates/sync")
 @router.get("/templates/sync")

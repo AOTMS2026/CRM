@@ -378,11 +378,17 @@ export default function WhatsappMessage() {
               <WhatsApp className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                Whatsapp_Messages & Meta Templates Studio
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                  Whatsapp_Messages & Meta Templates Studio
+                </h2>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Meta WABA Active
+                </span>
+              </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Upload local images, configure interactive buttons (Call Phone Number, Call on WhatsApp, Share Contact Info), and create official Meta templates.
+                Real-time API sync with Meta Cloud API. Upload local images, configure action buttons, and manage official approved templates.
               </p>
             </div>
           </div>
