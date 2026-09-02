@@ -134,10 +134,7 @@ export default function AuthPage({ defaultMode = 'signin' }) {
           <span>Back to Landing Page</span>
         </Link>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate_dark-300/80 border border-white/10 text-xs font-mono text-emerald-400">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>7-Day JWT • Neon PostgreSQL</span>
-        </div>
+      
       </div>
 
       {/* Main Authentication Card */}
@@ -243,32 +240,17 @@ export default function AuthPage({ defaultMode = 'signin' }) {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Company Name (AOTMS / Corporate) <span className="text-tech_orange">*</span>
+                    Company Name<span className="text-tech_orange">*</span>
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <select
                       {...register('companyName', { required: 'Please select an organization' })}
-                      defaultValue="Academy of Tech Masters (AOTMS)"
+                      defaultValue="AOTMS"
                       className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate_dark-400/90 border border-white/10 text-xs text-white focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all appearance-none cursor-pointer"
                     >
-                      <option value="Academy of Tech Masters (AOTMS)" className="bg-slate_dark-300 text-white">
-                        Academy of Tech Masters (AOTMS)
-                      </option>
-                      <option value="AOTMS Enterprise Solutions" className="bg-slate_dark-300 text-white">
-                        AOTMS Enterprise Solutions
-                      </option>
-                      <option value="AOTMS AI & Automation Labs" className="bg-slate_dark-300 text-white">
-                        AOTMS AI & Automation Labs
-                      </option>
-                      <option value="AOTMS Cloud Technologies" className="bg-slate_dark-300 text-white">
-                        AOTMS Cloud Technologies
-                      </option>
-                      <option value="Apex Global Technologies" className="bg-slate_dark-300 text-white">
-                        Apex Global Technologies
-                      </option>
-                      <option value="Corporate Enterprise Partner" className="bg-slate_dark-300 text-white">
-                        Corporate Enterprise Partner
+                      <option value="AOTMS" className="bg-slate_dark-300 text-white font-semibold">
+                        AOTMS
                       </option>
                     </select>
                     <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -450,11 +432,11 @@ export default function AuthPage({ defaultMode = 'signin' }) {
             className="w-full py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-lg shadow-tech_orange/30 border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0 mt-4"
           >
             {loading ? (
-              <span className="animate-pulse font-mono">Authenticating with Neon Database...</span>
+              <span className="animate-pulse font-mono">Authenticating...</span>
             ) : isSignUp ? (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Create Company Account (7-Day Session)</span>
+                <span>Create Company Account</span>
               </>
             ) : (
               <>

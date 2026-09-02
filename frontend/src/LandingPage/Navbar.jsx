@@ -271,54 +271,18 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    {/* Session Validity Pill */}
-                    <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate_dark-400/80 border border-white/5 text-[11px]">
-                      <span className="text-slate-400 flex items-center gap-1.5 font-mono">
-                        <IoShieldCheckmarkOutline className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>7-Day JWT Session</span>
-                      </span>
-                      <span className="text-emerald-400 font-bold font-mono">Active</span>
-                    </div>
-
                     {/* PRIMARY ACTION: REDIRECT TO DASHBOARD */}
                     <Link
                       to="/dashboard"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange text-white font-bold text-xs flex items-center justify-between shadow-lg shadow-tech_orange/30 border border-white/20 transition-all cursor-pointer group"
+                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange text-white font-bold text-xs flex items-center justify-between shadow-lg shadow-tech_orange/30 border border-white/20 transition-all cursor-pointer group"
                     >
                       <span className="flex items-center gap-2">
-                        <IoSpeedometerOutline className="text-base text-white" />
+                        <IoSpeedometerOutline className="text-lg text-white" />
                         <span>Open CRM Dashboard</span>
                       </span>
                       <IoArrowForward className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
-
-                    {/* Quick CRM Module Links */}
-                    <div className="pt-2 border-t border-white/10 space-y-1">
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center justify-between p-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate_dark-400/80 transition-colors"
-                      >
-                        <span className="flex items-center gap-2">
-                          <IoPeopleOutline className="text-tech_blue" />
-                          <span>Team & Users</span>
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono">Manage</span>
-                      </Link>
-
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center justify-between p-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate_dark-400/80 transition-colors"
-                      >
-                        <span className="flex items-center gap-2">
-                          <IoChatbubblesOutline className="text-emerald-400" />
-                          <span>WhatsApp Inbound</span>
-                        </span>
-                        <span className="text-[10px] text-emerald-400 font-mono">Live</span>
-                      </Link>
-                    </div>
 
                     {/* Sign Out Button */}
                     <div className="pt-2 border-t border-white/10">
