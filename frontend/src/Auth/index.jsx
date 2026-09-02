@@ -30,54 +30,75 @@ export default function AuthPage({ defaultMode = 'signin' }) {
 
   const { register, handleSubmit, formState: { errors } } = useForm();
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (formData) => {
     setLoading(true);
     setServerMessage(null);
 
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://crm-fee1.onrender.com";
+
     try {
       if (isSignUp) {
-        // Sign Up with Better Auth
-        const res = await authClient.signUp.email({
-          email: data.email,
-          password: data.password,
-          name: data.fullName,
-          company: data.companyName,
-          phone: data.phone
+        // Real Sign Up directly inserting into Neon PostgreSQL
+        const response = await fetch(`${API_BASE}/api/auth/sign-up/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+            companyName: formData.companyName,
+            phone: formData.phone
+          })
         });
 
-        if (res?.error) {
-          setServerMessage({ type: 'error', text: res.error.message || 'Registration failed' });
-        } else {
-          setServerMessage({ 
-            type: 'success', 
-            text: 'Account created successfully! Connecting to WhatsApp CRM Workspace...' 
-          });
-          setTimeout(() => navigate('/'), 2000);
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.detail || 'Registration failed');
         }
+
+        // Store session token and user profile
+        if (result.token) {
+          localStorage.setItem('better_auth_token', result.token);
+          localStorage.setItem('crm_user', JSON.stringify(result.user));
+        }
+
+        setServerMessage({
+          type: 'success',
+          text: `Account created in Neon Database! Welcome, ${result.user?.name || 'Admin'}!`
+        });
+        setTimeout(() => navigate('/'), 2000);
       } else {
-        // Sign In with Better Auth
-        const res = await authClient.signIn.email({
-          email: data.email,
-          password: data.password
+        // Real Sign In directly validating from Neon PostgreSQL
+        const response = await fetch(`${API_BASE}/api/auth/sign-in/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          })
         });
 
-        if (res?.error) {
-          setServerMessage({ type: 'error', text: res.error.message || 'Invalid credentials' });
-        } else {
-          setServerMessage({ 
-            type: 'success', 
-            text: 'Signed in successfully! Redirecting...' 
-          });
-          setTimeout(() => navigate('/'), 1500);
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.detail || 'Invalid email or password');
         }
+
+        if (result.token) {
+          localStorage.setItem('better_auth_token', result.token);
+          localStorage.setItem('crm_user', JSON.stringify(result.user));
+        }
+
+        setServerMessage({
+          type: 'success',
+          text: `Authenticated with Neon Database! Welcome back, ${result.user?.name || ''}!`
+        });
+        setTimeout(() => navigate('/'), 1500);
       }
     } catch (err) {
-      // Fallback simulation for live UI demonstration
       setServerMessage({
-        type: 'success',
-        text: `${isSignUp ? 'Account registered' : 'Signed in'} successfully with Better Auth Gateway! Redirecting...`
+        type: 'error',
+        text: err.message || 'Authentication error. Please check your credentials.'
       });
-      setTimeout(() => navigate('/'), 1800);
     } finally {
       setLoading(false);
     }
