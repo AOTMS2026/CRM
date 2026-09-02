@@ -1,6 +1,7 @@
 import os
 import secrets
 import json
+import re
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Optional, Dict, Any, List
@@ -235,18 +236,30 @@ class WhatsAppIntegrationService:
                 "text": req.header_text.strip()
             })
         elif req.header_type == "IMAGE":
+            # Valid sample media handle for Meta Cloud API image validation
+            sample_handle = "https://scontent.whatsapp.net/v/t61.29466-34/675497941_1013286391711304_5520202253338558258_n.jpg?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=0xtOeKeAM34Q7kNvwF0pSIv"
             components.append({
                 "type": "HEADER",
-                "format": "IMAGE"
+                "format": "IMAGE",
+                "example": {
+                    "header_handle": [sample_handle]
+                }
             })
 
         # 2. Body component
+        clean_body = req.body_text.strip()
+        # Meta requirement: variables cannot be at the very end of template text
+        if re.search(r'\{\{\d+\}\}\s*$', clean_body):
+            clean_body = clean_body + " to proceed."
+
         body_comp = {
             "type": "BODY",
-            "text": req.body_text.strip()
+            "text": clean_body
         }
-        if req.sample_values and len(req.sample_values) > 0:
-            body_comp["example"] = {"body_text": [req.sample_values]}
+        matches = re.findall(r'\{\{(\d+)\}\}', clean_body)
+        if matches:
+            samples = req.sample_values if (req.sample_values and len(req.sample_values) >= len(matches)) else [f"Val{i}" for i in range(1, len(matches) + 1)]
+            body_comp["example"] = {"body_text": [samples[:len(matches)]]}
         components.append(body_comp)
 
         # 3. Footer component
@@ -259,28 +272,27 @@ class WhatsAppIntegrationService:
         # 4. Buttons component
         if req.buttons and len(req.buttons) > 0:
             meta_buttons = []
-            for btn in req.buttons:
+            for btn in req.buttons[:3]: # Meta limit max 3 buttons
                 if btn.type in ["QUICK_REPLY", "CUSTOM"]:
-                    meta_buttons.append({"type": "QUICK_REPLY", "text": btn.text})
+                    meta_buttons.append({"type": "QUICK_REPLY", "text": btn.text[:25]})
                 elif btn.type == "URL":
-                    meta_buttons.append({"type": "URL", "text": btn.text, "url": btn.url or "https://aotms.com"})
-                elif btn.type == "PHONE_NUMBER":
-                    meta_buttons.append({"type": "PHONE_NUMBER", "text": btn.text, "phone_number": btn.phone_number or "+919876543210"})
-                elif btn.type == "WHATSAPP_CALL":
-                    meta_buttons.append({"type": "VOICE_CALL", "text": btn.text, "phone_number": btn.phone_number or "+919876543210"})
+                    meta_buttons.append({"type": "URL", "text": btn.text[:25], "url": btn.url or "https://aotms.com"})
+                elif btn.type in ["PHONE_NUMBER", "WHATSAPP_CALL"]:
+                    phone = (btn.phone_number or "+918121016848").replace(" ", "").replace("-", "")
+                    meta_buttons.append({"type": "PHONE_NUMBER", "text": btn.text[:25], "phone_number": phone})
                 elif btn.type == "CONTACT":
-                    meta_buttons.append({"type": "QUICK_REPLY", "text": f"📇 {btn.text}"})
+                    meta_buttons.append({"type": "QUICK_REPLY", "text": btn.text[:25]})
             components.append({"type": "BUTTONS", "buttons": meta_buttons})
 
         meta_payload = {
-            "name": req.name.lower().strip().replace(" ", "_"),
+            "name": req.name.lower().strip().replace(" ", "_").replace("-", "_"),
             "category": req.category.upper(),
             "language": req.language,
             "components": components
         }
 
         meta_template_id = None
-        status_val = "APPROVED" # Default active in CRM
+        status_val = "PENDING"
 
         # Attempt creation on Meta if credentials exist
         if integration and integration.get("access_token") and integration.get("waba_id"):
@@ -288,14 +300,15 @@ class WhatsAppIntegrationService:
                 access_token=integration["access_token"],
                 waba_id=integration["waba_id"],
                 template_payload=meta_payload,
-                graph_version=integration.get("graph_version", "v21.0")
+                graph_version=integration.get("graph_version", "v19.0")
             )
-            if meta_res.get("success"):
-                meta_template_id = meta_res.get("id")
-                status_val = meta_res.get("status", "APPROVED")
+            if not meta_res.get("success"):
+                raise ValueError(meta_res.get("error", "Failed to create template on Meta Cloud API."))
+            meta_template_id = meta_res.get("id")
+            status_val = meta_res.get("status", "PENDING")
 
         # Upsert into Neon DB
-        template_id = f"tmpl_{secrets.token_hex(8)}"
+        template_id = f"tmpl_{meta_template_id or secrets.token_hex(8)}"
         buttons_json = json.dumps([b.dict() for b in req.buttons]) if req.buttons else "[]"
         header_content = req.header_image_url if req.header_type == "IMAGE" else req.header_text
 
@@ -316,6 +329,7 @@ class WhatsAppIntegrationService:
                         footer_text = EXCLUDED.footer_text,
                         buttons = EXCLUDED.buttons,
                         status = EXCLUDED.status,
+                        meta_template_id = EXCLUDED.meta_template_id,
                         updated_at = CURRENT_TIMESTAMP
                     RETURNING id, name, category, language, status, header_type, header_content, body_text, footer_text, buttons, created_at;
                 """, (
@@ -326,7 +340,7 @@ class WhatsAppIntegrationService:
                     status_val,
                     req.header_type,
                     header_content,
-                    req.body_text,
+                    clean_body,
                     req.footer_text,
                     buttons_json,
                     meta_template_id
@@ -336,7 +350,7 @@ class WhatsAppIntegrationService:
 
             return {
                 "success": True,
-                "message": f"Template '{meta_payload['name']}' created successfully on Meta & Neon DB.",
+                "message": f"Template '{meta_payload['name']}' created successfully on Meta Account (ID: {meta_template_id}).",
                 "template": saved_template
             }
         finally:
@@ -418,6 +432,10 @@ class WhatsAppIntegrationService:
                                 tmpl_id, name, category, language, status, header_type,
                                 header_content, body_text, footer_text, json.dumps(buttons), meta_id
                             ))
+                        # Purge any local/dummy templates that do not exist on Meta account
+                        meta_names = [t.get("name") for t in meta_res["templates"] if t.get("name")]
+                        if meta_names:
+                            cur.execute("DELETE FROM whatsapp_templates WHERE name NOT IN %s", (tuple(meta_names),))
                         conn.commit()
                 finally:
                     conn.close()

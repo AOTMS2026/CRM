@@ -72,7 +72,7 @@ class MetaWhatsAppClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=35.0) as client:
                 response = await client.post(url, headers=headers, json=template_payload)
                 data = response.json()
 
@@ -85,10 +85,13 @@ class MetaWhatsAppClient:
                         "raw": data
                     }
                 else:
-                    error_msg = data.get("error", {}).get("message", "Failed to create template on Meta Graph API.")
+                    err_obj = data.get("error", {})
+                    user_msg = err_obj.get("error_user_msg") or err_obj.get("message", "Failed to create template on Meta Graph API.")
+                    user_title = err_obj.get("error_user_title")
+                    full_err = f"{user_title}: {user_msg}" if user_title else user_msg
                     return {
                         "success": False,
-                        "error": error_msg,
+                        "error": full_err,
                         "raw": data
                     }
         except httpx.RequestError as exc:
