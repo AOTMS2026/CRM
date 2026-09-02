@@ -95,6 +95,27 @@ async def auth_status():
         "frontend_url": settings.FRONTEND_URL
     }
 
+@app.get("/api/auth/ok")
+async def auth_ok():
+    return {"ok": True}
+
+@app.get("/api/auth/dash/validate")
+@app.post("/api/auth/dash/validate")
+async def dash_validate():
+    """Better Auth Dash ownership verification endpoint"""
+    return {"valid": True}
+
+@app.get("/api/auth/dash/config")
+@app.post("/api/auth/dash/config")
+async def dash_config():
+    """Better Auth Dash configuration endpoint"""
+    return {
+        "version": "1.1.0",
+        "plugins": ["dash"],
+        "emailAndPassword": {"enabled": True},
+        "socialProviders": []
+    }
+
 # -------------------------------------------------------------
 # 6. Realtime WebSocket Endpoint
 # -------------------------------------------------------------
