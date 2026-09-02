@@ -96,9 +96,7 @@ export default function DashboardPage() {
   });
 
   const getApiBase = () => {
-    return (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-      ? 'http://127.0.0.1:8000'
-      : (import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com');
+    return import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com';
   };
 
   const fetchWhatsAppStatus = async () => {

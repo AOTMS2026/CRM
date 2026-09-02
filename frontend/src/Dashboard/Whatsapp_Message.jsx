@@ -51,6 +51,24 @@ export default function WhatsappMessage() {
   const previewChatRef = useRef(null);
   const previewModalChatRef = useRef(null);
 
+  // Create Template Form State (Declared BEFORE useEffect)
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'MARKETING',
+    language: 'en_US',
+    header_type: 'IMAGE', // 'NONE', 'TEXT', 'IMAGE'
+    header_text: '',
+    header_image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
+    body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
+    footer_text: 'Reply STOP to unsubscribe • AOTMS',
+    buttons: [
+      { type: 'WHATSAPP_CALL', text: 'Call on WhatsApp', phone_number: '+919876543210', url: '', contact_name: '' },
+      { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+919876543210', url: '', contact_name: '' },
+      { type: 'CONTACT', text: 'Share Contact Info', phone_number: '+919876543210', url: '', contact_name: 'AOTMS Official' }
+    ],
+    sample_values: ['John', 'AOTMS2026']
+  });
+
   // Automatic smooth scroll behavior when content or buttons change
   useEffect(() => {
     if (previewChatRef.current) {
@@ -79,28 +97,8 @@ export default function WhatsappMessage() {
     }
   }, [previewTemplate]);
 
-  // Create Template Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    category: 'MARKETING',
-    language: 'en_US',
-    header_type: 'IMAGE', // 'NONE', 'TEXT', 'IMAGE'
-    header_text: '',
-    header_image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
-    body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
-    footer_text: 'Reply STOP to unsubscribe • AOTMS',
-    buttons: [
-      { type: 'WHATSAPP_CALL', text: 'Call on WhatsApp', phone_number: '+919876543210', url: '', contact_name: '' },
-      { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+919876543210', url: '', contact_name: '' },
-      { type: 'CONTACT', text: 'Share Contact Info', phone_number: '+919876543210', url: '', contact_name: 'AOTMS Official' }
-    ],
-    sample_values: ['John', 'AOTMS2026']
-  });
-
   const getApiBase = () => {
-    return (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-      ? 'http://127.0.0.1:8000'
-      : (import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com');
+    return import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com';
   };
 
   const showToast = (msg, type = 'success') => {
