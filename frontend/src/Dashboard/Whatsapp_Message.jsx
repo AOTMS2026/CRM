@@ -42,12 +42,6 @@ export default function WhatsappMessage() {
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
 
-  // Image Upload Type: 'file' (Local upload) or 'url' (Web URL)
-  const [imageUploadMode, setImageUploadMode] = useState('file');
-  const [dragActive, setDragActive] = useState(false);
-  const [localImageName, setLocalImageName] = useState('');
-  const [localImageSize, setLocalImageSize] = useState('');
-  const fileInputRef = useRef(null);
   const previewChatRef = useRef(null);
   const previewModalChatRef = useRef(null);
 
@@ -157,53 +151,7 @@ export default function WhatsappMessage() {
     fetchTemplates();
   }, []);
 
-  // Handle local image file upload & reading into base64 DataURL
-  const handleLocalImageFile = (file) => {
-    if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      showToast("Please upload a valid image file (PNG, JPG, JPEG, WEBP).", "error");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("Image size exceeds 5MB limit. Please upload a smaller image.", "error");
-      return;
-    }
-
-    setLocalImageName(file.name);
-    setLocalImageSize((file.size / (1024 * 1024)).toFixed(2) + ' MB');
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFormData(prev => ({
-        ...prev,
-        header_image_url: e.target.result
-      }));
-      showToast(`Local image "${file.name}" loaded for template header!`, "success");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Drag & drop handlers
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleLocalImageFile(e.dataTransfer.files[0]);
-    }
-  };
 
   // Real-time API: Create template directly via API
   const handleCreateTemplate = async (e) => {
@@ -279,7 +227,6 @@ export default function WhatsappMessage() {
       buttons: parsedButtons,
       sample_values: ['Customer', 'AOTMS2026']
     });
-    setLocalImageName(tmpl.header_type === 'IMAGE' ? 'Existing Image' : '');
     setShowCreateModal(true);
   };
 
@@ -691,12 +638,12 @@ export default function WhatsappMessage() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. customer_welcome_offer"
+                      placeholder="Enter your template name (e.g. ram_special_offer)"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500"
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-500"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Lowercase letters, numbers, and underscores only.</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Enter your own custom template name.</p>
                   </div>
 
                   <div>
@@ -709,18 +656,18 @@ export default function WhatsappMessage() {
                       className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
                       <option value="en_US">English (US) - en_US</option>
-                      <option value="en_GB">English (UK) - en_GB</option>
-                      <option value="hi_IN">Hindi - hi_IN</option>
-                      <option value="te_IN">Telugu - te_IN</option>
+                      <option value="en">English - en</option>
+                      <option value="hi">Hindi - hi</option>
+                      <option value="te">Telugu - te</option>
                     </select>
                   </div>
                 </div>
 
-                {/* 3. Header Media Type & Local Image Upload */}
+                {/* 3. Header Media Type & Image */}
                 <div className="space-y-3 p-4 rounded-2xl bg-slate-50/70 border border-slate-200">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold text-slate-800">
-                      3. Header Media (Image Upload / Text)
+                      3. Header Media
                     </label>
                     <div className="flex items-center gap-3">
                       {['NONE', 'IMAGE', 'TEXT'].map((type) => (
@@ -750,123 +697,74 @@ export default function WhatsappMessage() {
                   )}
 
                   {formData.header_type === 'IMAGE' && (
-                    <div className="space-y-2.5">
-                      {/* Upload Mode Selector: Local Upload vs URL */}
-                      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                        <button
-                          type="button"
-                          onClick={() => setImageUploadMode('file')}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${
-                            imageUploadMode === 'file' 
-                              ? 'bg-emerald-600 text-white' 
-                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                          }`}
-                        >
-                          <FolderOpen className="w-3.5 h-3.5" />
-                          <span>Local Image Upload</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setImageUploadMode('url')}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${
-                            imageUploadMode === 'url' 
-                              ? 'bg-emerald-600 text-white' 
-                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                          }`}
-                        >
-                          <Link2 className="w-3.5 h-3.5" />
-                          <span>Web Image URL</span>
-                        </button>
-                      </div>
-
-                      {/* Local File Upload Drag & Drop Zone */}
-                      {imageUploadMode === 'file' ? (
-                        <div>
-                          <input 
-                            ref={fileInputRef}
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                handleLocalImageFile(e.target.files[0]);
-                              }
-                            }}
-                          />
-
-                          <div
-                            onDragEnter={handleDrag}
-                            onDragLeave={handleDrag}
-                            onDragOver={handleDrag}
-                            onDrop={handleDrop}
-                            onClick={() => fileInputRef.current?.click()}
-                            className={`p-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-2 bg-white ${
-                              dragActive 
-                                ? 'border-emerald-500 bg-emerald-50/50' 
-                                : 'border-slate-300 hover:border-emerald-400 hover:bg-slate-50/50'
-                            }`}
-                          >
-                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs">
-                              <FileUp className="w-5 h-5" />
-                            </div>
-
-                            {localImageName ? (
-                              <div className="space-y-0.5">
-                                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5 justify-center">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>{localImageName}</span>
-                                </div>
-                                <div className="text-[10px] text-slate-400 font-mono">{localImageSize} • Click to change file</div>
-                              </div>
-                            ) : (
-                              <div className="space-y-0.5">
-                                <div className="text-xs font-bold text-slate-800">
-                                  Click to browse or drag & drop local image
-                                </div>
-                                <div className="text-[10px] text-slate-400">
-                                  Supports PNG, JPG, JPEG, WEBP (Max 5MB)
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Header Image URL
+                        </label>
+                        <div className="flex items-center gap-2">
                           <input
                             type="url"
-                            placeholder="Paste image URL (e.g. https://images.unsplash.com/...)"
+                            placeholder="https://images.unsplash.com/photo-..."
                             value={formData.header_image_url}
                             onChange={(e) => setFormData({ ...formData, header_image_url: e.target.value })}
-                            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-emerald-500"
+                            className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-emerald-500"
                           />
+                          {formData.header_image_url && (
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, header_image_url: '' })}
+                              className="px-2.5 py-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 bg-white border border-slate-200 rounded-lg hover:bg-rose-50 cursor-pointer"
+                              title="Clear Image"
+                            >
+                              Clear
+                            </button>
+                          )}
                         </div>
-                      )}
+                      </div>
+
+                      {/* Clean Preset Themes for Instant 1-Click Image Selection */}
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          Clean Sample Images:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { label: 'Technology', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80' },
+                            { label: 'Business & Deals', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80' },
+                            { label: 'Food & Meat', url: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800&q=80' },
+                            { label: 'Shopping & Retail', url: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=80' }
+                          ].map((preset) => (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, header_image_url: preset.url })}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                formData.header_image_url === preset.url
+                                  ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold ring-1 ring-emerald-400'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
                       {formData.header_image_url && (
-                        <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200">
+                        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-slate-200">
                           <img 
                             src={formData.header_image_url} 
-                            alt="Header thumbnail" 
-                            className="w-12 h-10 object-cover rounded-lg border border-slate-200" 
+                            alt="Header preview" 
+                            className="w-14 h-11 object-cover rounded-lg border border-slate-200"
+                            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80"; }}
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11px] font-bold text-slate-800 truncate">
-                              {localImageName || 'Header Image Loaded'}
+                            <div className="text-xs font-bold text-slate-800 truncate">
+                              Image Ready for Meta Template
                             </div>
-                            <div className="text-[10px] text-emerald-600 font-semibold">Active in Live Preview</div>
+                            <div className="text-[10px] text-emerald-600 font-semibold">Active in Phone Preview</div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, header_image_url: '' }));
-                              setLocalImageName('');
-                            }}
-                            className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
-                            title="Remove Image"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
                         </div>
                       )}
                     </div>
@@ -1085,20 +983,15 @@ export default function WhatsappMessage() {
                     {/* Message Bubble */}
                     <div className="bg-white rounded-2xl rounded-tl-none p-3 shadow-sm border border-slate-200/60 space-y-2 max-w-[95%]">
                       
-                      {/* Image Header Preview (Supports Local Image File Preview) */}
+                      {/* Image Header Preview */}
                       {formData.header_type === 'IMAGE' && formData.header_image_url && (
-                        <div className="rounded-xl overflow-hidden max-h-48 w-full bg-slate-100 relative group">
+                        <div className="rounded-xl overflow-hidden max-h-48 w-full bg-slate-100 shadow-2xs">
                           <img 
                             src={formData.header_image_url} 
                             alt="Header Preview" 
                             className="w-full h-full object-cover"
                             onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80"; }}
                           />
-                          {localImageName && (
-                            <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono backdrop-blur-xs">
-                              Local: {localImageName}
-                            </span>
-                          )}
                         </div>
                       )}
 
