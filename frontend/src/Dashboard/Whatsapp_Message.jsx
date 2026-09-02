@@ -44,6 +44,7 @@ export default function WhatsappMessage() {
 
   const previewChatRef = useRef(null);
   const previewModalChatRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Create Template Form State (Declared BEFORE useEffect)
   const [formData, setFormData] = useState({
@@ -52,7 +53,7 @@ export default function WhatsappMessage() {
     language: 'en_US',
     header_type: 'IMAGE', // 'NONE', 'TEXT', 'IMAGE'
     header_text: '',
-    header_image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
+    header_image_url: '',
     body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
     footer_text: 'Reply STOP to unsubscribe • AOTMS',
     buttons: [
@@ -152,6 +153,32 @@ export default function WhatsappMessage() {
   }, []);
 
 
+
+  // Handle image upload from file picker
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast("Please select a valid image file (PNG, JPG, JPEG, WEBP).", "error");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image size must be less than 5MB.", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({
+        ...prev,
+        header_image_url: event.target.result
+      }));
+      showToast(`Image "${file.name}" selected!`, "success");
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Real-time API: Create template directly via API
   const handleCreateTemplate = async (e) => {
@@ -375,7 +402,7 @@ export default function WhatsappMessage() {
                 language: 'en_US',
                 header_type: 'IMAGE',
                 header_text: '',
-                header_image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
+                header_image_url: '',
                 body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
                 footer_text: 'Reply STOP to unsubscribe • AOTMS',
                 buttons: [
@@ -696,73 +723,71 @@ export default function WhatsappMessage() {
                   )}
 
                   {formData.header_type === 'IMAGE' && (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Header Image URL
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="url"
-                            placeholder="https://images.unsplash.com/photo-..."
-                            value={formData.header_image_url}
-                            onChange={(e) => setFormData({ ...formData, header_image_url: e.target.value })}
-                            className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-emerald-500"
-                          />
-                          {formData.header_image_url && (
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, header_image_url: '' })}
-                              className="px-2.5 py-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 bg-white border border-slate-200 rounded-lg hover:bg-rose-50 cursor-pointer"
-                              title="Clear Image"
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                    <div className="space-y-2">
+                      {/* Hidden File Input */}
+                      <input 
+                        ref={fileInputRef}
+                        type="file" 
+                        accept="image/png,image/jpeg,image/jpg,image/webp" 
+                        className="hidden" 
+                        onChange={handleImageFileChange}
+                      />
 
-                      {/* Clean Preset Themes for Instant 1-Click Image Selection */}
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                          Clean Sample Images:
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { label: 'Technology', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80' },
-                            { label: 'Business & Deals', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80' },
-                            { label: 'Food & Meat', url: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800&q=80' },
-                            { label: 'Shopping & Retail', url: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=80' }
-                          ].map((preset) => (
-                            <button
-                              key={preset.label}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, header_image_url: preset.url })}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-                                formData.header_image_url === preset.url
-                                  ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold ring-1 ring-emerald-400'
-                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                              }`}
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
+                      {!formData.header_image_url ? (
+                        /* Empty Upload Image Container */
+                        <div 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-6 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-white hover:bg-emerald-50/20 transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-2 group shadow-2xs"
+                        >
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                            <UploadCloud className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                              Upload Header Image
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">
+                              Click to choose image (PNG, JPG, JPEG, WEBP)
+                            </div>
+                          </div>
+                          <span className="mt-1 px-3 py-1.5 rounded-lg bg-emerald-600 group-hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs flex items-center gap-1.5 transition-colors">
+                            <UploadCloud className="w-3.5 h-3.5" />
+                            <span>Select Image File</span>
+                          </span>
                         </div>
-                      </div>
-
-                      {formData.header_image_url && (
-                        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-slate-200">
+                      ) : (
+                        /* Uploaded Image Card */
+                        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 flex items-center gap-3.5 shadow-2xs">
                           <img 
                             src={formData.header_image_url} 
-                            alt="Header preview" 
-                            className="w-14 h-11 object-cover rounded-lg border border-slate-200"
+                            alt="Header Upload" 
+                            className="w-16 h-14 object-cover rounded-xl border border-slate-200 shadow-xs shrink-0"
                             onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80"; }}
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-slate-800 truncate">
-                              Image Ready for Meta Template
+                            <div className="text-xs font-bold text-slate-900 truncate">
+                              Header Image Uploaded
                             </div>
-                            <div className="text-[10px] text-emerald-600 font-semibold">Active in Phone Preview</div>
+                            <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">
+                              ✓ Ready for Meta Template
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Change
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, header_image_url: '' }))}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Remove Image"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                       )}
