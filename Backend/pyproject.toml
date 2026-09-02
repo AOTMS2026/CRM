@@ -1,0 +1,40 @@
+[project]
+name = "whatsapp-automachine-backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Jayaveer", email = "ramanadhamjayaveer@mictech.edu.in" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "alembic>=1.19.1",
+    "boto3>=1.43.86",
+    "fastapi>=0.141.1",
+    "greenlet>=3.5.5",
+    "httpx>=0.28.1",
+    "meilisearch>=0.43.0",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "redis>=8.1.0",
+    "rich>=15.0.0",
+    "sqlalchemy>=2.0.52",
+    "strawberry-graphql[fastapi]>=0.327.1",
+    "uvicorn[standard]>=0.52.4",
+    "websockets>=17.1",
+]
+
+[project.scripts]
+whatsapp-automachine-backend = "whatsapp_automachine_backend:main"
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.5",
+]
