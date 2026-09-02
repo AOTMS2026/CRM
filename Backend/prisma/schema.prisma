@@ -1,0 +1,137 @@
+// ==============================================================================
+// 🐘 NEON POSTGRESQL + BETTER AUTH + COMPANY CRM PRODUCTION PRISMA SCHEMA
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -------------------------------------------------------------
+// 🔐 1. BETTER AUTH CORE MODELS
+// -------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("user") // admin, agent, manager
+  phone         String?
+  companyId     String?
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  sessions      Session[]
+  accounts      Account[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([companyId])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId    String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@map("verifications")
+}
+
+// -------------------------------------------------------------
+// 🏢 2. ENTERPRISE COMPANY CRM MODELS
+// -------------------------------------------------------------
+
+model Company {
+  id             String    @id @default(cuid())
+  name           String
+  whatsappNumber String?   @unique
+  industry       String?
+  plan           String    @default("starter") // starter, professional, enterprise
+  maxSeats       Int       @default(5)
+  users          User[]
+  leads          Lead[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("companies")
+}
+
+model Lead {
+  id            String    @id @default(cuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name          String
+  phone         String
+  email         String?
+  status        String    @default("NEW_LEAD") // NEW_LEAD, QUALIFIED, DEMO_BOOKED, CLOSED_WON, LOST
+  dealValue     Decimal   @default(0.0) @db.Decimal(12, 2)
+  assignedAgent String?
+  tags          String[]  @default([])
+  notes         String?
+  messages      Message[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([phone])
+  @@index([status])
+  @@map("leads")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sender    String   // customer, bot, agent
+  text      String
+  channel   String   @default("whatsapp")
+  status    String   @default("delivered") // sent, delivered, read
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@map("messages")
+}

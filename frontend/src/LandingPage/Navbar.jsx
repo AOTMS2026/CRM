@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import AuthSwitch from '@/components/ui/auth-switch';
 import { 
   IoChevronDown, 
@@ -165,22 +166,21 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Desktop Right Actions: Login + Book a Demo */}
+          {/* Desktop Right Actions: Login + Book a Demo Routing */}
           <div className="hidden lg:flex items-center gap-3.5">
-            <button
-              type="button"
-              onClick={() => setShowAuthModal(true)}
-              className="px-4 py-2.5 text-[15px] font-medium text-slate-200 hover:text-tech_orange transition-colors duration-150 cursor-pointer"
+            <Link
+              to="/login"
+              className="px-4 py-2.5 text-[15px] font-medium text-slate-200 hover:text-tech_orange transition-colors duration-150"
             >
               Login
-            </button>
-            <a
-              href="#demo"
+            </Link>
+            <Link
+              to="/signup"
               className="inline-flex items-center justify-center gap-2 px-5.5 py-3 rounded-xl text-[15px] font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-md shadow-tech_orange/25 border border-tech_orange-400/40 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
             >
               <span>Book a Demo</span>
               <IoArrowForward className="text-sm" />
-            </a>
+            </Link>
           </div>
 
           {/* Mobile Hamburger Button */}
@@ -217,24 +217,21 @@ export default function Navbar() {
             </div>
 
             <div className="pt-3 border-t border-slate_dark-500 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setShowAuthModal(true);
-                }}
-                className="w-full py-2 rounded-lg text-center text-sm font-medium text-slate-200 hover:text-tech_orange hover:bg-slate_dark-400/50 transition-colors cursor-pointer"
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-2 rounded-lg text-center text-sm font-medium text-slate-200 hover:text-tech_orange hover:bg-slate_dark-400/50 transition-colors"
               >
                 Login
-              </button>
-              <a
-                href="#demo"
+              </Link>
+              <Link
+                to="/signup"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full py-2.5 rounded-xl text-center text-sm font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-tech_orange/25"
               >
                 <span>Book a Demo</span>
                 <IoArrowForward className="text-xs" />
-              </a>
+              </Link>
             </div>
           </div>
         )}
