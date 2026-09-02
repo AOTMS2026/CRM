@@ -175,13 +175,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fbf8f5] via-[#f8f9fa] to-[#f0f6fa] text-slate-800 flex flex-col font-sans selection:bg-tech_orange selection:text-white relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#fef5ee] via-[#fbfcfe] to-[#eaf4fb] text-slate-800 flex flex-col font-sans selection:bg-tech_orange selection:text-white relative">
       
-      {/* Subtle Background Mesh & Light Grid Pattern */}
+      {/* Ambient Luminous Orbs for Rich Background Shade (as in screenshot) */}
+      <div className="fixed top-0 left-0 w-[550px] h-[450px] bg-gradient-to-br from-amber-200/50 via-orange-100/35 to-transparent rounded-full blur-[110px] pointer-events-none -z-10" />
+      <div className="fixed top-0 right-0 w-[550px] h-[450px] bg-gradient-to-bl from-sky-200/45 via-cyan-100/25 to-transparent rounded-full blur-[110px] pointer-events-none -z-10" />
+
+      {/* Subtle Background Mesh & Light Dot Grid Pattern */}
       <div 
-        className="fixed inset-0 pointer-events-none opacity-[0.4] -z-10" 
+        className="fixed inset-0 pointer-events-none opacity-[0.55] -z-10" 
         style={{
-          backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(#94a3b8 1.1px, transparent 1.1px)',
           backgroundSize: '24px 24px'
         }}
       />
@@ -200,10 +204,10 @@ export default function DashboardPage() {
         {/* ========================================================================= */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Platform Administration
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1">
               Overview of system performance, user activities, and platform logs.
             </p>
           </div>
@@ -211,129 +215,128 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={handleRefresh}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 shadow-sm transition-all cursor-pointer active:scale-98"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs border border-slate-200 shadow-sm hover:shadow transition-all cursor-pointer active:scale-98"
           >
-            <RotateCw className={`w-3.5 h-3.5 text-sky-500 ${refreshing ? 'animate-spin' : ''}`} />
+            <RotateCw className={`w-3.5 h-3.5 text-sky-600 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh Data</span>
           </button>
         </div>
 
         {/* ========================================================================= */}
         {/* 5 TOP STAT CARDS: Users Total, Leads, Todo List, Employees, System Health */}
-        {/* (Directly between Header & Mini Navbar as shown in user's image)           */}
         {/* ========================================================================= */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           
           {/* Card 1: TOTAL USERS */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="bg-white/95 rounded-2xl p-5 border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 border border-sky-200/70 flex items-center justify-center shadow-xs">
                 <Users className="w-5 h-5" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-xs">
                 +12.5%
               </span>
             </div>
             <div className="mt-4">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                 TOTAL USERS
               </div>
-              <div className="text-3xl font-black text-slate-900 mt-0.5 tracking-tight">
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 mt-1 tracking-tight">
                 69
               </div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-xs font-semibold text-slate-600 mt-1">
                 Registered accounts
               </div>
             </div>
           </div>
 
           {/* Card 2: ACTIVE LEADS */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="bg-white/95 rounded-2xl p-5 border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 border border-amber-200/70 flex items-center justify-center shadow-xs">
                 <Target className="w-5 h-5" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                 Steady
               </span>
             </div>
             <div className="mt-4">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                 ACTIVE LEADS
               </div>
-              <div className="text-3xl font-black text-slate-900 mt-0.5 tracking-tight">
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 mt-1 tracking-tight">
                 184
               </div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-xs font-semibold text-slate-600 mt-1">
                 WhatsApp inbounds
               </div>
             </div>
           </div>
 
           {/* Card 3: TODO LIST */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="bg-white/95 rounded-2xl p-5 border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 border border-rose-200/70 flex items-center justify-center shadow-xs">
                 <CheckSquare className="w-5 h-5" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                 Clear
               </span>
             </div>
             <div className="mt-4">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                 TODO LIST
               </div>
-              <div className="text-3xl font-black text-slate-900 mt-0.5 tracking-tight">
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 mt-1 tracking-tight">
                 5
               </div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-xs font-semibold text-slate-600 mt-1">
                 Pending approval queue
               </div>
             </div>
           </div>
 
           {/* Card 4: EMPLOYEES */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="bg-white/95 rounded-2xl p-5 border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 border border-sky-200/70 flex items-center justify-center shadow-xs">
                 <Briefcase className="w-5 h-5" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                 Real-time
               </span>
             </div>
             <div className="mt-4">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                 EMPLOYEES
               </div>
-              <div className="text-3xl font-black text-slate-900 mt-0.5 tracking-tight">
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 mt-1 tracking-tight">
                 12
               </div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-xs font-semibold text-slate-600 mt-1">
                 Currently active now
               </div>
             </div>
           </div>
 
           {/* Card 5: SYSTEM HEALTH */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="bg-white/95 rounded-2xl p-5 border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex flex-col justify-between">
             <div className="flex items-start justify-between">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 border border-teal-200/70 flex items-center justify-center shadow-xs">
                 <Activity className="w-5 h-5" />
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                 Optimal
               </span>
             </div>
             <div className="mt-4">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                 SYSTEM HEALTH
               </div>
-              <div className="text-3xl font-black text-slate-900 mt-0.5 tracking-tight">
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 mt-1 tracking-tight">
                 99.4%
               </div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-xs font-semibold text-slate-600 mt-1">
                 Platform-wide
               </div>
             </div>
@@ -342,9 +345,9 @@ export default function DashboardPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* MINI NAVBAR (Horizontal Underline Tab Bar as shown in user's image)       */}
+        {/* MINI NAVBAR (Horizontal Underline Tab Bar with Vivid Contrast)             */}
         {/* ========================================================================= */}
-        <div className="border-b border-slate-200/80 pt-2 flex items-center gap-7 overflow-x-auto scrollbar-none">
+        <div className="border-b border-slate-200 pt-2 flex items-center gap-7 overflow-x-auto scrollbar-none">
           {navTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -352,13 +355,13 @@ export default function DashboardPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 pb-3.5 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer relative ${
+                className={`flex items-center gap-2 pb-3.5 text-xs font-bold whitespace-nowrap transition-all cursor-pointer relative ${
                   isActive
-                    ? 'text-sky-600 font-bold'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? 'text-sky-600 font-black'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600' : 'text-slate-500'}`} />
                 <span>{tab.label}</span>
                 {isActive && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500 rounded-full" />
@@ -411,38 +414,38 @@ export default function DashboardPage() {
                 <div
                   key={user.id}
                   onClick={() => setSelectedUser(user)}
-                  className="p-6 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 group"
+                  className="p-6 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-sky-300 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 group"
                 >
                   <div className="space-y-3.5">
                     <div className="flex items-start justify-between">
-                      <div className="relative w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-base font-black text-slate-800 shadow-sm group-hover:scale-105 transition-transform">
+                      <div className="relative w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-base font-black text-slate-900 shadow-sm group-hover:scale-105 transition-transform">
                         {user.name.charAt(0)}
-                        <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                        <span className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
                           user.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'
                         }`} />
                       </div>
 
-                      <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] font-mono border border-slate-200">
+                      <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 font-bold text-[10px] font-mono border border-slate-200">
                         {user.role}
                       </span>
                     </div>
 
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 group-hover:text-tech_orange transition-colors">
+                      <h3 className="text-base font-extrabold text-slate-900 group-hover:text-tech_orange transition-colors">
                         {user.name}
                       </h3>
-                      <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5 font-medium truncate">
-                        <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-slate-600 text-xs mt-0.5 font-semibold truncate">
+                        <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                         <span className="truncate">{user.company}</span>
                       </div>
                     </div>
 
-                    <div className="space-y-1 text-xs font-mono pt-1 text-slate-600">
+                    <div className="space-y-1 text-xs font-mono pt-1 text-slate-700">
                       <div className="flex items-center gap-2 truncate">
-                        <Mail className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                        <span className="truncate text-slate-500">{user.email}</span>
+                        <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <span className="truncate text-slate-600 font-medium">{user.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-600 font-semibold">
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold">
                         <Phone className="w-3.5 h-3.5 shrink-0" />
                         <span>{user.phone}</span>
                       </div>
@@ -450,19 +453,19 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="text-[10px] text-slate-400 font-medium">Leads Handled</div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                      <div className="text-[10px] text-slate-500 font-bold">Leads Handled</div>
                       <div className="text-sm font-black text-slate-900 font-mono">{user.leadsHandled}</div>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="text-[10px] text-slate-400 font-medium">Conversion</div>
-                      <div className="text-sm font-black text-emerald-600 font-mono">{user.conversionRate}</div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                      <div className="text-[10px] text-slate-500 font-bold">Conversion</div>
+                      <div className="text-sm font-black text-emerald-700 font-mono">{user.conversionRate}</div>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    className="w-full py-2 px-3 rounded-xl bg-slate-50 group-hover:bg-slate-900 group-hover:text-white text-slate-700 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    className="w-full py-2.5 px-3 rounded-xl bg-slate-100 group-hover:bg-slate-900 group-hover:text-white text-slate-800 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
                   >
                     <span>Overall Information</span>
                     <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
