@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardNavbar from './DashboardNavbar';
+import MiniNavbar from './MiniNavbar';
 import { 
   Users, 
   Target, 
@@ -33,7 +34,8 @@ import {
   Key,
   Hash,
   Sparkles,
-  Layers
+  Layers,
+  ArrowLeft
 } from 'lucide-react';
 import { 
   IoLogoInstagram as Instagram,
@@ -45,12 +47,12 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null); // For Overall Information Modal
+  const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  // Integrations state (WhatsApp & Instagram)
   const [selectedIntegration, setSelectedIntegration] = useState('whatsapp');
+  const [showIntegrationForm, setShowIntegrationForm] = useState(false);
   const [showAccessToken, setShowAccessToken] = useState(false);
   const [showIgSecret, setShowIgSecret] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
@@ -420,32 +422,7 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* ========================================================================= */}
-        {/* MINI NAVBAR (Horizontal Underline Tab Bar with Vivid Contrast)             */}
-        {/* ========================================================================= */}
-        <div className="border-b border-slate-200 pt-2 flex items-center gap-7 overflow-x-auto scrollbar-none">
-          {navTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 pb-3.5 text-xs font-bold whitespace-nowrap transition-all cursor-pointer relative ${
-                  isActive
-                    ? 'text-sky-600 font-black'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600' : 'text-slate-500'}`} />
-                <span>{tab.label}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500 rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <MiniNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {/* ========================================================================= */}
         {/* TAB 1: USER MANAGEMENT (Card Style with Overall Info Modal)               */}
@@ -705,63 +682,97 @@ export default function DashboardPage() {
               
               {/* Channel 1: WhatsApp Business Cloud API */}
               <div
-                onClick={() => setSelectedIntegration('whatsapp')}
-                className={`p-6 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4 ${
-                  selectedIntegration === 'whatsapp'
+                onClick={() => {
+                  setSelectedIntegration('whatsapp');
+                  setShowIntegrationForm(true);
+                }}
+                className={`p-6 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-4 group ${
+                  selectedIntegration === 'whatsapp' && showIntegrationForm
                     ? 'bg-emerald-50/50 border-emerald-500 shadow-md ring-2 ring-emerald-500/20'
-                    : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                    : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
-                    <WhatsApp className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-extrabold text-slate-900">WhatsApp Cloud API</h3>
-                      <span className="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono border border-emerald-200">
-                        Official Meta WABA
-                      </span>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                      <WhatsApp className="w-8 h-8" />
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">High-throughput broadcast engine, auto-replies & webhooks</p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-extrabold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                          WhatsApp Cloud API
+                        </h3>
+                        <span className="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono border border-emerald-200">
+                          Official WABA
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">High-throughput broadcast engine, auto-replies & webhooks</p>
+                    </div>
                   </div>
+
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
+                    selectedIntegration === 'whatsapp' && showIntegrationForm
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    {selectedIntegration === 'whatsapp' && showIntegrationForm ? 'Form Active' : 'Click to Configure'}
+                  </span>
                 </div>
 
-                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 border-emerald-500">
-                  {selectedIntegration === 'whatsapp' && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  )}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium">Meta Graph v21.0 • 100K/Day limit</span>
+                  <span className="text-emerald-600 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    <span>{selectedIntegration === 'whatsapp' && showIntegrationForm ? 'Editing Credentials' : 'Open Setup Form'}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
                 </div>
               </div>
 
               {/* Channel 2: Instagram Graph API */}
               <div
-                onClick={() => setSelectedIntegration('instagram')}
-                className={`p-6 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4 ${
-                  selectedIntegration === 'instagram'
+                onClick={() => {
+                  setSelectedIntegration('instagram');
+                  setShowIntegrationForm(true);
+                }}
+                className={`p-6 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-4 group ${
+                  selectedIntegration === 'instagram' && showIntegrationForm
                     ? 'bg-pink-50/50 border-pink-500 shadow-md ring-2 ring-pink-500/20'
-                    : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                    : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shadow-md shadow-pink-500/20">
-                    <Instagram className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-extrabold text-slate-900">Instagram Graph API</h3>
-                      <span className="px-2 py-0.2 rounded-full bg-pink-100 text-pink-800 text-[10px] font-bold font-mono border border-pink-200">
-                        DM & Story Replies
-                      </span>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shadow-md shadow-pink-500/20 group-hover:scale-105 transition-transform">
+                      <Instagram className="w-8 h-8" />
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">Automated direct message response triggers & lead capture</p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-extrabold text-slate-900 group-hover:text-pink-700 transition-colors">
+                          Instagram Graph API
+                        </h3>
+                        <span className="px-2 py-0.2 rounded-full bg-pink-100 text-pink-800 text-[10px] font-bold font-mono border border-pink-200">
+                          DM & Story Replies
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">Automated direct message response triggers & lead capture</p>
+                    </div>
                   </div>
+
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
+                    selectedIntegration === 'instagram' && showIntegrationForm
+                      ? 'bg-pink-600 text-white border-pink-600'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    {selectedIntegration === 'instagram' && showIntegrationForm ? 'Form Active' : 'Click to Configure'}
+                  </span>
                 </div>
 
-                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 border-pink-500">
-                  {selectedIntegration === 'instagram' && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-pink-500" />
-                  )}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium">Meta Graph v21.0 • Webhook Triggers</span>
+                  <span className="text-pink-600 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    <span>{selectedIntegration === 'instagram' && showIntegrationForm ? 'Editing Credentials' : 'Open Setup Form'}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
                 </div>
               </div>
 
@@ -775,21 +786,35 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* DETAILS FORM 1: WHATSAPP OPTIONS (REQUESTED BY USER) */}
-            {selectedIntegration === 'whatsapp' && (
-              <form onSubmit={handleSaveWhatsApp} className="p-7 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
+            {/* DETAILS FORM 1: WHATSAPP OPTIONS (REQUESTED BY USER - SHOWN ON CARD CLICK) */}
+            {showIntegrationForm && selectedIntegration === 'whatsapp' && (
+              <form onSubmit={handleSaveWhatsApp} className="p-7 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                      <WhatsApp className="w-5 h-5 text-emerald-600" />
-                      <span>Meta WhatsApp Cloud API Configuration</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Fill in your Meta for Developers credentials to activate outbound sending & webhook reception.</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowIntegrationForm(false)}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
+                      title="Back to Channels"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <div>
+                      <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <WhatsApp className="w-5 h-5 text-emerald-600" />
+                        <span>Meta WhatsApp Cloud API Configuration</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Fill in your Meta for Developers credentials to activate outbound sending & webhook reception.</p>
+                    </div>
                   </div>
 
-                  <span className="text-[11px] font-mono text-slate-400 font-semibold hidden sm:inline">
-                    Step 1 of 1 • Credentials Verification
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowIntegrationForm(false)}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                  >
+                    Close Form
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -948,21 +973,35 @@ export default function DashboardPage() {
               </form>
             )}
 
-            {/* DETAILS FORM 2: INSTAGRAM OPTIONS */}
-            {selectedIntegration === 'instagram' && (
-              <form onSubmit={handleSaveInstagram} className="p-7 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
+            {/* DETAILS FORM 2: INSTAGRAM OPTIONS (SHOWN ON CARD CLICK) */}
+            {showIntegrationForm && selectedIntegration === 'instagram' && (
+              <form onSubmit={handleSaveInstagram} className="p-7 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                      <Instagram className="w-5 h-5 text-pink-600" />
-                      <span>Meta Instagram Graph API Configuration</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Automate direct messages, keyword auto-replies, and story mentions.</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowIntegrationForm(false)}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
+                      title="Back to Channels"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <div>
+                      <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <Instagram className="w-5 h-5 text-pink-600" />
+                        <span>Meta Instagram Graph API Configuration</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Automate direct messages, keyword auto-replies, and story mentions.</p>
+                    </div>
                   </div>
 
-                  <span className="text-[11px] font-mono text-slate-400 font-semibold hidden sm:inline">
-                    Instagram Direct Module
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowIntegrationForm(false)}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                  >
+                    Close Form
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
