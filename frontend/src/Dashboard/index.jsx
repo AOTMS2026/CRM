@@ -1050,12 +1050,12 @@ export default function DashboardPage() {
                       <input
                         type="text"
                         readOnly
-                        value="https://crm-fee1.onrender.com/api/whatsapp/webhook"
+                        value="https://crm-fee1.onrender.com/api/integrations/whatsapp/webhook"
                         className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-800 select-all font-bold"
                       />
                       <button
                         type="button"
-                        onClick={() => copyToClipboard("https://crm-fee1.onrender.com/api/whatsapp/webhook")}
+                        onClick={() => copyToClipboard("https://crm-fee1.onrender.com/api/integrations/whatsapp/webhook")}
                         className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                       >
                         {copiedWebhook ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
