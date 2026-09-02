@@ -58,6 +58,17 @@ export default function DashboardPage() {
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [savingIntegration, setSavingIntegration] = useState(false);
   const [integrationSuccess, setIntegrationSuccess] = useState('');
+  const [integrationError, setIntegrationError] = useState('');
+
+  // Live status from Neon DB
+  const [whatsappStatus, setWhatsappStatus] = useState({
+    connected: false,
+    verified_name: '',
+    display_phone_number: '',
+    quality_rating: '',
+    status: 'not_configured',
+    masked_access_token: ''
+  });
 
   // WhatsApp form fields specified by user
   const [whatsappForm, setWhatsappForm] = useState(() => {
@@ -83,16 +94,76 @@ export default function DashboardPage() {
     };
   });
 
-  const handleSaveWhatsApp = (e) => {
+  const getApiBase = () => {
+    return (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+      ? 'http://127.0.0.1:8000'
+      : (import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com');
+  };
+
+  const fetchWhatsAppStatus = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/status`);
+      const data = await res.json();
+      if (data && data.connected && data.data) {
+        setWhatsappStatus({
+          connected: true,
+          ...data.data
+        });
+        setWhatsappForm(prev => ({
+          ...prev,
+          phoneNumberId: data.data.phone_number_id || prev.phoneNumberId,
+          verifyToken: data.data.verify_token || prev.verifyToken,
+          graphVersion: data.data.graph_version || prev.graphVersion,
+          wabaId: data.data.waba_id || prev.wabaId
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to load WhatsApp status:", err);
+    }
+  };
+
+  const handleSaveWhatsApp = async (e) => {
     e.preventDefault();
     setSavingIntegration(true);
     setIntegrationSuccess('');
-    setTimeout(() => {
+    setIntegrationError('');
+
+    try {
+      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_token: whatsappForm.accessToken,
+          phone_number_id: whatsappForm.phoneNumberId,
+          verify_token: whatsappForm.verifyToken,
+          graph_version: whatsappForm.graphVersion,
+          waba_id: whatsappForm.wabaId
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.detail || "Failed to connect Meta WhatsApp account.");
+      }
+
       localStorage.setItem('aotms_whatsapp_config', JSON.stringify(whatsappForm));
+      setWhatsappStatus({
+        connected: true,
+        verified_name: result.verified_name,
+        display_phone_number: result.display_phone_number,
+        quality_rating: result.quality_rating,
+        status: result.status,
+        masked_access_token: result.masked_access_token
+      });
+
+      setIntegrationSuccess(result.message || 'WhatsApp Business Cloud API connected and saved in Neon Database!');
+      setTimeout(() => setIntegrationSuccess(''), 7000);
+    } catch (err) {
+      setIntegrationError(err.message || 'Error connecting to Meta API.');
+      setTimeout(() => setIntegrationError(''), 7000);
+    } finally {
       setSavingIntegration(false);
-      setIntegrationSuccess('WhatsApp Business Cloud API credentials saved & verified successfully!');
-      setTimeout(() => setIntegrationSuccess(''), 5000);
-    }, 600);
+    }
   };
 
   const handleSaveInstagram = (e) => {
@@ -127,6 +198,8 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+
+    fetchWhatsAppStatus();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -710,17 +783,30 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
-                    selectedIntegration === 'whatsapp' && showIntegrationForm
-                      ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border flex items-center gap-1.5 ${
+                    whatsappStatus.connected
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : (selectedIntegration === 'whatsapp' && showIntegrationForm
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-slate-100 text-slate-700 border-slate-200')
                   }`}>
-                    {selectedIntegration === 'whatsapp' && showIntegrationForm ? 'Form Active' : 'Click to Configure'}
+                    {whatsappStatus.connected && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    )}
+                    <span>
+                      {whatsappStatus.connected 
+                        ? 'Live Connected' 
+                        : (selectedIntegration === 'whatsapp' && showIntegrationForm ? 'Form Active' : 'Click to Configure')}
+                    </span>
                   </span>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-medium">Meta Graph v21.0 • 100K/Day limit</span>
+                  <span className="text-slate-500 font-medium">
+                    {whatsappStatus.connected 
+                      ? `${whatsappStatus.display_phone_number} • ${whatsappStatus.verified_name}`
+                      : 'Meta Graph v21.0 • 100K/Day limit'}
+                  </span>
                   <span className="text-emerald-600 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                     <span>{selectedIntegration === 'whatsapp' && showIntegrationForm ? 'Editing Credentials' : 'Open Setup Form'}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -783,6 +869,14 @@ export default function DashboardPage() {
               <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2.5 animate-in fade-in">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>{integrationSuccess}</span>
+              </div>
+            )}
+
+            {/* Error Banner */}
+            {integrationError && (
+              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2.5 animate-in fade-in">
+                <X className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{integrationError}</span>
               </div>
             )}
 
@@ -967,7 +1061,7 @@ export default function DashboardPage() {
                     className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>{savingIntegration ? 'Saving Credentials...' : 'Save WhatsApp Credentials'}</span>
+                    <span>{savingIntegration ? 'Connecting Meta & Storing in Neon DB...' : 'Connect Meta Account & Save in Neon DB'}</span>
                   </button>
                 </div>
               </form>

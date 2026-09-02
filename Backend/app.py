@@ -83,6 +83,9 @@ def init_tables():
             """)
             conn.commit()
         conn.close()
+        # Initialize clean architecture WhatsApp integrations table
+        from whatsapp import WhatsAppIntegrationService
+        WhatsAppIntegrationService.init_tables()
         print("[INFO] Neon PostgreSQL tables verified.")
     except Exception as e:
         print("[NOTICE] Database init notice:", e)
@@ -163,6 +166,10 @@ app.add_middleware(
 )
 
 app.include_router(graphql_app, prefix="/graphql")
+
+# Mount Clean Architecture WhatsApp Meta Cloud Integration Router
+from whatsapp import whatsapp_router
+app.include_router(whatsapp_router, prefix="/api/integrations/whatsapp", tags=["whatsapp-integration"])
 
 # -------------------------------------------------------------
 # 6. Request Schemas
