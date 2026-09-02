@@ -1,4 +1,5 @@
 import os
+import re
 import secrets
 import hashlib
 import datetime
@@ -178,6 +179,74 @@ class SignInRequest(BaseModel):
     email: str
     password: str
 
+def validate_signup_input(name: str, email: str, password: str, phone: str, company: str):
+    """
+    Conditional statements validation for string, numeric, and security constraints
+    """
+    # 1. Full Name String Validation
+    if not name or not isinstance(name, str) or len(name.strip()) < 3:
+        return None, "Full Name must be at least 3 characters long."
+    if not re.match(r"^[a-zA-Z\s]{3,50}$", name.strip()):
+        return None, "Full Name must contain alphabetic letters and spaces only."
+
+    # 2. Company Name String Validation
+    if not company or not isinstance(company, str) or len(company.strip()) < 2:
+        return None, "Company Name must be at least 2 characters long."
+
+    # 3. Email RFC Validation
+    if not email or not isinstance(email, str):
+        return None, "Email address is required."
+    clean_email = email.strip().lower()
+    if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", clean_email):
+        return None, "Please enter a valid corporate email address (e.g. user@company.com)."
+
+    # 4. WhatsApp Phone Numeric Validation (+91 followed by exactly 10 digits)
+    if not phone:
+        return None, "WhatsApp phone number is required."
+    raw_digits = re.sub(r"\D", "", str(phone))
+    
+    # Check conditional digit counts
+    if raw_digits.startswith("91") and len(raw_digits) == 12:
+        ten_digits = raw_digits[2:]
+    elif len(raw_digits) == 10:
+        ten_digits = raw_digits
+    else:
+        return None, f"WhatsApp number must contain exactly 10 digits (+91). Received {len(raw_digits)} digits."
+
+    if not ten_digits.isdigit():
+        return None, "Phone number must consist of numeric digits only."
+    if ten_digits[0] not in "6789":
+        return None, "Indian mobile numbers must begin with 6, 7, 8, or 9."
+
+    formatted_phone = f"+91 {ten_digits}"
+
+    # 5. Password Security Rules (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol)
+    if not password or len(password) < 8:
+        return None, "Password must be at least 8 characters long."
+    if not re.search(r"[A-Z]", password):
+        return None, "Password must contain at least one uppercase letter (A-Z)."
+    if not re.search(r"[a-z]", password):
+        return None, "Password must contain at least one lowercase letter (a-z)."
+    if not re.search(r"\d", password):
+        return None, "Password must contain at least one numeric digit (0-9)."
+    if not re.search(r"[@$!%*?&#^~_\-+=]", password):
+        return None, "Password must contain at least one special character (@$!%*?&#)."
+
+    return {
+        "name": name.strip(),
+        "company": company.strip(),
+        "email": clean_email,
+        "phone": formatted_phone,
+        "password": password
+    }, None
+
+def validate_signin_input(email: str, password: str):
+    if not email or not isinstance(email, str) or not email.strip():
+        return "Email address is required."
+    if not password or not isinstance(password, str) or not password.strip():
+        return "Password is required."
+    return None
+
 # -------------------------------------------------------------
 # 7. Authentication Endpoints (7-Day JWT + Neon PostgreSQL)
 # -------------------------------------------------------------
@@ -185,35 +254,45 @@ class SignInRequest(BaseModel):
 @app.post("/api/auth/sign-up/email")
 async def sign_up(body: SignUpRequest):
     """
-    Register user & company in Neon PostgreSQL and return 7-Day JWT Token
+    Register user & company in Neon PostgreSQL with strict input validation
     """
+    company_title = body.companyName or body.company or f"{body.name}'s Company"
+    valid_data, err_msg = validate_signup_input(
+        name=body.name,
+        email=body.email,
+        password=body.password,
+        phone=body.phone,
+        company=company_title
+    )
+    if err_msg:
+        raise HTTPException(status_code=400, detail=err_msg)
+
     conn = get_db()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # Check existing user
-            cur.execute("SELECT id FROM users WHERE email = %s;", (body.email.lower().strip(),))
+            cur.execute("SELECT id FROM users WHERE email = %s;", (valid_data["email"],))
             if cur.fetchone():
                 raise HTTPException(status_code=400, detail="An account with this email already exists.")
 
             # 1. Create Company
             company_id = f"comp_{secrets.token_hex(8)}"
-            company_title = body.companyName or body.company or f"{body.name}'s Company"
             cur.execute(
                 "INSERT INTO companies (id, name, whatsapp_number) VALUES (%s, %s, %s) RETURNING id, name;",
-                (company_id, company_title, body.phone)
+                (company_id, valid_data["company"], valid_data["phone"])
             )
             company = cur.fetchone()
 
             # 2. Hash Password & Create User
             user_id = f"usr_{secrets.token_hex(8)}"
-            pw_hash, _ = hash_password(body.password)
+            pw_hash, _ = hash_password(valid_data["password"])
             cur.execute(
                 """
                 INSERT INTO users (id, name, email, password_hash, role, phone, company_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, name, email, role, phone, company_id, created_at;
                 """,
-                (user_id, body.name, body.email.lower().strip(), pw_hash, "admin", body.phone, company_id)
+                (user_id, valid_data["name"], valid_data["email"], pw_hash, "admin", valid_data["phone"], company_id)
             )
             user = cur.fetchone()
 
@@ -264,6 +343,10 @@ async def sign_in(body: SignInRequest):
     """
     Authenticate against Neon PostgreSQL and issue 7-Day JWT Token
     """
+    err = validate_signin_input(body.email, body.password)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
     conn = get_db()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
