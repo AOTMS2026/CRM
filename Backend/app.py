@@ -171,6 +171,22 @@ app.include_router(graphql_app, prefix="/graphql")
 from whatsapp import whatsapp_router
 app.include_router(whatsapp_router, prefix="/api/integrations/whatsapp", tags=["whatsapp-integration"])
 
+@app.get("/")
+def root():
+    return {
+        "service": "Academy of Tech Masters - WhatsApp Automation CRM API",
+        "status": "operational",
+        "version": "2.0.0"
+    }
+
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy",
+        "database": "Neon PostgreSQL connected",
+        "timestamp": datetime.datetime.now(timezone.utc).isoformat()
+    }
+
 # -------------------------------------------------------------
 # 6. Request Schemas
 # -------------------------------------------------------------
