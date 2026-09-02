@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Response, status, Header
-from typing import Optional
-from .models import WhatsAppConfigRequest, WhatsAppConfigResponse
+from typing import Optional, List
+from .models import WhatsAppConfigRequest, WhatsAppConfigResponse, CreateTemplateRequest
 from .service import WhatsAppIntegrationService
 
 router = APIRouter()
@@ -38,6 +38,48 @@ def get_whatsapp_status():
             detail=f"Failed to fetch WhatsApp status: {str(e)}"
         )
 
+# -----------------------------------------------------------------------------
+# TEMPLATE MANAGEMENT ENDPOINTS (FAST API CALLING)
+# -----------------------------------------------------------------------------
+@router.get("/templates")
+async def list_whatsapp_templates():
+    """Retrieve all message templates from Neon DB & Meta Cloud API."""
+    try:
+        templates = await WhatsAppIntegrationService.list_templates()
+        return {"success": True, "templates": templates}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch templates: {str(e)}"
+        )
+
+@router.post("/templates")
+async def create_whatsapp_template(req: CreateTemplateRequest):
+    """Create a new message template in Meta WhatsApp Business Cloud and Neon DB."""
+    try:
+        res = await WhatsAppIntegrationService.create_template(req)
+        return res
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to create template: {str(e)}"
+        )
+
+@router.delete("/templates/{template_name}")
+async def delete_whatsapp_template(template_name: str):
+    """Delete a template from Meta WhatsApp Cloud and Neon DB."""
+    try:
+        res = await WhatsAppIntegrationService.delete_template(template_name)
+        return res
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete template: {str(e)}"
+        )
+
+# -----------------------------------------------------------------------------
+# WEBHOOK CHALLENGE AND EVENT RECEIVERS
+# -----------------------------------------------------------------------------
 @router.get("/webhook")
 def verify_meta_webhook(
     hub_mode: Optional[str] = Query(None, alias="hub.mode"),

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardNavbar from './DashboardNavbar';
 import MiniNavbar from './MiniNavbar';
+import WhatsappMessage from './Whatsapp_Message';
 import { 
   Users, 
   Target, 
@@ -1370,48 +1371,10 @@ export default function DashboardPage() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 5: WHATSAPP                                                           */}
+        {/* TAB 5: WHATSAPP_MESSAGES & META TEMPLATES STUDIO                          */}
         {/* ========================================================================= */}
         {activeTab === 'whatsapp' && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-              <h2 className="text-base font-bold text-slate-900">Enterprise WhatsApp Business Console</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Verified Meta Cloud API gateway with 100K messages/day broadcast throughput.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="p-6 rounded-2xl bg-white border border-emerald-200 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-700">Gateway Status</span>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] font-mono border border-emerald-200">Live • Connected</span>
-                </div>
-                <div className="text-xl font-black text-slate-900 font-mono">+91 98765 43210</div>
-                <p className="text-xs text-slate-600">Verified Account: <span className="text-slate-900 font-bold">{currentUser?.company_name || 'AOTMS'}</span></p>
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Daily Limit</span>
-                  <span className="font-mono text-emerald-700 font-bold">100,000 / Day</span>
-                </div>
-              </div>
-
-              <div className="lg:col-span-2 p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
-                <h3 className="text-sm font-bold text-slate-900">Broadcast Campaign Template Sender</h3>
-                <input 
-                  type="text" 
-                  placeholder="Campaign Title (e.g. Masterclass New Cohort Announcement)" 
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-sky-500"
-                />
-                <textarea 
-                  rows={3} 
-                  placeholder="Template Message Body with dynamic tags {{name}}, {{company}}..." 
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-sky-500"
-                />
-                <button className="px-5 py-2.5 rounded-xl bg-tech_orange hover:bg-tech_orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm">
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Send Broadcast to 3,184 Contacts</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          <WhatsappMessage />
         )}
 
         {/* ========================================================================= */}

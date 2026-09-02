@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 class WhatsAppConfigRequest(BaseModel):
@@ -19,3 +19,21 @@ class WhatsAppConfigResponse(BaseModel):
     waba_id: Optional[str] = None
     graph_version: Optional[str] = None
     masked_access_token: Optional[str] = None
+
+class TemplateButton(BaseModel):
+    type: str = "QUICK_REPLY" # "QUICK_REPLY", "URL", "PHONE_NUMBER"
+    text: str
+    url: Optional[str] = None
+    phone_number: Optional[str] = None
+
+class CreateTemplateRequest(BaseModel):
+    name: str = Field(..., description="Template name, lowercase with underscores, e.g. welcome_offer")
+    category: str = Field(default="MARKETING", description="MARKETING, UTILITY, or AUTHENTICATION")
+    language: str = Field(default="en_US", description="Language code e.g. en_US, te_IN")
+    header_type: str = Field(default="NONE", description="NONE, TEXT, or IMAGE")
+    header_text: Optional[str] = None
+    header_image_url: Optional[str] = None
+    body_text: str = Field(..., description="Body text with {{1}}, {{2}} variables")
+    footer_text: Optional[str] = None
+    buttons: Optional[List[TemplateButton]] = None
+    sample_values: Optional[List[str]] = None
