@@ -3,6 +3,7 @@ import strawberry
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
+from app.core.config import settings
 
 # -------------------------------------------------------------
 # 1. Strawberry GraphQL Schema Definition
@@ -36,11 +37,11 @@ app = FastAPI(
 )
 
 # -------------------------------------------------------------
-# 3. CORS Middleware Configuration
+# 3. CORS Middleware Configuration (Loaded from Backend/.env)
 # -------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins, including frontend on Render and localhost
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -60,8 +61,10 @@ async def root():
         "service": "Academy of Tech Masters - WhatsApp CRM API",
         "status": "online",
         "version": "1.0.0",
-        "docs_url": "/docs",
-        "graphql_url": "/graphql"
+        "backend_url": settings.BACKEND_URL,
+        "frontend_url": settings.FRONTEND_URL,
+        "docs_url": f"{settings.BACKEND_URL}/docs",
+        "graphql_url": f"{settings.BACKEND_URL}/graphql"
     }
 
 @app.get("/health")
@@ -70,20 +73,26 @@ async def health_check():
         "status": "healthy",
         "uptime": "100%",
         "database": "connected",
-        "cache": "redis-ready"
+        "cache": "redis-ready",
+        "backend_url": settings.BACKEND_URL
     }
 
 @app.get("/api/auth")
 @app.get("/api/auth/status")
 async def auth_status():
-    api_key = os.environ.get("BETTER_AUTH_API_KEY", "ba_1srxo579z8prokewgiqcwcwz8kjckpqt")
+    """
+    Better Auth Gateway status endpoint.
+    All credentials and target endpoints are dynamically retrieved from Backend/.env.
+    """
     return {
         "status": "ready",
         "service": "Better Auth Gateway",
-        "api_key_configured": bool(api_key),
+        "api_key_configured": bool(settings.BETTER_AUTH_API_KEY),
         "endpoint": "/api/auth",
         "dash_infra": "enabled",
-        "vercel_url": "https://crm-1-peach.vercel.app/api/auth"
+        "vercel_auth_url": settings.VERCEL_AUTH_URL,
+        "backend_url": settings.BACKEND_URL,
+        "frontend_url": settings.FRONTEND_URL
     }
 
 # -------------------------------------------------------------
