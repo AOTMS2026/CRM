@@ -19,7 +19,9 @@ import {
   Filter,
   Tag,
   Shield,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
@@ -318,14 +320,15 @@ export default function Contacts({ onOpenBlast }) {
 
   // Extract unique identities dynamically with strict case-insensitive deduplication
   const availableIdentities = (() => {
-    const defaultList = ['ALL', 'Client', 'VIP', 'Lead', 'Vendor'];
-    const seenLower = new Set(defaultList.map(item => item.toLowerCase()));
+    const defaultList = ['ALL', 'SAP FICO', 'Client', 'VIP', 'Lead', 'Vendor'];
+    const seenLower = new Set(defaultList.map(item => item.toLowerCase().replace(/_/g, ' ')));
     const dynamicList = [];
 
     contacts.forEach(c => {
       const tag = (c.identity || '').trim();
-      if (tag && !seenLower.has(tag.toLowerCase())) {
-        seenLower.add(tag.toLowerCase());
+      const norm = tag.toLowerCase().replace(/_/g, ' ');
+      if (tag && tag !== 'General' && !seenLower.has(norm)) {
+        seenLower.add(norm);
         dynamicList.push(tag);
       }
     });
@@ -335,7 +338,7 @@ export default function Contacts({ onOpenBlast }) {
 
   // Filter contacts by Search Query & Identity
   const filteredContacts = contacts.filter(c => {
-    const contactIdentity = c.identity || 'Client';
+    const contactIdentity = (c.identity && c.identity !== 'General') ? c.identity : 'SAP FICO';
     const matchesIdentity = selectedIdentity === 'ALL' || contactIdentity.toLowerCase() === selectedIdentity.toLowerCase();
     const query = searchQuery.toLowerCase();
     const matchesSearch = 
@@ -346,6 +349,21 @@ export default function Contacts({ onOpenBlast }) {
 
     return matchesIdentity && matchesSearch;
   });
+
+  // Pagination State: 12 contacts per page (4-column grid)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  // Reset to page 1 on filter or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedIdentity]);
+
+  const totalPages = Math.ceil(filteredContacts.length / ITEMS_PER_PAGE) || 1;
+  const paginatedContacts = filteredContacts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -511,112 +529,149 @@ export default function Contacts({ onOpenBlast }) {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filteredContacts.map((contact) => {
-            const cleanPhone = (contact.phone || '').replace(/[^0-9]/g, '');
-            const initials = contact.name ? contact.name.charAt(0).toUpperCase() : 'C';
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {paginatedContacts.map((contact) => {
+              const cleanPhone = (contact.phone || '').replace(/[^0-9]/g, '');
+              const initials = contact.name ? contact.name.charAt(0).toUpperCase() : 'C';
 
-            return (
-              <div
-                key={contact._id || contact.id}
-                className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-sky-300 transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden"
-              >
-                <div className="space-y-3">
-                  
-                  {/* Initials Avatar, Identity Tag & Status */}
-                  <div className="flex items-start justify-between">
-                    <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-tech_orange p-[2px] shadow-sm group-hover:scale-105 transition-transform">
-                      <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center text-base font-black text-slate-900">
-                        {initials}
+              return (
+                <div
+                  key={contact._id || contact.id}
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-sky-300 transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    
+                    {/* Initials Avatar, Identity Tag & Status */}
+                    <div className="flex items-start justify-between">
+                      <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-tech_orange p-[2px] shadow-sm group-hover:scale-105 transition-transform">
+                        <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center text-base font-black text-slate-900">
+                          {initials}
+                        </div>
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-emerald-500" />
                       </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-emerald-500" />
+
+                      <span className="px-2.5 py-1 rounded-full font-extrabold text-[10px] font-mono border bg-sky-50 text-sky-700 border-sky-200">
+                        🏷️ {(contact.identity && contact.identity !== 'General') ? contact.identity : 'SAP FICO'}
+                      </span>
                     </div>
 
-                    <span className="px-2.5 py-1 rounded-full font-extrabold text-[10px] font-mono border bg-sky-50 text-sky-700 border-sky-200">
-                      🏷️ {contact.identity || 'Client'}
+                    {/* Contact Name */}
+                    <div>
+                      <h3 className="text-base font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors truncate">
+                        {contact.name}
+                      </h3>
+                    </div>
+
+                    {/* Phone & Email Details */}
+                    <div className="space-y-1.5 text-xs pt-1">
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold font-mono">
+                        <Phone className="w-3.5 h-3.5 shrink-0" />
+                        <span>+91 {contact.phone}</span>
+                      </div>
+
+                      {contact.email && (
+                        <div className="flex items-center gap-2 text-slate-600 font-medium truncate font-mono">
+                          <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                          <span className="truncate">{contact.email}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Read Rate / Segment Badge */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Segment</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black font-mono flex items-center gap-1 uppercase">
+                      <Activity className="w-3 h-3 text-emerald-600" />
+                      <span>{contact.segment || 'New'}</span>
                     </span>
                   </div>
 
-                  {/* Contact Name */}
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors truncate">
-                      {contact.name}
-                    </h3>
-                  </div>
-
-                  {/* Phone & Email Details */}
-                  <div className="space-y-1.5 text-xs pt-1">
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold font-mono">
-                      <Phone className="w-3.5 h-3.5 shrink-0" />
-                      <span>+91 {contact.phone}</span>
-                    </div>
-
-                    {contact.email && (
-                      <div className="flex items-center gap-2 text-slate-600 font-medium truncate font-mono">
-                        <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                        <span className="truncate">{contact.email}</span>
-                      </div>
+                  {/* Action Buttons: WhatsApp Blast, Direct Chat, Call, Delete */}
+                  <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-slate-100">
+                    {onOpenBlast && (
+                      <button
+                        type="button"
+                        onClick={onOpenBlast}
+                        className="py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer flex-1"
+                        title="Trigger WhatsApp Blast to this contact"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>WhatsApp Blast</span>
+                      </button>
                     )}
-                  </div>
-                </div>
 
-                {/* Read Rate / Segment Badge */}
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Segment</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black font-mono flex items-center gap-1 uppercase">
-                    <Activity className="w-3 h-3 text-emerald-600" />
-                    <span>{contact.segment || 'New'}</span>
-                  </span>
-                </div>
+                    {/* Direct Chat */}
+                    <a
+                      href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
+                      title="Chat on WhatsApp"
+                    >
+                      <WhatsApp className="w-3.5 h-3.5 text-emerald-600" />
+                    </a>
 
-                {/* Action Buttons: WhatsApp Blast, Direct Chat, Call, Delete */}
-                <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-slate-100">
-                  {onOpenBlast && (
+                    {/* Phone Call */}
+                    <a
+                      href={`tel:${contact.phone}`}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors"
+                      title="Direct Call"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                    </a>
+
+                    {/* Delete */}
                     <button
                       type="button"
-                      onClick={onOpenBlast}
-                      className="py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer flex-1"
-                      title="Trigger WhatsApp Blast to this contact"
+                      onClick={() => handleDeleteContact(contact._id || contact.id, contact.name)}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
+                      title="Delete Contact"
                     >
-                      <Send className="w-3 h-3" />
-                      <span>WhatsApp Blast</span>
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                  </div>
 
-                  {/* Direct Chat */}
-                  <a
-                    href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
-                    title="Chat on WhatsApp"
-                  >
-                    <WhatsApp className="w-3.5 h-3.5 text-emerald-600" />
-                  </a>
-
-                  {/* Phone Call */}
-                  <a
-                    href={`tel:${contact.phone}`}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors"
-                    title="Direct Call"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                  </a>
-
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteContact(contact._id || contact.id, contact.name)}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
-                    title="Delete Contact"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
                 </div>
+              );
+            })}
+          </div>
 
+          {/* Pagination Footer Controls */}
+          {filteredContacts.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-slate-900 font-extrabold">{paginatedContacts.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredContacts.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredContacts.length}</span> contacts
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
