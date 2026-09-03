@@ -19,6 +19,7 @@ import {
   Calendar, 
   Check, 
   LayoutGrid, 
+  List,
   MessageSquare,
   ExternalLink,
   ChevronLeft,
