@@ -32,28 +32,28 @@ export default function FAQSection() {
   ];
 
   return (
-    <section id="faq" className="py-24 bg-slate-950 text-white relative border-t border-emerald-500/20">
+    <section id="faq" className="py-24 bg-slate_dark text-white relative border-t border-tech_orange/20">
       
-      {/* Background Accent */}
-      <div className="absolute top-1/2 left-10 w-96 h-96 bg-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
+      {/* Background Ambient Glow */}
+      <div className="absolute top-1/2 left-10 w-96 h-96 bg-tech_orange/15 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header */}
         <div className="text-center mb-16 space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-extrabold text-emerald-300 uppercase tracking-wider shadow-md">
-            <IoHelpCircleOutline className="text-amber-400 text-base" /> 
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tech_orange/20 border border-tech_orange/40 text-xs font-mono font-extrabold text-tech_orange-700 uppercase tracking-wider shadow-md">
+            <IoHelpCircleOutline className="text-tech_orange text-base" /> 
             <span>GOT QUESTIONS?</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-            Frequently Asked <span className="bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-300 bg-clip-text text-transparent">Questions</span>
+            Frequently Asked <span className="bg-gradient-to-r from-tech_orange via-amber-400 to-orange-400 bg-clip-text text-transparent">Questions</span>
           </h2>
           <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
             Everything you need to know about Meta Cloud API compliance, bulk imports, and employee tracking.
           </p>
         </div>
 
-        {/* Accordion with Luminous Cards */}
+        {/* Accordion with Orange Accent Cards */}
         <div className="space-y-4">
           {faqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
@@ -62,8 +62,8 @@ export default function FAQSection() {
                 key={idx}
                 className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isOpen 
-                    ? 'bg-slate-900 border-emerald-500/60 shadow-xl shadow-emerald-500/10' 
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                    ? 'bg-slate_dark-300 border-tech_orange/60 shadow-xl shadow-tech_orange/10' 
+                    : 'bg-slate_dark-300/60 border-slate_dark-500 hover:border-slate_dark-400'
                 }`}
               >
                 <button
@@ -75,14 +75,14 @@ export default function FAQSection() {
                     {faq.q}
                   </span>
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 ${
-                    isOpen ? 'bg-amber-500 text-slate-950 rotate-180 font-black' : 'bg-slate-800 text-slate-400'
+                    isOpen ? 'bg-tech_orange text-white rotate-180 font-black' : 'bg-slate_dark-400 text-slate-400'
                   }`}>
                     <IoChevronDownOutline className="text-base" />
                   </div>
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 sm:px-6 pb-6 pt-1 text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 animate-in fade-in duration-150">
+                  <div className="px-5 sm:px-6 pb-6 pt-1 text-sm text-slate-300 leading-relaxed border-t border-slate_dark-500 animate-in fade-in duration-150">
                     {faq.a}
                   </div>
                 )}

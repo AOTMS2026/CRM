@@ -19,23 +19,23 @@ export default function CTASection() {
   };
 
   return (
-    <section id="signup" className="py-20 relative overflow-hidden bg-slate-950 text-white border-t border-emerald-500/20">
+    <section id="signup" className="py-20 relative overflow-hidden bg-slate_dark text-white border-t border-tech_orange/20">
       
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-850 to-amber-950/90 p-8 sm:p-14 border border-amber-500/40 shadow-2xl relative overflow-hidden text-center">
+        <div className="rounded-3xl bg-gradient-to-r from-slate_dark-300 via-slate_dark-400 to-slate_dark-300 p-8 sm:p-14 border border-tech_orange/40 shadow-2xl relative overflow-hidden text-center">
           
           {/* Luminous Glow Streaks */}
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-500/20 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-tech_orange/20 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-amber-500/15 rounded-full blur-[140px] pointer-events-none" />
 
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-extrabold text-emerald-300 tracking-wider uppercase mb-6 shadow-md">
-            <IoSparkles className="text-sm text-amber-400" /> INSTANT DEPLOYMENT IN 60 SECONDS
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tech_orange/20 border border-tech_orange/40 text-xs font-mono font-extrabold text-tech_orange-700 tracking-wider uppercase mb-6 shadow-md">
+            <IoSparkles className="text-sm text-tech_orange" /> INSTANT DEPLOYMENT IN 60 SECONDS
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight max-w-3xl mx-auto mb-6 leading-tight">
-            Ready To Turn WhatsApp Into Your <span className="bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-300 bg-clip-text text-transparent">Highest Converting</span> Channel?
+            Ready To Turn WhatsApp Into Your <span className="bg-gradient-to-r from-tech_orange via-amber-400 to-orange-400 bg-clip-text text-transparent">Highest Converting</span> Channel?
           </h2>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-8 leading-relaxed font-normal">
@@ -59,7 +59,7 @@ export default function CTASection() {
                   }
                 })}
                 placeholder="Enter your corporate work email..."
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-900 text-white placeholder:text-slate-400 text-sm border border-slate-700 focus:outline-none focus:border-amber-400 transition-colors font-sans shadow-md"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate_dark text-white placeholder:text-slate-400 text-sm border border-slate_dark-500 focus:outline-none focus:border-tech_orange transition-colors font-sans shadow-md"
               />
               {errors.email && (
                 <p className="text-xs text-rose-400 text-left mt-1 ml-1 font-bold">{errors.email.message}</p>
@@ -68,7 +68,7 @@ export default function CTASection() {
 
             <button
               type="submit"
-              className="px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider text-slate-950 bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 hover:from-amber-600 hover:to-teal-600 shadow-xl shadow-emerald-500/25 border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-xl shadow-tech_orange/30 border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <IoFlash className="text-base" />
               <span>Get Free Access</span>
@@ -77,20 +77,20 @@ export default function CTASection() {
           </form>
 
           {submitted && (
-            <div className="p-3.5 mb-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold font-mono animate-in fade-in">
+            <div className="p-3.5 mb-4 rounded-2xl bg-tech_orange/20 border border-tech_orange/40 text-tech_orange-700 text-xs font-bold font-mono animate-in fade-in">
               🎉 Welcome aboard! Check your inbox for your 14-day free trial workspace invite.
             </div>
           )}
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-300 font-mono">
             <span className="flex items-center gap-1.5">
-              <IoCheckmarkCircle className="text-emerald-400 text-base" /> 14-Day Free Trial
+              <IoCheckmarkCircle className="text-tech_orange text-base" /> 14-Day Free Trial
             </span>
             <span className="flex items-center gap-1.5">
-              <IoCheckmarkCircle className="text-emerald-400 text-base" /> No Credit Card Required
+              <IoCheckmarkCircle className="text-tech_orange text-base" /> No Credit Card Required
             </span>
             <span className="flex items-center gap-1.5">
-              <IoCheckmarkCircle className="text-emerald-400 text-base" /> Meta Verified Cloud API
+              <IoCheckmarkCircle className="text-tech_orange text-base" /> Meta Verified Cloud API
             </span>
           </div>
 
