@@ -14,7 +14,11 @@ import {
   IoSpeedometerOutline,
   IoPeopleOutline,
   IoSparklesOutline,
-  IoBusinessOutline
+  IoBusinessOutline,
+  IoRocketOutline,
+  IoCardOutline,
+  IoCallOutline,
+  IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 
 export default function Navbar() {
@@ -98,319 +102,344 @@ export default function Navbar() {
       hasDropdown: true,
       items: [
         { 
-          title: 'D2C & eCommerce', 
-          desc: 'Automate abandoned carts, COD verification, and order tracking.',
-          icon: <IoChatbubblesOutline className="text-tech_orange text-lg" />,
+          title: 'Meta WhatsApp Blast', 
+          desc: 'High-speed broadcast campaigns with official Meta Cloud API templates.',
+          icon: <IoRocketOutline className="text-amber-400 text-lg" />,
           href: '#features'
         },
         { 
-          title: 'Customer Support', 
-          desc: 'Shared multi-agent team inbox with instant AI auto-replies.',
-          icon: <IoShieldCheckmarkOutline className="text-tech_blue-600 text-lg" />,
+          title: 'Multi-Agent Team Inbox', 
+          desc: 'Shared team workspace for support agents, managers, and sales leads.',
+          icon: <IoShieldCheckmarkOutline className="text-emerald-400 text-lg" />,
           href: '#about'
         },
         { 
-          title: 'Marketing & Broadcasts', 
-          desc: 'Personalized broadcast campaigns with zero-ban rate limiting.',
-          icon: <IoGitNetworkOutline className="text-tech_orange-600 text-lg" />,
+          title: 'Lead Pipeline & Daily Calls', 
+          desc: 'Track daily 1st, 2nd, and final calling notes with employee conversion rates.',
+          icon: <IoStatsChartOutline className="text-sky-400 text-lg" />,
           href: '#workflow'
         },
         { 
-          title: 'High-Volume Enterprise', 
-          desc: 'Dedicated proxies, custom SLA, and direct CRM webhooks.',
-          icon: <IoStatsChartOutline className="text-tech_blue-700 text-lg" />,
+          title: 'Pay_SIP Reminders', 
+          desc: 'Automated monthly mutual fund installment alerts directly on WhatsApp.',
+          icon: <IoCardOutline className="text-teal-400 text-lg" />,
           href: '#pricing'
         }
       ]
     },
+    { name: 'WhatsApp Blast', href: '#whatsapp-blast' },
     { name: 'Integrations', href: '#integrations' },
-    { name: 'Resources', href: '#resources' },
-    { name: 'Partners', href: '#partners' },
     { name: 'Pricing', href: '#pricing' },
+    { name: 'Support', href: '#support' }
   ];
 
   return (
-    <header 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
-        isScrolled 
-          ? 'calm-nav calm-nav-scrolled py-4' 
-          : 'calm-nav py-5'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          
-          {/* Brand Logo - Native Transparent PNG (Slightly Increased Size) */}
-          <a href="#" className="flex items-center group py-1">
-            <img 
-              src="/logo.png" 
-              alt="Academy of Tech Masters" 
-              className="h-9 sm:h-11 md:h-12 w-auto object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-[1.02]" 
-            />
-          </a>
+    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+      
+      {/* Top Bright Gradient Accent Line Bar */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-amber-500 via-emerald-400 via-teal-400 to-amber-500 shadow-sm" />
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-1.5">
-            {navLinks.map((link) => {
-              if (link.hasDropdown) {
-                return (
-                  <div 
-                    key={link.name} 
-                    className="relative"
-                    onMouseEnter={() => handleMouseEnter('solutions')}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    <button
-                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-base font-bold transition-colors duration-150 ${
-                        activeDropdown === 'solutions' 
-                          ? 'text-white bg-slate_dark-400' 
-                          : 'text-slate-200 hover:text-white hover:bg-slate_dark-400/60'
-                      }`}
-                    >
-                      <span>{link.name}</span>
-                      <IoChevronDown 
-                        className={`text-sm text-tech_blue-700 transition-transform duration-200 ${
-                          activeDropdown === 'solutions' ? 'rotate-180 text-tech_orange' : ''
-                        }`} 
-                      />
-                    </button>
-
-                    {/* Solutions Dropdown Menu */}
-                    {activeDropdown === 'solutions' && (
-                      <div className="absolute top-full left-0 w-84 mt-2.5 p-2.5 rounded-2xl bg-slate_dark-300/95 backdrop-blur-xl border border-tech_blue/30 shadow-2xl shadow-black/80 animate-in fade-in slide-in-from-top-2 duration-150">
-                        <div className="grid grid-cols-1 gap-1.5">
-                          {link.items.map((item, idx) => (
-                            <a
-                              key={idx}
-                              href={item.href}
-                              onClick={() => setActiveDropdown(null)}
-                              className="p-3 rounded-xl hover:bg-slate_dark-400/80 flex items-start gap-3.5 transition-colors group"
-                            >
-                              <div className="p-2.5 rounded-lg bg-slate_dark-400/90 border border-tech_blue/20 group-hover:border-tech_orange/50 transition-colors">
-                                {item.icon}
-                              </div>
-                              <div>
-                                <div className="text-base font-bold text-white group-hover:text-tech_orange transition-colors">
-                                  {item.title}
-                                </div>
-                                <div className="text-xs text-slate-300 leading-normal mt-0.5">
-                                  {item.desc}
-                                </div>
-                              </div>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-
-              return (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="px-4 py-2.5 rounded-lg text-base font-bold text-slate-200 hover:text-white hover:bg-slate_dark-400/60 transition-colors duration-150"
-                >
-                  {link.name}
-                </a>
-              );
-            })}
-          </nav>
-
-          {/* Desktop Right Actions: User Profile Dropdown or Login/Signup */}
-          <div className="hidden lg:flex items-center gap-3.5">
-            {currentUser ? (
-              <div className="relative" ref={profileDropdownRef}>
-                {/* Clickable Profile Button with Color Theme Gradient Ring */}
-                <button
-                  type="button"
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-full bg-slate_dark-400/90 hover:bg-slate_dark-400 border border-tech_blue/40 shadow-lg shadow-tech_orange/10 backdrop-blur-md transition-all cursor-pointer group"
-                  aria-expanded={profileDropdownOpen}
-                >
-                  {/* Glowing Profile Avatar Circle */}
-                  <div className="relative w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-tech_orange via-amber-400 to-tech_blue shadow-md group-hover:scale-105 transition-transform">
-                    <div className="w-full h-full rounded-full bg-slate_dark flex items-center justify-center text-xs font-black text-white">
-                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                    {/* Live Online Dot */}
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate_dark" />
-                  </div>
-
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-white group-hover:text-tech_orange transition-colors leading-tight">
-                      {currentUser.name}
-                    </div>
-                    <div className="text-[10px] text-slate-400 truncate max-w-[110px]">
-                      {currentUser.company_name || 'AOTMS'}
-                    </div>
-                  </div>
-
-                  <IoChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Profile Circle Dropdown Menu */}
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-80 rounded-2xl bg-slate_dark-300/98 backdrop-blur-2xl border border-tech_blue/30 shadow-2xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
-                    
-                    {/* User Identity Header */}
-                    <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-                      <div className="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-tech_orange via-amber-400 to-tech_blue shadow-md shrink-0">
-                        <div className="w-full h-full rounded-full bg-slate_dark flex items-center justify-center text-sm font-black text-white">
-                          {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                        </div>
-                      </div>
-                      <div className="overflow-hidden">
-                        <div className="text-sm font-black text-white truncate">{currentUser.name}</div>
-                        <div className="text-xs text-slate-400 truncate font-mono">{currentUser.email}</div>
-                        <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-tech_orange/15 border border-tech_orange/30 text-tech_orange text-[10px] font-bold">
-                          <IoBusinessOutline className="w-3 h-3" />
-                          <span className="truncate max-w-[140px]">{currentUser.company_name || 'AOTMS Enterprise'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* PRIMARY ACTION: REDIRECT TO DASHBOARD */}
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setProfileDropdownOpen(false)}
-                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange text-white font-bold text-xs flex items-center justify-between shadow-lg shadow-tech_orange/30 border border-white/20 transition-all cursor-pointer group"
-                    >
-                      <span className="flex items-center gap-2">
-                        <IoSpeedometerOutline className="text-lg text-white" />
-                        <span>Open CRM Dashboard</span>
-                      </span>
-                      <IoArrowForward className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-
-                    {/* Sign Out Button */}
-                    <div className="pt-2 border-t border-white/10">
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs flex items-center justify-center gap-2 border border-rose-500/20 transition-colors cursor-pointer"
-                      >
-                        <IoLogOutOutline className="text-base" />
-                        <span>Sign Out from Workspace</span>
-                      </button>
-                    </div>
-
-                  </div>
-                )}
+      {/* Main Glassmorphic Navigation Bar */}
+      <div 
+        className={`w-full transition-all duration-200 ${
+          isScrolled 
+            ? 'bg-gradient-to-r from-slate-950/95 via-slate-900/95 to-slate-950/95 backdrop-blur-2xl border-b border-emerald-500/20 shadow-[0_10px_35px_-10px_rgba(16,185,129,0.25)] py-3' 
+            : 'bg-gradient-to-r from-slate-950/90 via-slate-900/90 to-slate-950/90 backdrop-blur-xl border-b border-white/10 py-4'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            
+            {/* Brand Logo & Production Identity Badge */}
+            <a href="#" className="flex items-center gap-3 group py-1">
+              <div className="relative">
+                <img 
+                  src="/logo.png" 
+                  alt="AOTMS Enterprise WhatsApp CRM" 
+                  className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-transform duration-200 group-hover:scale-105" 
+                />
               </div>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2.5 text-[15px] font-medium text-slate-200 hover:text-tech_orange transition-colors duration-150"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center justify-center gap-2 px-5.5 py-3 rounded-xl text-[15px] font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-md shadow-tech_orange/25 border border-tech_orange-400/40 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  <span>Book a Demo</span>
-                  <IoArrowForward className="text-sm" />
-                </Link>
-              </>
-            )}
-          </div>
 
-          {/* Mobile Hamburger Button */}
-          <div className="lg:hidden flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl bg-slate_dark-400 border border-tech_blue/30 text-white hover:text-tech_orange transition-colors"
-              aria-label="Toggle navigation"
-            >
-              {mobileMenuOpen ? (
-                <IoCloseOutline className="text-2xl" />
-              ) : (
-                <IoMenuOutline className="text-2xl" />
-              )}
-            </button>
-          </div>
+              <div className="hidden sm:flex flex-col text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">
+                    AOTMS CRM
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-extrabold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-xs">
+                    PROD v2.4
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-300 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Meta Verified API</span>
+                </div>
+              </div>
+            </a>
 
-        </div>
+            {/* Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center space-x-1.5">
+              {navLinks.map((link) => {
+                if (link.hasDropdown) {
+                  return (
+                    <div 
+                      key={link.name} 
+                      className="relative"
+                      onMouseEnter={() => handleMouseEnter('solutions')}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <button
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-150 cursor-pointer ${
+                          activeDropdown === 'solutions' 
+                            ? 'text-white bg-emerald-500/20 border border-emerald-500/40 shadow-sm' 
+                            : 'text-slate-200 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{link.name}</span>
+                        <IoChevronDown 
+                          className={`text-sm text-emerald-400 transition-transform duration-200 ${
+                            activeDropdown === 'solutions' ? 'rotate-180 text-amber-400' : ''
+                          }`} 
+                        />
+                      </button>
 
-        {/* Mobile Slide-down Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden mt-3 p-4 rounded-2xl bg-slate_dark-300/95 backdrop-blur-xl border border-tech_blue/30 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
-            <div className="flex flex-col space-y-1">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 rounded-lg text-sm font-medium text-slate-100 hover:text-tech_orange hover:bg-slate_dark-400/60 transition-colors"
-                >
-                  {link.name}
-                </a>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-slate_dark-500 flex flex-col gap-2">
-              {currentUser ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate_dark-400 border border-white/10">
-                    <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-tech_orange via-amber-400 to-tech_blue">
-                      <div className="w-full h-full rounded-full bg-slate_dark flex items-center justify-center text-xs font-bold text-white">
-                        {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
+                      {/* Solutions Dropdown Menu */}
+                      {activeDropdown === 'solutions' && (
+                        <div className="absolute top-full left-0 w-88 mt-2 p-3 rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-emerald-500/30 shadow-2xl shadow-emerald-950/50 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                          <div className="grid grid-cols-1 gap-1.5">
+                            {link.items.map((item, idx) => (
+                              <a
+                                key={idx}
+                                href={item.href}
+                                onClick={() => setActiveDropdown(null)}
+                                className="p-3 rounded-xl hover:bg-slate-800/80 flex items-start gap-3 transition-all group border border-transparent hover:border-emerald-500/30"
+                              >
+                                <div className="p-2.5 rounded-xl bg-slate-800/90 border border-emerald-500/20 group-hover:border-emerald-400/50 transition-colors shrink-0">
+                                  {item.icon}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                                    {item.title}
+                                  </div>
+                                  <div className="text-xs text-slate-300 leading-normal mt-0.5">
+                                    {item.desc}
+                                  </div>
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <div className="text-sm font-bold text-white">{currentUser.name}</div>
-                      <div className="text-xs text-tech_orange">{currentUser.company_name || 'AOTMS'}</div>
-                    </div>
-                  </div>
+                  );
+                }
 
-                  {/* Mobile Dashboard Link */}
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-tech_orange to-tech_orange-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-tech_orange/25"
+                return (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="px-4 py-2 rounded-xl text-sm font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-colors duration-150"
                   >
-                    <IoSpeedometerOutline className="text-base" />
-                    <span>Open CRM Dashboard</span>
-                  </Link>
+                    {link.name}
+                  </a>
+                );
+              })}
+            </nav>
 
+            {/* Right Desktop Actions: User Profile Dropdown or Login/Signup */}
+            <div className="hidden lg:flex items-center gap-3">
+              {currentUser ? (
+                <div className="relative" ref={profileDropdownRef}>
+                  
+                  {/* Clickable Profile Button with Color Theme Gradient Ring */}
                   <button
                     type="button"
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full py-2 rounded-lg text-center text-sm font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors"
+                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    className="flex items-center gap-2.5 p-1.5 pr-3.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 shadow-lg shadow-emerald-500/10 backdrop-blur-md transition-all cursor-pointer group"
+                    aria-expanded={profileDropdownOpen}
                   >
-                    Sign Out
+                    {/* Glowing Profile Avatar Circle */}
+                    <div className="relative w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-amber-400 via-emerald-400 to-teal-400 shadow-md group-hover:scale-105 transition-transform">
+                      <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-xs font-black text-white">
+                        {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-950" />
+                    </div>
+
+                    <div className="text-left">
+                      <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors leading-tight">
+                        {currentUser.name}
+                      </div>
+                      <div className="text-[10px] text-slate-300 font-mono truncate max-w-[110px]">
+                        {currentUser.company_name || 'AOTMS Enterprise'}
+                      </div>
+                    </div>
+
+                    <IoChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
+
+                  {/* Profile Dropdown Menu */}
+                  {profileDropdownOpen && (
+                    <div className="absolute right-0 mt-3 w-80 rounded-2xl bg-slate-900/98 backdrop-blur-2xl border border-emerald-500/30 shadow-2xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                      
+                      {/* User Identity Header */}
+                      <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+                        <div className="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-amber-400 via-emerald-400 to-teal-400 shadow-md shrink-0">
+                          <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-sm font-black text-white">
+                            {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                        </div>
+                        <div className="overflow-hidden">
+                          <div className="text-sm font-black text-white truncate">{currentUser.name}</div>
+                          <div className="text-xs text-slate-300 truncate font-mono">{currentUser.email}</div>
+                          <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                            <IoBusinessOutline className="w-3 h-3" />
+                            <span className="truncate max-w-[140px]">{currentUser.company_name || 'AOTMS Enterprise'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* PRIMARY ACTION: REDIRECT TO DASHBOARD */}
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-black text-xs flex items-center justify-between shadow-lg shadow-amber-500/20 border border-white/20 transition-all cursor-pointer group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <IoSpeedometerOutline className="text-lg text-white" />
+                          <span>Open CRM Studio</span>
+                        </span>
+                        <IoArrowForward className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+
+                      {/* Sign Out Button */}
+                      <div className="pt-2 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs flex items-center justify-center gap-2 border border-rose-500/20 transition-colors cursor-pointer"
+                        >
+                          <IoLogOutOutline className="text-base" />
+                          <span>Sign Out from Workspace</span>
+                        </button>
+                      </div>
+
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
                   <Link
                     to="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-2 rounded-lg text-center text-sm font-medium text-slate-200 hover:text-tech_orange hover:bg-slate_dark-400/50 transition-colors"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-colors duration-150"
                   >
-                    Login
+                    Sign In
                   </Link>
+
                   <Link
                     to="/signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-2.5 rounded-xl text-center text-sm font-semibold text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-tech_orange/25"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 shadow-lg shadow-amber-500/20 border border-white/20 transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
                   >
-                    <span>Book a Demo</span>
-                    <IoArrowForward className="text-xs" />
+                    <span>🚀 Get Started Free</span>
+                    <IoArrowForward className="text-sm" />
                   </Link>
                 </>
               )}
             </div>
-          </div>
-        )}
 
+            {/* Mobile Hamburger Button */}
+            <div className="lg:hidden flex items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-xl bg-slate-900 border border-emerald-500/30 text-white hover:text-emerald-400 transition-colors cursor-pointer"
+                aria-label="Toggle navigation"
+              >
+                {mobileMenuOpen ? (
+                  <IoCloseOutline className="text-2xl" />
+                ) : (
+                  <IoMenuOutline className="text-2xl" />
+                )}
+              </button>
+            </div>
+
+          </div>
+
+          {/* Mobile Drawer Menu */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden mt-3 p-4 rounded-2xl bg-slate-900/98 backdrop-blur-2xl border border-emerald-500/30 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="flex flex-col space-y-1">
+                {navLinks.map((link) => (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-xl text-xs font-bold text-slate-100 hover:text-emerald-400 hover:bg-white/10 transition-colors"
+                  >
+                    {link.name}
+                  </a>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
+                {currentUser ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-800 border border-white/10">
+                      <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-amber-400 via-emerald-400 to-teal-400">
+                        <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-xs font-bold text-white">
+                          {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-white">{currentUser.name}</div>
+                        <div className="text-[10px] text-emerald-400 font-mono">{currentUser.company_name || 'AOTMS Enterprise'}</div>
+                      </div>
+                    </div>
+
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/20"
+                    >
+                      <IoSpeedometerOutline className="text-base" />
+                      <span>Open CRM Studio</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full py-2 rounded-xl text-center text-xs font-bold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2 rounded-xl text-center text-xs font-bold text-slate-200 hover:text-emerald-400 hover:bg-white/5 transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2.5 rounded-xl text-center text-xs font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20"
+                    >
+                      <span>🚀 Get Started Free</span>
+                      <IoArrowForward className="text-xs" />
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </header>
   );
 }
+
