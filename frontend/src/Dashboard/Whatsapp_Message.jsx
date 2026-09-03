@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
+import ConfirmModal from '../components/ui/ConfirmModal';
+
 export default function WhatsappMessage() {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,17 @@ export default function WhatsappMessage() {
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
+
+  // In-App Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    confirmText: 'OK, Delete',
+    cancelText: 'Cancel',
+    onConfirm: null
+  });
 
   const previewChatRef = useRef(null);
   const previewModalChatRef = useRef(null);
@@ -267,9 +280,21 @@ export default function WhatsappMessage() {
   };
 
   // Delete Template directly via API
-  const handleDeleteTemplate = async (tmpl) => {
+  const handleDeleteTemplate = (tmpl) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete WhatsApp Template",
+      message: `Are you sure you want to delete template '${tmpl.name}'? This action cannot be undone.`,
+      type: "danger",
+      confirmText: "OK, Delete Template",
+      cancelText: "Cancel",
+      onConfirm: () => executeDeleteTemplate(tmpl)
+    });
+  };
+
+  const executeDeleteTemplate = async (tmpl) => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
     const targetId = tmpl._id || tmpl.id || tmpl.name;
-    if (!window.confirm(`Are you sure you want to delete template '${tmpl.name}'?`)) return;
 
     try {
       const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/${targetId}`, {
@@ -1286,6 +1311,18 @@ export default function WhatsappMessage() {
           </div>
         </div>
       )}
+
+      {/* In-App Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
 
     </div>
   );

@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
+import ConfirmModal from '../components/ui/ConfirmModal';
+
 export default function WhatsappBlast() {
   const [templates, setTemplates] = useState([]);
   const [leads, setLeads] = useState([]);
@@ -25,6 +27,17 @@ export default function WhatsappBlast() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   
+  // In-App Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'primary',
+    confirmText: 'OK',
+    cancelText: 'Cancel',
+    onConfirm: null
+  });
+
   // Dispatch Progress & Results
   const [sending, setSending] = useState(false);
   const [blastResult, setBlastResult] = useState(null);
@@ -218,7 +231,7 @@ export default function WhatsappBlast() {
   };
 
   // Trigger Batch WhatsApp Blast Action
-  const handleTriggerBlast = async () => {
+  const handleTriggerBlast = () => {
     if (!selectedTemplate) {
       showToast("Please select a WhatsApp template first.", "error");
       return;
@@ -228,8 +241,19 @@ export default function WhatsappBlast() {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to trigger WhatsApp Blast using template '${selectedTemplate.name}' to ${selectedIds.length} ${recipientType}?`)) return;
+    setConfirmModal({
+      isOpen: true,
+      title: "Dispatch WhatsApp Broadcast",
+      message: `Are you sure you want to trigger WhatsApp Blast using template '${selectedTemplate.name}' to ${selectedIds.length} ${recipientType}?`,
+      type: "primary",
+      confirmText: "OK, Send Blast",
+      cancelText: "Cancel",
+      onConfirm: executeBlast
+    });
+  };
 
+  const executeBlast = async () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
     setSending(true);
     setBlastResult(null);
 
@@ -618,6 +642,19 @@ export default function WhatsappBlast() {
 
         </div>
       )}
+
+      {/* In-App Confirmation Dialog (No Browser Localhost Popups) */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        loading={sending}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
 
     </div>
   );

@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
+import ConfirmModal from '../components/ui/ConfirmModal';
+
 export default function Contacts({ onOpenBlast }) {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,17 @@ export default function Contacts({ onOpenBlast }) {
   const [showUploadExcelModal, setShowUploadExcelModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // In-App Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    confirmText: 'OK, Delete',
+    cancelText: 'Cancel',
+    onConfirm: null
+  });
 
   // Form State (All Required Fields)
   const [formData, setFormData] = useState({
@@ -277,9 +290,20 @@ export default function Contacts({ onOpenBlast }) {
     }
   };
 
-  const handleDeleteContact = async (contactId, contactName) => {
-    if (!window.confirm(`Are you sure you want to delete contact '${contactName}'?`)) return;
+  const handleDeleteContact = (contactId, contactName) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Contact",
+      message: `Are you sure you want to delete contact '${contactName}'?`,
+      type: "danger",
+      confirmText: "OK, Delete",
+      cancelText: "Cancel",
+      onConfirm: () => executeDeleteContact(contactId, contactName)
+    });
+  };
 
+  const executeDeleteContact = async (contactId, contactName) => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
     try {
       const res = await fetch(`${getApiBase()}/api/contacts/${contactId}`, { method: 'DELETE' });
       const result = await res.json();
@@ -888,6 +912,18 @@ export default function Contacts({ onOpenBlast }) {
           </div>
         </div>
       )}
+
+      {/* In-App Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
 
     </div>
   );
