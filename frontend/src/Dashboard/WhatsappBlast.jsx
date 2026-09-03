@@ -157,12 +157,32 @@ export default function WhatsappBlast() {
     setSelectedIds(targetList.map(item => getItemId(item)));
   };
 
-  // Dynamic Contact Identities
-  const contactIdentities = Array.from(
-    new Set(contacts.map(c => (c.identity && c.identity !== 'General') ? c.identity : 'SAP FICO'))
-  ).filter(Boolean);
+  // Dynamic Contact Identities with Strict Case-Insensitive Deduplication
+  const availableIdentities = (() => {
+    const rawList = contacts.map(c => c.identity).filter(Boolean);
+    const seen = new Set();
+    const result = [];
 
-  const availableIdentities = Array.from(new Set(['SAP FICO', 'Client', 'VIP', 'Lead', 'Vendor', ...contactIdentities]));
+    const defaultList = ['SAP FICO', 'Client', 'VIP', 'Lead', 'Vendor'];
+
+    [...defaultList, ...rawList].forEach(id => {
+      if (!id || id.trim() === '' || id === 'General') return;
+      const cleanId = id.trim();
+      const normalized = cleanId.toLowerCase().replace(/_/g, ' ');
+      
+      if (normalized === 'sap fico') {
+        if (!seen.has('sap fico')) {
+          seen.add('sap fico');
+          result.push('SAP FICO');
+        }
+      } else if (!seen.has(normalized)) {
+        seen.add(normalized);
+        result.push(cleanId);
+      }
+    });
+
+    return Array.from(new Set(result));
+  })();
 
   // Active Recipient List
   const activeRawList = recipientType === 'contacts' ? contacts : leads;
