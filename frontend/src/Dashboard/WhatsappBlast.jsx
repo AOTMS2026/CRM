@@ -152,20 +152,40 @@ export default function WhatsappBlast() {
   // Switch Recipient Type
   const handleSwitchRecipientType = (type) => {
     setRecipientType(type);
+    setStatusFilter('ALL');
     const targetList = type === 'contacts' ? contacts : leads;
     setSelectedIds(targetList.map(item => getItemId(item)));
   };
+
+  // Dynamic Contact Identities
+  const contactIdentities = Array.from(
+    new Set(contacts.map(c => (c.identity && c.identity !== 'General') ? c.identity : 'SAP FICO'))
+  ).filter(Boolean);
+
+  const availableIdentities = Array.from(new Set(['SAP FICO', 'Client', 'VIP', 'Lead', 'Vendor', ...contactIdentities]));
 
   // Active Recipient List
   const activeRawList = recipientType === 'contacts' ? contacts : leads;
 
   const filteredRecipients = activeRawList.filter(item => {
-    const itemStatus = (item.status || item.pipeline_stage || 'Active').toUpperCase();
-    const matchesStatus = statusFilter === 'ALL' || itemStatus === statusFilter.toUpperCase();
-    const matchesSearch = (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.address || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    const query = searchQuery.toLowerCase();
+    
+    if (recipientType === 'contacts') {
+      const contactIdentity = (item.identity && item.identity !== 'General') ? item.identity : 'SAP FICO';
+      const matchesIdentity = statusFilter === 'ALL' || contactIdentity.toLowerCase() === statusFilter.toLowerCase();
+      const matchesSearch = (item.name || '').toLowerCase().includes(query) ||
+                            (item.phone || '').toLowerCase().includes(query) ||
+                            (item.email || '').toLowerCase().includes(query) ||
+                            contactIdentity.toLowerCase().includes(query);
+      return matchesIdentity && matchesSearch;
+    } else {
+      const itemStatus = (item.status || item.pipeline_stage || 'Inquiries').toUpperCase();
+      const matchesStatus = statusFilter === 'ALL' || itemStatus === statusFilter.toUpperCase();
+      const matchesSearch = (item.name || '').toLowerCase().includes(query) ||
+                            (item.phone || '').toLowerCase().includes(query) ||
+                            (item.address || '').toLowerCase().includes(query);
+      return matchesStatus && matchesSearch;
+    }
   });
 
   const isAllSelected = filteredRecipients.length > 0 && filteredRecipients.every(item => selectedIds.includes(getItemId(item)));
@@ -452,16 +472,18 @@ export default function WhatsappBlast() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                className="px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-extrabold text-slate-800 focus:bg-white focus:outline-none focus:border-sky-500 shadow-2xs"
               >
-                <option value="ALL">All Statuses</option>
                 {recipientType === 'contacts' ? (
                   <>
-                    <option value="Active">Active</option>
-                    <option value="VIP">VIP</option>
+                    <option value="ALL">All Identities</option>
+                    {availableIdentities.map(id => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
                   </>
                 ) : (
                   <>
+                    <option value="ALL">All Stages</option>
                     <option value="Inquiries">Inquiries</option>
                     <option value="Demo">Demo</option>
                     <option value="Enrolled">Enrolled</option>
@@ -487,7 +509,7 @@ export default function WhatsappBlast() {
               {filteredRecipients.map((item) => {
                 const itemId = getItemId(item);
                 const isSelected = selectedIds.includes(itemId);
-                const itemStatus = item.status || item.pipeline_stage || 'Active';
+                const itemStatus = item.status || item.pipeline_stage || 'Inquiries';
 
                 return (
                   <div
@@ -521,8 +543,14 @@ export default function WhatsappBlast() {
                       </div>
                     </div>
 
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                      {itemStatus}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold border ${
+                      recipientType === 'contacts'
+                        ? 'bg-sky-50 text-sky-700 border-sky-200/80'
+                        : 'bg-amber-50 text-amber-700 border-amber-200/80'
+                    }`}>
+                      {recipientType === 'contacts'
+                        ? `🏷️ ${item.identity && item.identity !== 'General' ? item.identity : 'SAP FICO'}`
+                        : itemStatus}
                     </span>
                   </div>
                 );
