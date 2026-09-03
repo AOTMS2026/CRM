@@ -159,21 +159,6 @@ export default function Navbar() {
                   className="h-10 sm:h-12 w-auto object-contain drop-shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-transform duration-200 group-hover:scale-105" 
                 />
               </div>
-
-              <div className="hidden sm:flex flex-col text-left">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-base font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">
-                    AOTMS CRM
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-extrabold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-xs">
-                    PROD v2.4
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] text-slate-300 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Meta Verified API</span>
-                </div>
-              </div>
             </a>
 
             {/* Desktop Navigation Links */}
