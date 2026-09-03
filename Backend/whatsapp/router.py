@@ -129,5 +129,6 @@ def verify_meta_webhook(
 @router.post("/webhook")
 async def receive_meta_webhook(payload: dict):
     """Receive incoming WhatsApp messages and status payloads from Meta Webhooks."""
-    print(f"[WHATSAPP WEBHOOK EVENT] Received event payload: {payload.get('object', 'unknown')}")
+    import json
+    print(f"[WHATSAPP WEBHOOK EVENT] Full payload: {json.dumps(payload, indent=2)}")
     return {"status": "received", "success": True}
