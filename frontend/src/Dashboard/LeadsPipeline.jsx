@@ -397,36 +397,52 @@ export default function LeadsPipeline({ onOpenBlast }) {
     setShowAddModal(true);
   };
 
-  const statusOptions = ['Intrest', 'Not Intrest', 'Pipeline', 'Total', 'Inquiries', 'Demo', 'Enrolled'];
+  const statusOptions = ['Intrest', 'Not Intrest', 'Pipeline', 'Overall Calls', 'Inquiries', 'Demo', 'Enrolled'];
 
-  // Extract unique Employee Names for Tracker
+  // Extract unique, strictly deduplicated Employee Names (case-insensitive deduplication)
   const employeeNamesList = useMemo(() => {
-    const namesSet = new Set(['Jayaveer', 'Raman', 'Anjali', 'Kiran', 'Suresh']);
+    const seenMap = new Map();
+    // Default seed employees
+    ['Jayaveer', 'Raman', 'Anjali', 'Kiran', 'Suresh'].forEach(emp => {
+      seenMap.set(emp.toLowerCase(), emp);
+    });
+
     leads.forEach(l => {
       if (l.employeeName && l.employeeName.trim()) {
-        namesSet.add(l.employeeName.trim());
+        const raw = l.employeeName.trim();
+        const lowerKey = raw.toLowerCase();
+        if (!seenMap.has(lowerKey)) {
+          const formatted = raw.charAt(0).toUpperCase() + raw.slice(1);
+          seenMap.set(lowerKey, formatted);
+        }
       }
     });
-    return Array.from(namesSet);
+
+    return Array.from(seenMap.values());
   }, [leads]);
 
-  // Compute Employee Daily Calling Performance Stats
+  // Compute Employee Daily Calling Performance Stats (Total = Overall Calls)
   const employeeStats = useMemo(() => {
     const map = {};
     employeeNamesList.forEach(emp => {
-      map[emp] = { total: 0, interested: 0, pipeline: 0, joined: 0 };
+      map[emp.toLowerCase()] = { name: emp, total: 0, interested: 0, pipeline: 0, joined: 0 };
     });
 
     leads.forEach(l => {
-      const emp = (l.employeeName && l.employeeName.trim()) ? l.employeeName.trim() : 'Jayaveer';
-      if (!map[emp]) {
-        map[emp] = { total: 0, interested: 0, pipeline: 0, joined: 0 };
+      const empRaw = (l.employeeName && l.employeeName.trim()) ? l.employeeName.trim() : 'Jayaveer';
+      const lowerKey = empRaw.toLowerCase();
+      if (!map[lowerKey]) {
+        const formatted = empRaw.charAt(0).toUpperCase() + empRaw.slice(1);
+        map[lowerKey] = { name: formatted, total: 0, interested: 0, pipeline: 0, joined: 0 };
       }
-      map[emp].total += 1;
+
+      // Total represents Overall Calls / Total Leads handled
+      map[lowerKey].total += 1;
+
       const st = (l.status || '').toLowerCase();
-      if (st.includes('intrest') || st.includes('interest')) map[emp].interested += 1;
-      if (st.includes('pipe') || st.includes('demo') || st.includes('inquir')) map[emp].pipeline += 1;
-      if (st.includes('enrol') || st.includes('joined') || st.includes('total') || st.includes('won')) map[emp].joined += 1;
+      if (st.includes('intrest') || st.includes('interest')) map[lowerKey].interested += 1;
+      if (st.includes('pipe') || st.includes('demo') || st.includes('inquir')) map[lowerKey].pipeline += 1;
+      if (st.includes('enrol') || st.includes('joined') || st.includes('total') || st.includes('overall') || st.includes('won')) map[lowerKey].joined += 1;
     });
 
     return map;
@@ -435,7 +451,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
   // Filtered Leads
   const filteredLeads = leads.filter(lead => {
     const currStatus = (lead.status || 'Intrest').toUpperCase();
-    const matchesStatus = selectedStatus === 'ALL' || currStatus === selectedStatus.toUpperCase();
+    const matchesStatus = selectedStatus === 'ALL' || currStatus === selectedStatus.toUpperCase() || (selectedStatus === 'Overall Calls' && true);
     
     const currEmp = (lead.employeeName || 'Jayaveer').toUpperCase();
     const matchesEmployee = selectedEmployeeFilter === 'ALL' || currEmp === selectedEmployeeFilter.toUpperCase();
@@ -621,56 +637,93 @@ export default function LeadsPipeline({ onOpenBlast }) {
       </div>
 
       {/* ========================================================================= */}
-      {/* EMPLOYEE DAILY CALLING & LEAD JOINED PERFORMANCE TRACKER                  */}
+      {/* OVERALL EMPLOYEE DAILY CALLING & LEAD CONVERSION SUMMARY (EXPANDED UI)    */}
       {/* ========================================================================= */}
-      <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Award className="w-4 h-4 text-tech_orange" />
-            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Employee Daily Calling & Lead Conversion Summary</h3>
+      <div className="p-6 sm:p-7 rounded-3xl bg-white border border-slate-200/90 shadow-md space-y-5 my-2">
+        
+        {/* Section Title Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shrink-0">
+              <Award className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                Overall Employee Daily Calling & Lead Conversion Summary
+              </h2>
+              <p className="text-xs text-slate-500">
+                Track overall calls handled, interested leads, pipeline stages, and member enrollments per Employee.
+              </p>
+            </div>
           </div>
-          <span className="text-[11px] font-mono text-slate-400 font-bold">Tracked by Employee Name</span>
+
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+              {selectedEmployeeFilter === 'ALL' ? 'Showing All Employees' : `Filtered: ${selectedEmployeeFilter}`}
+            </span>
+            {selectedEmployeeFilter !== 'ALL' && (
+              <button
+                type="button"
+                onClick={() => setSelectedEmployeeFilter('ALL')}
+                className="text-xs font-bold text-amber-600 hover:text-amber-700 underline cursor-pointer"
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {/* Employee Cards Grid (Increased Height & Spacing) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {employeeNamesList.map(empName => {
-            const stats = employeeStats[empName] || { total: 0, interested: 0, pipeline: 0, joined: 0 };
+            const key = empName.toLowerCase();
+            const stats = employeeStats[key] || { name: empName, total: 0, interested: 0, pipeline: 0, joined: 0 };
+            const isSelected = selectedEmployeeFilter.toLowerCase() === key;
+
             return (
               <div 
                 key={empName}
-                onClick={() => setSelectedEmployeeFilter(selectedEmployeeFilter === empName ? 'ALL' : empName)}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 ${
-                  selectedEmployeeFilter === empName 
-                    ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-400/20' 
-                    : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+                onClick={() => setSelectedEmployeeFilter(isSelected ? 'ALL' : empName)}
+                className={`p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer space-y-4 flex flex-col justify-between min-h-[160px] ${
+                  isSelected 
+                    ? 'bg-amber-50/90 border-amber-400 shadow-lg ring-2 ring-amber-400/30 scale-[1.02]' 
+                    : 'bg-slate-50/70 hover:bg-white hover:border-amber-300 border-slate-200 shadow-2xs hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-black text-xs flex items-center justify-center">
-                      {empName.charAt(0)}
+                {/* Top Row: Employee Avatar & Overall Calls Pill */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-800 text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0">
+                      {empName.charAt(0).toUpperCase()}
                     </div>
-                    <span className="font-extrabold text-xs text-slate-900 truncate">{empName}</span>
+                    <span className="font-extrabold text-sm text-slate-900 truncate" title={empName}>
+                      {empName}
+                    </span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-700">
-                    {stats.total} Leads
+
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-black bg-slate-900 text-white shadow-2xs shrink-0" title="Overall Calls / Leads Handled">
+                    {stats.total} Calls
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-1 text-[10px] pt-1 border-t border-slate-200/60 font-mono">
-                  <div className="text-center">
-                    <span className="block text-slate-400 font-semibold">Intrest</span>
-                    <span className="font-black text-emerald-700">{stats.interested}</span>
+                {/* Metrics Breakdown Grid (Increased Text Sizes) */}
+                <div className="grid grid-cols-3 gap-1.5 pt-3 border-t border-slate-200/80">
+                  <div className="text-center p-1.5 rounded-xl bg-white/80 border border-slate-200/60 shadow-2xs">
+                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Intrest</span>
+                    <span className="text-sm font-black text-emerald-600 font-mono">{stats.interested}</span>
                   </div>
-                  <div className="text-center border-x border-slate-200">
-                    <span className="block text-slate-400 font-semibold">Pipeline</span>
-                    <span className="font-black text-sky-700">{stats.pipeline}</span>
+
+                  <div className="text-center p-1.5 rounded-xl bg-white/80 border border-slate-200/60 shadow-2xs">
+                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Pipeline</span>
+                    <span className="text-sm font-black text-sky-600 font-mono">{stats.pipeline}</span>
                   </div>
-                  <div className="text-center">
-                    <span className="block text-slate-400 font-semibold">Joined</span>
-                    <span className="font-black text-amber-700 font-bold">🌟 {stats.joined}</span>
+
+                  <div className="text-center p-1.5 rounded-xl bg-amber-100/70 border border-amber-300/80 shadow-2xs">
+                    <span className="block text-[10px] text-amber-900 font-bold uppercase tracking-wider">Joined</span>
+                    <span className="text-sm font-black text-amber-700 font-mono">🌟 {stats.joined}</span>
                   </div>
                 </div>
+
               </div>
             );
           })}
