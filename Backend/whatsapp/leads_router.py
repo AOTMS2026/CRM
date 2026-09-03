@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, status, Query
 
 from .client import MetaWhatsAppClient
+from .service import WhatsAppIntegrationService
 
 leads_router = APIRouter()
 
@@ -463,10 +464,21 @@ async def send_single_whatsapp_test(req: SingleWhatsAppTestRequest):
     )
 
     if result.get("success"):
+        wamid = result.get("message_id")
+        # Record into whatsapp_message_logs with initial API Status
+        WhatsAppIntegrationService.log_message_sent(
+            wamid=wamid,
+            template_name=req.template_name,
+            category=(target_tmpl.get("category") if target_tmpl else "MARKETING"),
+            recipient_phone=req.phone,
+            api_status="SENT (Awaiting Delivery Confirmation)"
+        )
         return {
             "success": True,
-            "message": f"Test WhatsApp message sent successfully to +91 {req.phone}!",
-            "message_id": result.get("message_id"),
+            "message": f"Test WhatsApp message accepted by Meta API for +91 {req.phone}!",
+            "message_id": wamid,
+            "api_status": "SENT (Awaiting Delivery Confirmation)",
+            "webhook_status": "pending",
             "details": result
         }
     else:
@@ -582,12 +594,21 @@ async def trigger_whatsapp_blast(req: WhatsAppBlastRequest):
 
         if result.get("success"):
             successful_count += 1
+            wamid = result.get("message_id")
+            WhatsAppIntegrationService.log_message_sent(
+                wamid=wamid,
+                template_name=req.template_name,
+                category=(target_tmpl.get("category") if target_tmpl else "MARKETING"),
+                recipient_phone=r["phone"],
+                api_status="SENT (Awaiting Delivery Confirmation)"
+            )
             dispatch_logs.append({
                 "lead_id": r["id"],
                 "lead_name": r_name,
                 "phone": r["phone"],
-                "status": "SENT",
-                "message_id": result.get("message_id")
+                "status": "SENT (Awaiting Delivery Confirmation)",
+                "message_id": wamid,
+                "webhook_status": "pending"
             })
         else:
             failed_count += 1

@@ -64,12 +64,93 @@ class WhatsAppIntegrationService:
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );
+
+                CREATE TABLE IF NOT EXISTS whatsapp_message_logs (
+                    wamid VARCHAR(255) PRIMARY KEY,
+                    template_name VARCHAR(255),
+                    category VARCHAR(64),
+                    recipient_phone VARCHAR(64) NOT NULL,
+                    api_status VARCHAR(64) DEFAULT 'SENT (Awaiting Delivery Confirmation)',
+                    webhook_status VARCHAR(64) DEFAULT 'pending',
+                    error_code INT,
+                    error_message TEXT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
                 """)
                 conn.commit()
             conn.close()
-            print("[INFO] whatsapp_integrations and whatsapp_templates initialized in Neon DB.")
+            print("[INFO] whatsapp_integrations, whatsapp_templates, and whatsapp_message_logs initialized in Neon DB.")
         except Exception as e:
             print(f"[ERROR] Failed to init whatsapp tables: {e}")
+
+    @classmethod
+    def log_message_sent(cls, wamid: str, template_name: str, category: str, recipient_phone: str, api_status: str = "SENT"):
+        """Record outbound message log into Neon DB."""
+        if not wamid:
+            return
+        cls.init_tables()
+        conn = cls.get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO whatsapp_message_logs (wamid, template_name, category, recipient_phone, api_status, webhook_status)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (wamid) DO UPDATE 
+                    SET api_status = EXCLUDED.api_status, updated_at = CURRENT_TIMESTAMP;
+                """, (wamid, template_name, category, recipient_phone, api_status, "pending"))
+                conn.commit()
+        except Exception as e:
+            print(f"[ERROR] Failed to log sent message: {e}")
+        finally:
+            conn.close()
+
+    @classmethod
+    def update_webhook_status(cls, wamid: str, webhook_status: str, error_code: Optional[int] = None, error_message: Optional[str] = None):
+        """Update webhook delivery status (sent, delivered, read, failed) from Meta Webhook payload."""
+        if not wamid:
+            return
+        cls.init_tables()
+        conn = cls.get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE whatsapp_message_logs
+                    SET webhook_status = %s,
+                        error_code = COALESCE(%s, error_code),
+                        error_message = COALESCE(%s, error_message),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE wamid = %s;
+                """, (webhook_status, error_code, error_message, wamid))
+                conn.commit()
+        except Exception as e:
+            print(f"[ERROR] Failed to update webhook status: {e}")
+        finally:
+            conn.close()
+
+    @classmethod
+    def get_message_logs(cls, recipient_phone: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve recent message logs with real-time webhook status."""
+        cls.init_tables()
+        conn = cls.get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                if recipient_phone:
+                    clean = "".join(filter(str.isdigit, recipient_phone))
+                    cur.execute("""
+                        SELECT * FROM whatsapp_message_logs 
+                        WHERE recipient_phone LIKE %s OR recipient_phone LIKE %s
+                        ORDER BY created_at DESC LIMIT %s;
+                    """, (f"%{clean}%", f"%{recipient_phone}%", limit))
+                else:
+                    cur.execute("SELECT * FROM whatsapp_message_logs ORDER BY created_at DESC LIMIT %s;", (limit,))
+                rows = cur.fetchall()
+                return [dict(r) for r in rows]
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch message logs: {e}")
+            return []
+        finally:
+            conn.close()
 
     @classmethod
     async def save_and_connect(

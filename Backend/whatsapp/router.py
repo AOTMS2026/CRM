@@ -126,9 +126,52 @@ def verify_meta_webhook(
     print(f"[META WEBHOOK VERIFY FAILED] Mismatch or invalid parameters")
     raise HTTPException(status_code=403, detail="Verification token mismatch")
 
+@router.get("/message-logs")
+def get_whatsapp_message_logs(phone: Optional[str] = None):
+    """Fetch message logs with exact Meta API and Webhook statuses."""
+    try:
+        logs = WhatsAppIntegrationService.get_message_logs(recipient_phone=phone)
+        return {"success": True, "count": len(logs), "logs": logs}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch message logs: {str(e)}"
+        )
+
 @router.post("/webhook")
 async def receive_meta_webhook(payload: dict):
     """Receive incoming WhatsApp messages and status payloads from Meta Webhooks."""
     import json
-    print(f"[WHATSAPP WEBHOOK EVENT] Full payload: {json.dumps(payload, indent=2)}")
+    print(f"[WHATSAPP WEBHOOK EVENT] Received Webhook Payload:\n{json.dumps(payload, indent=2)}")
+
+    try:
+        # Extract status updates from Meta payload structure
+        entry_list = payload.get("entry", [])
+        for entry in entry_list:
+            for change in entry.get("changes", []):
+                val = change.get("value", {})
+                statuses = val.get("statuses", [])
+                for st in statuses:
+                    wamid = st.get("id")
+                    wh_status = st.get("status") # 'sent', 'delivered', 'read', 'failed'
+                    err_code = None
+                    err_msg = None
+
+                    errors = st.get("errors", [])
+                    if errors and len(errors) > 0:
+                        first_err = errors[0]
+                        err_code = first_err.get("code")
+                        err_msg = first_err.get("title") or first_err.get("message") or first_err.get("error_data", {}).get("details")
+
+                    if wamid and wh_status:
+                        print(f"[META WEBHOOK STATUS MATCHED] wamid={wamid} -> status={wh_status}, error_code={err_code}")
+                        WhatsAppIntegrationService.update_webhook_status(
+                            wamid=wamid,
+                            webhook_status=wh_status,
+                            error_code=err_code,
+                            error_message=err_msg
+                        )
+    except Exception as exc:
+        print(f"[ERROR] Failed to process webhook status payload: {exc}")
+
     return {"status": "received", "success": True}
