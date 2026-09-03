@@ -63,9 +63,36 @@ export default function WhatsappBlast() {
       const contactsData = await contactsRes.json();
 
       if (tmplData && tmplData.success && Array.isArray(tmplData.templates)) {
-        setTemplates(tmplData.templates);
-        if (tmplData.templates.length > 0) {
-          setSelectedTemplate(tmplData.templates[0]);
+        const mapped = tmplData.templates.map(t => {
+          const bodyComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'BODY') : null;
+          const footerComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'FOOTER') : null;
+          const headerComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'HEADER') : null;
+          const buttonsComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'BUTTONS') : null;
+
+          let headerType = t.header_type || (t.imageUrl ? 'IMAGE' : (headerComp ? (headerComp.format || 'NONE') : 'NONE'));
+          let headerText = t.header_text || (headerComp?.format === 'TEXT' ? (headerComp.text || '') : '');
+          let headerImageUrl = t.imageUrl || t.header_image_url || (headerComp?.example?.header_handle?.[0] || '');
+          let headerContent = headerImageUrl || headerText || t.header_content || '';
+          let bodyText = t.message || bodyComp?.text || t.body_text || t.title || 'Hello {{1}}!';
+          let footerText = t.footer || footerComp?.text || t.footer_text || '';
+          let buttonsList = t.buttons || (buttonsComp?.buttons || []);
+
+          return {
+            ...t,
+            name: t.name || t.title || 'template',
+            status: t.metaStatus || t.status || 'APPROVED',
+            header_type: headerType,
+            header_text: headerText,
+            header_image_url: headerImageUrl,
+            header_content: headerContent,
+            body_text: bodyText,
+            footer_text: footerText,
+            buttons: buttonsList
+          };
+        });
+        setTemplates(mapped);
+        if (mapped.length > 0) {
+          setSelectedTemplate(mapped[0]);
         }
       }
 
@@ -474,14 +501,14 @@ export default function WhatsappBlast() {
               <div className="p-3 bg-[#efeae2] flex-1 overflow-y-auto space-y-3 text-xs" style={{ minHeight: '340px' }}>
                 {selectedTemplate ? (
                   <div className="bg-white rounded-2xl rounded-tl-none p-3 shadow-sm border border-slate-200/60 space-y-2">
-                    {selectedTemplate.header_type === 'IMAGE' && selectedTemplate.header_content && (
-                      <div className="rounded-xl overflow-hidden max-h-36 w-full bg-slate-100">
-                        <img src={selectedTemplate.header_content} alt="Header" className="w-full h-full object-cover" />
+                    {selectedTemplate.header_type === 'IMAGE' && (selectedTemplate.header_image_url || selectedTemplate.header_content || selectedTemplate.imageUrl) && (
+                      <div className="rounded-xl overflow-hidden max-h-40 w-full bg-slate-100 border border-slate-200">
+                        <img src={selectedTemplate.header_image_url || selectedTemplate.header_content || selectedTemplate.imageUrl} alt="Header" className="w-full h-full object-cover" />
                       </div>
                     )}
-                    {selectedTemplate.header_type === 'TEXT' && selectedTemplate.header_content && (
-                      <h4 className="text-xs font-black text-slate-900 pb-1 border-b border-slate-100">
-                        {selectedTemplate.header_content}
+                    {selectedTemplate.header_type === 'TEXT' && (selectedTemplate.header_text || selectedTemplate.header_content) && (
+                      <h4 className="text-xs font-black text-slate-900 pb-1 border-b border-slate-100 font-sans">
+                        {selectedTemplate.header_text || selectedTemplate.header_content}
                       </h4>
                     )}
 
@@ -497,6 +524,24 @@ export default function WhatsappBlast() {
                       <span>10:45 AM</span>
                       <span className="text-sky-500 font-bold">✓✓</span>
                     </div>
+
+                    {/* Action buttons preview */}
+                    {(() => {
+                      let pButtons = [];
+                      try {
+                        pButtons = typeof selectedTemplate.buttons === 'string' ? JSON.parse(selectedTemplate.buttons) : (selectedTemplate.buttons || []);
+                      } catch(e) { pButtons = []; }
+
+                      return pButtons.length > 0 ? (
+                        <div className="space-y-1 pt-1.5 border-t border-slate-100">
+                          {pButtons.map((btn, i) => (
+                            <div key={i} className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center text-[10px] font-bold text-sky-600 flex items-center justify-center gap-1.5">
+                              <span>{btn.text}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 ) : (
                   <div className="p-6 text-center text-slate-400 text-xs">Select a template to view live preview</div>

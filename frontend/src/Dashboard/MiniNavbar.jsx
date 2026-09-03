@@ -41,7 +41,7 @@ export default function MiniNavbar({ activeTab, setActiveTab, currentUser }) {
       return ['leads', 'contacts', 'whatsapp-blast', 'whatsapp', 'todos', 'employees'].includes(tab.id);
     }
     if (role === 'employee') {
-      return ['whatsapp', 'contacts', 'todos'].includes(tab.id);
+      return ['whatsapp-blast', 'whatsapp', 'contacts', 'todos'].includes(tab.id);
     }
     return true;
   });
