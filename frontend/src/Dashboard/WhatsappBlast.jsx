@@ -100,12 +100,18 @@ export default function WhatsappBlast() {
       let loadedContacts = [];
 
       if (leadsData && leadsData.success && Array.isArray(leadsData.leads)) {
-        loadedLeads = leadsData.leads;
+        loadedLeads = leadsData.leads.map((l, index) => ({
+          ...l,
+          id: String(l._id || l.id || `lead_${index}`)
+        }));
         setLeads(loadedLeads);
       }
 
       if (contactsData && contactsData.success && Array.isArray(contactsData.contacts)) {
-        loadedContacts = contactsData.contacts;
+        loadedContacts = contactsData.contacts.map((c, index) => ({
+          ...c,
+          id: String(c._id || c.id || c.phone || `contact_${index}`)
+        }));
         setContacts(loadedContacts);
       }
 
@@ -147,24 +153,24 @@ export default function WhatsappBlast() {
     return matchesStatus && matchesSearch;
   });
 
-  const isAllSelected = filteredRecipients.length > 0 && filteredRecipients.every(item => selectedIds.includes(item.id));
+  const isAllSelected = filteredRecipients.length > 0 && filteredRecipients.every(item => item.id && selectedIds.includes(String(item.id)));
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
-      const remaining = selectedIds.filter(id => !filteredRecipients.some(fr => fr.id === id));
-      setSelectedIds(remaining);
+      const filteredIds = new Set(filteredRecipients.map(fr => String(fr.id)));
+      setSelectedIds(prev => prev.filter(id => !filteredIds.has(id)));
     } else {
-      const combined = Array.from(new Set([...selectedIds, ...filteredRecipients.map(item => item.id)]));
+      const combined = Array.from(new Set([...selectedIds, ...filteredRecipients.map(item => String(item.id))]));
       setSelectedIds(combined);
     }
   };
 
   const toggleSelectItem = (id) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(prev => prev.filter(i => i !== id));
-    } else {
-      setSelectedIds(prev => [...prev, id]);
-    }
+    if (!id) return;
+    const strId = String(id);
+    setSelectedIds(prev => 
+      prev.includes(strId) ? prev.filter(i => i !== strId) : [...prev, strId]
+    );
   };
 
   const firstSelectedRecipient = activeRawList.find(item => selectedIds.includes(item.id)) || activeRawList[0] || { name: 'Recipient' };

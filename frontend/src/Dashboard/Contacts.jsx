@@ -72,7 +72,11 @@ export default function Contacts({ onOpenBlast }) {
       const res = await fetch(`${getApiBase()}/api/contacts`);
       const data = await res.json();
       if (res.ok && data && data.success && Array.isArray(data.contacts)) {
-        setContacts(data.contacts);
+        const mapped = data.contacts.map((c, index) => ({
+          ...c,
+          id: String(c._id || c.id || c.phone || `contact_${index}`)
+        }));
+        setContacts(mapped);
       } else {
         setContacts([]);
       }
