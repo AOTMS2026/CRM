@@ -710,7 +710,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
                   </div>
 
                   <div className="text-center p-1.5 rounded-xl bg-white/80 border border-slate-200/60 shadow-2xs">
-                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Pipeline</span>
+                    <span className="block text-[9.5px] text-slate-900 font-bold uppercase tracking-wider">Pipeline</span>
                     <span className="text-sm font-black text-sky-600 font-mono">{stats.pipeline}</span>
                   </div>
 
