@@ -352,9 +352,9 @@ const getTemplatesHandler = async (req, res) => {
 router.get('/', getTemplatesHandler);
 router.get('/list', getTemplatesHandler);
 
-// POST /api/template/sync-meta
+// POST /api/template/sync-meta (or /sync, /sync-templates)
 // Synchronize all templates directly from Meta Cloud API into the database
-router.post('/sync-meta', async (req, res) => {
+const syncMetaHandler = async (req, res) => {
   try {
     const currentWaba = process.env.META_WA_BUSINESS_ACCOUNT_ID;
     const metaTemplates = await fetchAllTemplatesFromMeta();
@@ -460,7 +460,11 @@ router.post('/sync-meta', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.response?.data?.error?.message || error.message });
   }
-});
+};
+
+router.post('/sync-meta', syncMetaHandler);
+router.post('/sync', syncMetaHandler);
+router.post('/sync-templates', syncMetaHandler);
 
 // GET /api/template/meta/:id/status
 // Check the approval status of a Meta template
