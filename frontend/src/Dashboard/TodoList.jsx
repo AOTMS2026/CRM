@@ -20,7 +20,9 @@ import {
   List,
   Calendar,
   Layers,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export default function TodoList() {
@@ -237,6 +239,19 @@ export default function TodoList() {
     return matchesPriority && matchesStatus && matchesSearch;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterPriority, filterStatus]);
+
+  const totalPages = Math.ceil(filteredTodos.length / ITEMS_PER_PAGE) || 1;
+  const paginatedTodos = filteredTodos.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const priorityStyles = {
     Critical: 'bg-rose-100 text-rose-800 border-rose-300',
     High: 'bg-amber-100 text-amber-800 border-amber-300',
@@ -437,195 +452,270 @@ export default function TodoList() {
       ) : viewMode === 'cards' ? (
         
         /* CARD STYLE GRID VIEW WITH INTERACTIVE STATUS DROPDOWN */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredTodos.map((todo) => {
-            const taskId = todo._id || todo.id;
-            const currentStatus = todo.status || (todo.done ? 'Completed' : 'Pending');
-            const isCompleted = currentStatus === 'Completed';
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginatedTodos.map((todo) => {
+              const taskId = todo._id || todo.id;
+              const currentStatus = todo.status || (todo.done ? 'Completed' : 'Pending');
+              const isCompleted = currentStatus === 'Completed';
 
-            return (
-              <div
-                key={taskId}
-                className={`p-5 rounded-2xl border shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden ${
-                  isCompleted
-                    ? 'bg-slate-50/80 border-slate-200'
-                    : 'bg-white border-slate-200 hover:border-sky-300'
-                }`}
-              >
-                <div className="space-y-3">
-                  
-                  {/* Category Tag & Priority Badge */}
-                  <div className="flex items-start justify-between">
-                    <span className="px-2.5 py-1 rounded-full font-semibold text-[10px] font-mono bg-sky-50 text-sky-700 border border-sky-200">
-                      🏷️ {todo.category || 'General'}
-                    </span>
+              return (
+                <div
+                  key={taskId}
+                  className={`p-5 rounded-2xl border shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden ${
+                    isCompleted
+                      ? 'bg-slate-50/80 border-slate-200'
+                      : 'bg-white border-slate-200 hover:border-sky-300'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    
+                    {/* Category Tag & Priority Badge */}
+                    <div className="flex items-start justify-between">
+                      <span className="px-2.5 py-1 rounded-full font-semibold text-[10px] font-mono bg-sky-50 text-sky-700 border border-sky-200">
+                        🏷️ {todo.category || 'General'}
+                      </span>
 
-                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-extrabold border ${priorityStyles[todo.priority] || priorityStyles.Normal}`}>
-                      {todo.priority}
-                    </span>
-                  </div>
-
-                  {/* Task Title & Checkbox */}
-                  <div className="flex items-start gap-3 pt-1">
-                    <input
-                      type="checkbox"
-                      checked={isCompleted}
-                      onChange={() => handleToggleTask(taskId, isCompleted, todo.title)}
-                      className="mt-1 w-4.5 h-4.5 rounded text-sky-600 border-slate-300 focus:ring-sky-500 cursor-pointer shrink-0"
-                    />
-                    <h3 className={`text-sm font-semibold leading-snug transition-colors ${
-                      isCompleted ? 'line-through text-slate-400' : 'text-slate-900 group-hover:text-sky-600'
-                    }`}>
-                      {todo.title}
-                    </h3>
-                  </div>
-
-                  {/* Details Grid: Assignee & Due Date */}
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
-                    <div className="flex items-center gap-2 text-slate-700 font-medium">
-                      <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      <span>Assignee: <strong className="text-slate-900">{todo.assignee || 'Admin Manager'}</strong></span>
+                      <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-extrabold border ${priorityStyles[todo.priority] || priorityStyles.Normal}`}>
+                        {todo.priority}
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-slate-600 font-medium font-mono">
-                      <Clock className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                      <span>Due: <strong className="text-slate-800 font-sans">{todo.dueDate}</strong></span>
+                    {/* Task Title & Checkbox */}
+                    <div className="flex items-start gap-3 pt-1">
+                      <input
+                        type="checkbox"
+                        checked={isCompleted}
+                        onChange={() => handleToggleTask(taskId, isCompleted, todo.title)}
+                        className="mt-1 w-4.5 h-4.5 rounded text-sky-600 border-slate-300 focus:ring-sky-500 cursor-pointer shrink-0"
+                      />
+                      <h3 className={`text-sm font-semibold leading-snug transition-colors ${
+                        isCompleted ? 'line-through text-slate-400' : 'text-slate-900 group-hover:text-sky-600'
+                      }`}>
+                        {todo.title}
+                      </h3>
+                    </div>
+
+                    {/* Details Grid: Assignee & Due Date */}
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
+                      <div className="flex items-center gap-2 text-slate-700 font-medium">
+                        <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span>Assignee: <strong className="text-slate-900">{todo.assignee || 'Admin Manager'}</strong></span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-slate-600 font-medium font-mono">
+                        <Clock className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <span>Due: <strong className="text-slate-800 font-sans">{todo.dueDate}</strong></span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Card Footer: Interactive Status Selector & Actions */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
+                    {/* Interactive Status Selector Dropdown */}
+                    <select
+                      value={currentStatus}
+                      onChange={(e) => handleUpdateStatus(taskId, e.target.value, todo.title)}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold font-mono border cursor-pointer focus:outline-none transition-colors ${
+                        statusStyles[currentStatus] || statusStyles.Pending
+                      }`}
+                    >
+                      <option value="Pending">Pending ⏳</option>
+                      <option value="In Progress">In Progress ⚡</option>
+                      <option value="Completed">Completed ✓</option>
+                    </select>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditTodo({ ...todo, status: currentStatus })}
+                        className="p-1.5 rounded-xl text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer border border-slate-200"
+                        title="Edit Task"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTask(taskId, todo.title)}
+                        className="p-1.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer border border-slate-200"
+                        title="Delete Task"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Card Footer: Interactive Status Selector & Actions */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
-                  {/* Interactive Status Selector Dropdown */}
-                  <select
-                    value={currentStatus}
-                    onChange={(e) => handleUpdateStatus(taskId, e.target.value, todo.title)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold font-mono border cursor-pointer focus:outline-none transition-colors ${
-                      statusStyles[currentStatus] || statusStyles.Pending
-                    }`}
-                  >
-                    <option value="Pending">Pending ⏳</option>
-                    <option value="In Progress">In Progress ⚡</option>
-                    <option value="Completed">Completed ✓</option>
-                  </select>
+          {/* Pagination Footer Controls */}
+          {filteredTodos.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-slate-900 font-extrabold">{paginatedTodos.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredTodos.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredTodos.length}</span> tasks
+              </div>
 
-                  <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+      ) : (
+
+        /* LIST STYLE TABLE VIEW */
+        <div className="space-y-6">
+          <div className="space-y-3">
+            {paginatedTodos.map((todo) => {
+              const taskId = todo._id || todo.id;
+              const currentStatus = todo.status || (todo.done ? 'Completed' : 'Pending');
+              const isCompleted = currentStatus === 'Completed';
+
+              return (
+                <div
+                  key={taskId}
+                  className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                    isCompleted
+                      ? 'bg-slate-50/80 border-slate-200'
+                      : 'bg-white border-slate-200 hover:border-sky-300 shadow-2xs'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={isCompleted}
+                      onChange={() => handleToggleTask(taskId, isCompleted, todo.title)}
+                      className="w-4.5 h-4.5 rounded text-sky-600 border-slate-300 focus:ring-sky-500 cursor-pointer shrink-0"
+                    />
+
+                    <div className="min-w-0 space-y-1">
+                      <div className={`text-xs font-semibold leading-relaxed ${
+                        isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
+                      }`}>
+                        {todo.title}
+                      </div>
+
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap font-medium">
+                        <span className="flex items-center gap-1 font-mono text-slate-600">
+                          <Clock className="w-3.5 h-3.5 text-sky-600" />
+                          <span>{todo.dueDate}</span>
+                        </span>
+
+                        <span className="flex items-center gap-1 text-slate-700">
+                          <User className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Assignee: <strong className="text-slate-900">{todo.assignee}</strong></span>
+                        </span>
+
+                        <span className="flex items-center gap-1 text-slate-600">
+                          <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{todo.category}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Status Dropdown */}
+                    <select
+                      value={currentStatus}
+                      onChange={(e) => handleUpdateStatus(taskId, e.target.value, todo.title)}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold font-mono border cursor-pointer focus:outline-none ${
+                        statusStyles[currentStatus] || statusStyles.Pending
+                      }`}
+                    >
+                      <option value="Pending">Pending ⏳</option>
+                      <option value="In Progress">In Progress ⚡</option>
+                      <option value="Completed">Completed ✓</option>
+                    </select>
+
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono border ${priorityStyles[todo.priority] || priorityStyles.Normal}`}>
+                      {todo.priority}
+                    </span>
+
                     <button
                       type="button"
                       onClick={() => setEditTodo({ ...todo, status: currentStatus })}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Edit Task Details"
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer"
+                      title="Edit Task"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-sky-600" />
+                      <Edit3 className="w-4 h-4" />
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleDeleteTask(taskId, todo.title)}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       title="Delete Task"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
+              );
+            })}
+          </div>
 
+          {/* Pagination Footer Controls */}
+          {filteredTodos.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-slate-900 font-extrabold">{paginatedTodos.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredTodos.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredTodos.length}</span> tasks
               </div>
-            );
-          })}
-        </div>
 
-      ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
 
-        /* TABLE LIST VIEW WITH INTERACTIVE STATUS DROPDOWN */
-        <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
-          {filteredTodos.map((todo) => {
-            const taskId = todo._id || todo.id;
-            const currentStatus = todo.status || (todo.done ? 'Completed' : 'Pending');
-            const isCompleted = currentStatus === 'Completed';
+                <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                  Page {currentPage} of {totalPages}
+                </span>
 
-            return (
-              <div
-                key={taskId}
-                className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                  isCompleted
-                    ? 'bg-slate-50/70 border-slate-200/80 opacity-75'
-                    : 'bg-white border-slate-200 hover:border-sky-300 shadow-2xs'
-                }`}
-              >
-                <div className="flex items-start gap-3.5 flex-1">
-                  <input
-                    type="checkbox"
-                    checked={isCompleted}
-                    onChange={() => handleToggleTask(taskId, isCompleted, todo.title)}
-                    className="mt-1 w-4 h-4 rounded text-sky-600 border-slate-300 focus:ring-sky-500 cursor-pointer shrink-0"
-                  />
-                  <div className="space-y-1">
-                    <div className={`text-xs font-semibold leading-relaxed ${
-                      isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
-                    }`}>
-                      {todo.title}
-                    </div>
-
-                    <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap font-medium">
-                      <span className="flex items-center gap-1 font-mono text-slate-600">
-                        <Clock className="w-3.5 h-3.5 text-sky-600" />
-                        <span>{todo.dueDate}</span>
-                      </span>
-
-                      <span className="flex items-center gap-1 text-slate-700">
-                        <User className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Assignee: <strong className="text-slate-900">{todo.assignee}</strong></span>
-                      </span>
-
-                      <span className="flex items-center gap-1 text-slate-600">
-                        <Tag className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{todo.category}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  {/* Status Dropdown */}
-                  <select
-                    value={currentStatus}
-                    onChange={(e) => handleUpdateStatus(taskId, e.target.value, todo.title)}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold font-mono border cursor-pointer focus:outline-none ${
-                      statusStyles[currentStatus] || statusStyles.Pending
-                    }`}
-                  >
-                    <option value="Pending">Pending ⏳</option>
-                    <option value="In Progress">In Progress ⚡</option>
-                    <option value="Completed">Completed ✓</option>
-                  </select>
-
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono border ${priorityStyles[todo.priority] || priorityStyles.Normal}`}>
-                    {todo.priority}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => setEditTodo({ ...todo, status: currentStatus })}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer"
-                    title="Edit Task"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteTask(taskId, todo.title)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                    title="Delete Task"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       )}
 

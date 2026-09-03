@@ -20,7 +20,9 @@ import {
   Building,
   Send,
   Sparkles,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
@@ -252,6 +254,19 @@ export default function PaySipGenerator({ onOpenBlast }) {
     return statusMatches && matchesSearch;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus]);
+
+  const totalPages = Math.ceil(filteredPaysips.length / ITEMS_PER_PAGE) || 1;
+  const paginatedPaysips = filteredPaysips.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const statusBadgeStyle = {
     Active: 'bg-emerald-100 text-emerald-800 border-emerald-300',
     Pending: 'bg-amber-100 text-amber-800 border-amber-300',
@@ -406,112 +421,149 @@ export default function PaySipGenerator({ onOpenBlast }) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredPaysips.map((item) => {
-            const cleanPhone = (item.phone || '').replace(/\D/g, '');
-            const initials = item.clientName ? item.clientName.charAt(0).toUpperCase() : 'S';
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginatedPaysips.map((item) => {
+              const cleanPhone = (item.phone || '').replace(/\D/g, '');
+              const initials = item.clientName ? item.clientName.charAt(0).toUpperCase() : 'S';
 
-            return (
-              <div
-                key={item._id || item.id}
-                className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-xl hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden"
-              >
-                <div className="space-y-3">
-                  
-                  {/* Top Bar: Folio Number Tag & Status Badge */}
-                  <div className="flex items-start justify-between">
-                    <div className="px-2.5 py-1 rounded-full font-mono text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                      📄 {item.folioNumber}
-                    </div>
-
-                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-extrabold border ${statusBadgeStyle[item.paymentStatus] || statusBadgeStyle.Active}`}>
-                      {item.paymentStatus || 'Active'}
-                    </span>
-                  </div>
-
-                  {/* Client Name & Fund Info */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white font-black text-base flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-                      {initials}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                        {item.clientName}
-                      </h3>
-                      <div className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-0.5">
-                        <Building className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{item.fundName || 'HDFC Flexi Cap Fund'}</span>
+              return (
+                <div
+                  key={item._id || item.id}
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-xl hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    
+                    {/* Top Bar: Folio Number Tag & Status Badge */}
+                    <div className="flex items-start justify-between">
+                      <div className="px-2.5 py-1 rounded-full font-mono text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                        📄 {item.folioNumber}
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Details Card Grid */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs font-mono">
-                    <div className="flex items-center justify-between text-slate-700 font-sans">
-                      <span className="text-[11px] text-slate-500 font-medium">Monthly Amount:</span>
-                      <span className="text-sm font-black text-emerald-600 flex items-center font-mono">
-                        ₹{Number(item.sipAmount).toLocaleString('en-IN')}/mo
+                      <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-extrabold border ${statusBadgeStyle[item.paymentStatus] || statusBadgeStyle.Active}`}>
+                        {item.paymentStatus || 'Active'}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
-                      <span className="text-slate-500 font-medium font-sans">Debit Day:</span>
-                      <span className="font-bold text-slate-800">{item.monthlyDay || 10}th of every month</span>
+                    {/* Client Name & Fund Info */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white font-black text-base flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                        {initials}
+                      </div>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                          {item.clientName}
+                        </h3>
+                        <div className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                          <Building className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{item.fundName || 'HDFC Flexi Cap Fund'}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500 font-medium font-sans">Installments:</span>
-                      <span className="font-bold text-slate-800">{item.installmentCount || 12} Months Tenure</span>
+                    {/* Details Card Grid */}
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs font-mono">
+                      <div className="flex items-center justify-between text-slate-700 font-sans">
+                        <span className="text-[11px] text-slate-500 font-medium">Monthly Amount:</span>
+                        <span className="text-sm font-black text-emerald-600 flex items-center font-mono">
+                          ₹{Number(item.sipAmount).toLocaleString('en-IN')}/mo
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
+                        <span className="text-slate-500 font-medium font-sans">Debit Day:</span>
+                        <span className="font-bold text-slate-800">{item.monthlyDay || 10}th of every month</span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500 font-medium font-sans">Installments:</span>
+                        <span className="font-bold text-slate-800">{item.installmentCount || 12} Months Tenure</span>
+                      </div>
+                    </div>
+
+                    {/* Phone Details */}
+                    {item.phone && (
+                      <div className="flex items-center gap-2 text-emerald-700 font-bold font-mono text-xs pt-0.5">
+                        <WhatsApp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>+91 {item.phone}</span>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Footer Action Buttons */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <a
+                      href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}?text=${encodeURIComponent(`Hello ${item.clientName}, your Pay_SIP installment of ₹${item.sipAmount} for Folio ${item.folioNumber} is due on the ${item.monthlyDay}th. Thank you!`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center gap-1.5 border border-emerald-200 transition-colors"
+                      title="Send WhatsApp Payment Reminder"
+                    >
+                      <Send className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>WhatsApp Reminder</span>
+                    </a>
+
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => setEditSip({ ...item })}
+                        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
+                        title="Edit Pay_SIP Details"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-sky-600" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePaySip(item._id || item.id, item.folioNumber)}
+                        className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
+                        title="Delete Pay_SIP Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Phone Details */}
-                  {item.phone && (
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold font-mono text-xs pt-0.5">
-                      <WhatsApp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>+91 {item.phone}</span>
-                    </div>
-                  )}
-
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Footer Action Buttons */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <a
-                    href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}?text=${encodeURIComponent(`Hello ${item.clientName}, your Pay_SIP installment of ₹${item.sipAmount} for Folio ${item.folioNumber} is due on the ${item.monthlyDay}th. Thank you!`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center gap-1.5 border border-emerald-200 transition-colors"
-                    title="Send WhatsApp Payment Reminder"
-                  >
-                    <Send className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>WhatsApp Reminder</span>
-                  </a>
-
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <button
-                      type="button"
-                      onClick={() => setEditSip({ ...item })}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Edit Pay_SIP Details"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-sky-600" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePaySip(item._id || item.id, item.folioNumber)}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Delete Pay_SIP Record"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
+          {/* Pagination Footer Controls */}
+          {filteredPaysips.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-slate-900 font-extrabold">{paginatedPaysips.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredPaysips.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredPaysips.length}</span> records
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

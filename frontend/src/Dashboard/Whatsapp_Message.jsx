@@ -17,6 +17,7 @@ import {
   Check, 
   Eye, 
   ChevronRight,
+  ChevronLeft,
   Send,
   UploadCloud,
   HelpCircle,
@@ -398,79 +399,88 @@ export default function WhatsappMessage() {
     return output;
   };
 
-  const filteredTemplates = templates.filter(t => {
-    const matchesCategory = filterCategory === 'ALL' || t.category.toUpperCase() === filterCategory;
-    const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.body_text.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const filteredTemplates = templates.filter(tmpl => {
+    const matchesCat = filterCategory === 'ALL' || (tmpl.category || '').toUpperCase() === filterCategory.toUpperCase();
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = (tmpl.name || '').toLowerCase().includes(query) ||
+                          (tmpl.body_text || '').toLowerCase().includes(query) ||
+                          (tmpl.header_text || '').toLowerCase().includes(query);
+    return matchesCat && matchesSearch;
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCategory]);
+
+  const totalPages = Math.ceil(filteredTemplates.length / ITEMS_PER_PAGE) || 1;
+  const paginatedTemplates = filteredTemplates.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       
-      {/* Toast Banner */}
+      {/* Toast Alert */}
       {toastMessage && (
-        <div className={`p-4 rounded-xl border text-xs font-bold flex items-center justify-between shadow-md transition-all animate-in fade-in ${
-          toastType === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' :
-          toastType === 'info' ? 'bg-sky-50 border-sky-200 text-sky-800' :
-          'bg-emerald-50 border-emerald-200 text-emerald-800'
+        <div className={`p-4 rounded-2xl border flex items-center justify-between shadow-md transition-all ${
+          toastType === 'success' ? 'bg-emerald-50 text-emerald-900 border-emerald-200' : 'bg-rose-50 text-rose-900 border-rose-200'
         }`}>
-          <div className="flex items-center gap-2.5">
-            {toastType === 'error' ? <X className="w-4 h-4 text-rose-600" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
-            <span>{toastMessage}</span>
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className={`w-5 h-5 ${toastType === 'success' ? 'text-emerald-600' : 'text-rose-600'}`} />
+            <span className="text-xs font-extrabold">{toastMessage}</span>
           </div>
-          <button onClick={() => setToastMessage(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+          <button onClick={() => setToastMessage(null)} className="text-slate-400 hover:text-slate-700">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Header Bar */}
-      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
-              <WhatsApp className="w-5 h-5" />
+      {/* Top Banner Header */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-800">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-inner">
+            <WhatsApp className="w-7 h-7" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-black tracking-tight">WhatsApp Template & Action Builder</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">Meta Cloud API</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                  Whatsapp_Messages & Meta Templates Studio
-                </h2>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Meta WABA Active
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Real-time API sync with Meta Cloud API.
-              </p>
-            </div>
+            <p className="text-xs text-slate-300 mt-0.5 max-w-xl">
+              Create, sync, and send Meta WhatsApp Cloud API approved templates with interactive action buttons.
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Sync Meta Button */}
           <button
             type="button"
             onClick={handleSyncMeta}
             disabled={syncingMeta}
-            className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-emerald-200 shadow-2xs hover:shadow-xs"
-            title="Fetch all templates created in your Meta WhatsApp Business Account"
+            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+            title="Sync Meta WhatsApp Account templates"
           >
-            <RotateCw className={`w-3.5 h-3.5 ${syncingMeta ? 'animate-spin text-emerald-600' : 'text-emerald-700'}`} />
-            <span>{syncingMeta ? 'Fetching from Meta...' : 'Sync Meta Templates'}</span>
+            <RotateCw className={`w-3.5 h-3.5 ${syncingMeta ? 'animate-spin text-emerald-400' : ''}`} />
+            <span>{syncingMeta ? 'Syncing...' : 'Sync Meta API'}</span>
           </button>
 
+          {/* Refresh Local */}
           <button
             type="button"
             onClick={fetchTemplates}
             disabled={refreshing}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-emerald-600' : ''}`} />
+            <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-emerald-400' : ''}`} />
             <span>Refresh</span>
           </button>
 
+          {/* Create Template */}
           <button
             type="button"
             onClick={() => {
@@ -491,7 +501,7 @@ export default function WhatsappMessage() {
               });
               setShowCreateModal(true);
             }}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
           >
             <Plus className="w-4 h-4" />
             <span>Create Template</span>
@@ -501,7 +511,6 @@ export default function WhatsappMessage() {
 
       {/* Filter & Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Category Pills */}
         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
           {['ALL', 'MARKETING', 'UTILITY', 'AUTHENTICATION'].map((cat) => (
             <button
@@ -518,7 +527,6 @@ export default function WhatsappMessage() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -555,135 +563,166 @@ export default function WhatsappMessage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredTemplates.map((tmpl) => {
-            let parsedButtons = [];
-            try {
-              parsedButtons = typeof tmpl.buttons === 'string' ? JSON.parse(tmpl.buttons) : (tmpl.buttons || []);
-            } catch (e) {
-              parsedButtons = [];
-            }
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginatedTemplates.map((tmpl) => {
+              let parsedButtons = [];
+              try {
+                parsedButtons = typeof tmpl.buttons === 'string' ? JSON.parse(tmpl.buttons) : (tmpl.buttons || []);
+              } catch (e) {
+                parsedButtons = [];
+              }
 
-            return (
-              <div 
-                key={tmpl.id || tmpl.name}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 hover:border-emerald-300 group"
-              >
-                {/* Top Badge Row */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black border ${
-                      tmpl.category === 'MARKETING' 
-                        ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                        : 'bg-teal-50 text-teal-700 border-teal-200'
-                    }`}>
-                      {tmpl.category}
-                    </span>
-
-                    <select
-                      value={tmpl.status || 'APPROVED'}
-                      onChange={(e) => handleUpdateStatus(tmpl, e.target.value)}
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border cursor-pointer focus:outline-none transition-colors ${
-                        tmpl.status === 'APPROVED' 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : tmpl.status === 'PENDING'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : tmpl.status === 'REJECTED'
-                          ? 'bg-rose-50 text-rose-700 border-rose-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      <option value="APPROVED">APPROVED ✓</option>
-                      <option value="PENDING">PENDING ⏳</option>
-                      <option value="REJECTED">REJECTED ❌</option>
-                      <option value="DRAFT">DRAFT 📝</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-extrabold text-slate-900 font-mono tracking-tight group-hover:text-emerald-700 transition-colors">
-                      {tmpl.name}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                        Meta ID: {tmpl.meta_template_id || (tmpl.id && tmpl.id.startsWith('tmpl_') ? tmpl.id.replace('tmpl_', '') : tmpl.id) || 'Active'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Header preview tag */}
-                  {tmpl.header_type !== 'NONE' && (
-                    <div className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                      {tmpl.header_type === 'IMAGE' ? <ImageIcon className="w-3.5 h-3.5 text-sky-600" /> : <FileText className="w-3.5 h-3.5 text-amber-600" />}
-                      <span>Header: {tmpl.header_type}</span>
-                    </div>
-                  )}
-
-                  {/* Body Text snippet */}
-                  <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-normal">
-                    {tmpl.body_text}
-                  </p>
-
-                  {/* Buttons count badge */}
-                  {parsedButtons.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {parsedButtons.map((btn, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-semibold flex items-center gap-1 border border-slate-200">
-                          {btn.type === 'WHATSAPP_CALL' ? <WhatsApp className="w-3 h-3 text-emerald-600" /> :
-                           btn.type === 'PHONE_NUMBER' ? <Phone className="w-2.5 h-2.5 text-emerald-600" /> :
-                           btn.type === 'CONTACT' ? <UserCheck className="w-2.5 h-2.5 text-amber-600" /> :
-                           btn.type === 'URL' ? <ExternalLink className="w-2.5 h-2.5 text-sky-600" /> :
-                           <Send className="w-2.5 h-2.5 text-purple-600" />}
-                          <span>{btn.text}</span>
+              return (
+                <div 
+                  key={tmpl.id || tmpl.name}
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    
+                    {/* Header bar */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-600 uppercase border border-slate-200">
+                          {tmpl.category}
                         </span>
-                      ))}
+                        <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-700 transition-colors mt-1 truncate max-w-[200px]">
+                          {tmpl.name}
+                        </h3>
+                      </div>
+
+                      {/* Live Meta Status Selector */}
+                      <select
+                        value={tmpl.status || 'APPROVED'}
+                        onChange={(e) => handleUpdateStatus(tmpl, e.target.value)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold cursor-pointer border focus:outline-none transition-all shadow-2xs ${
+                          tmpl.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
+                          tmpl.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' :
+                          tmpl.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' :
+                          'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <option value="APPROVED">APPROVED</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="REJECTED">REJECTED</option>
+                        <option value="DRAFT">DRAFT</option>
+                      </select>
                     </div>
-                  )}
-                </div>
 
-                {/* Card Actions */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-[11px] font-mono text-slate-400">
-                    {tmpl.language || 'en_US'}
-                  </span>
+                    {/* Preview box */}
+                    <div className="p-3.5 rounded-xl bg-emerald-50/40 border border-emerald-100 space-y-2 text-xs">
+                      {tmpl.header_image_url && (
+                        <div className="relative rounded-lg overflow-hidden border border-emerald-200/80 bg-slate-100 max-h-32">
+                          <img src={tmpl.header_image_url} alt="Header" className="w-full h-28 object-cover" />
+                        </div>
+                      )}
+                      {tmpl.header_text && !tmpl.header_image_url && (
+                        <div className="font-extrabold text-slate-900 border-b border-emerald-200/60 pb-1">
+                          {tmpl.header_text}
+                        </div>
+                      )}
+                      <p className="text-slate-800 line-clamp-3 leading-relaxed whitespace-pre-wrap font-medium">
+                        {tmpl.body_text}
+                      </p>
+                      {tmpl.footer_text && (
+                        <p className="text-[10px] text-slate-400 italic pt-1 border-t border-emerald-100">
+                          {tmpl.footer_text}
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-1.5">
+                    {/* Buttons preview */}
+                    {parsedButtons.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action Buttons ({parsedButtons.length})</span>
+                        <div className="flex flex-col gap-1">
+                          {parsedButtons.map((btn, idx) => (
+                            <div key={idx} className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-emerald-700 text-xs font-extrabold flex items-center justify-between shadow-2xs">
+                              <span className="truncate">{btn.text || btn.url || btn.phone_number}</span>
+                              <span className="text-[9px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{btn.type}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => setPreviewTemplate(tmpl)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Preview WhatsApp Chat"
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Preview</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleEditTemplate(tmpl)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Edit / Duplicate"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteTemplate(tmpl)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Delete from Meta & DB"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
 
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleEditTemplate(tmpl)}
+                        className="p-1.5 rounded-xl bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 border border-slate-200 transition-colors cursor-pointer"
+                        title="Edit Template"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTemplate(tmpl)}
+                        className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
+                        title="Delete Template"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination Footer Controls */}
+          {filteredTemplates.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-slate-900 font-extrabold">{paginatedTemplates.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredTemplates.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredTemplates.length}</span> templates
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 1: CREATE / EDIT TEMPLATE STUDIO WITH LIVE PHONE PREVIEW             */}
-      {/* ========================================================================= */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
           <div className="relative w-full max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">

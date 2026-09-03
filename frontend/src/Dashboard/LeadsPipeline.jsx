@@ -16,7 +16,9 @@ import {
   Send,
   AlertCircle,
   Eye,
-  Activity
+  Activity,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
@@ -246,6 +248,19 @@ export default function LeadsPipeline({ onOpenBlast }) {
     return matchesStatus && matchesSearch;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedStatus]);
+
+  const totalPages = Math.ceil(filteredLeads.length / ITEMS_PER_PAGE) || 1;
+  const paginatedLeads = filteredLeads.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       
@@ -375,137 +390,169 @@ export default function LeadsPipeline({ onOpenBlast }) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filteredLeads.map((lead) => {
-            const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
-            const leadStatus = lead.status || lead.pipeline_stage || 'Inquiries';
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {paginatedLeads.map((lead) => {
+              const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
+              const leadStatus = lead.status || lead.pipeline_stage || 'Inquiries';
 
-            return (
-              <div
-                key={lead.id}
-                className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-amber-300 transition-all duration-200 flex flex-col justify-between space-y-4 group"
-              >
-                <div className="space-y-3">
-                  {/* Header Avatar & Status Badge (Inquiries, Demo, Enrolled) */}
-                  <div className="flex items-start justify-between">
-                    <div className="relative w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 text-amber-900 flex items-center justify-center text-lg font-black shadow-xs group-hover:scale-105 transition-transform">
-                      {(lead.name || 'L').charAt(0)}
-                      <span className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                        leadStatus === 'Enrolled' ? 'bg-emerald-500' :
-                        leadStatus === 'Demo' ? 'bg-purple-500' : 'bg-sky-500'
-                      }`} />
+              return (
+                <div
+                  key={lead.id}
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-amber-300 transition-all duration-200 flex flex-col justify-between space-y-4 group"
+                >
+                  <div className="space-y-3">
+                    {/* Header Avatar & Status Badge (Inquiries, Demo, Enrolled) */}
+                    <div className="flex items-start justify-between">
+                      <div className="relative w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 text-amber-900 flex items-center justify-center text-lg font-black shadow-xs group-hover:scale-105 transition-transform">
+                        {(lead.name || 'L').charAt(0)}
+                        <span className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                          leadStatus === 'Enrolled' ? 'bg-emerald-500' :
+                          leadStatus === 'Demo' ? 'bg-purple-500' : 'bg-sky-500'
+                        }`} />
+                      </div>
+
+                      {/* Interactive Stage Selector */}
+                      <select
+                        value={leadStatus}
+                        onChange={(e) => handleStageChange(lead, e.target.value)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold cursor-pointer border focus:outline-none transition-all shadow-2xs ${
+                          leadStatus === 'Enrolled' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' :
+                          leadStatus === 'Demo' ? 'bg-purple-50 text-purple-800 border-purple-300' :
+                          'bg-sky-50 text-sky-800 border-sky-300'
+                        }`}
+                      >
+                        <option value="Inquiries">Inquiries</option>
+                        <option value="Demo">Demo</option>
+                        <option value="Enrolled">Enrolled</option>
+                      </select>
                     </div>
 
-                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] font-mono border ${
-                      leadStatus === 'Enrolled' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                      leadStatus === 'Demo' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                      'bg-sky-50 text-sky-700 border-sky-200'
-                    }`}>
-                      {leadStatus}
+                    {/* Lead Name */}
+                    <div>
+                      <h3 className="text-base font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors truncate">
+                        {lead.name}
+                      </h3>
+                    </div>
+
+                    {/* Phone & Email */}
+                    <div className="space-y-1 text-xs pt-1">
+                      <div className="flex items-center gap-2 text-slate-700 font-bold font-mono">
+                        <Phone className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>+91 {lead.phone}</span>
+                      </div>
+                      {lead.email && (
+                        <div className="flex items-center gap-2 text-slate-500 font-mono truncate">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{lead.email}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Read Rate / Engagement Badge */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Read Rate</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black font-mono flex items-center gap-1">
+                      <Activity className="w-3 h-3 text-emerald-600" />
+                      <span>{lead.read_rate || '95%'}</span>
                     </span>
                   </div>
 
-                  {/* Lead Name */}
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors truncate">
-                      {lead.name}
-                    </h3>
-                  </div>
-
-                  {/* Contact Info (Phone, Email, Address) */}
-                  <div className="space-y-1.5 text-xs pt-1">
-                    {/* 10-Digit Mobile */}
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold font-mono">
-                      <Phone className="w-3.5 h-3.5 shrink-0" />
-                      <span>{lead.phone}</span>
-                    </div>
-
-                    {/* Email */}
-                    {lead.email && (
-                      <div className="flex items-center gap-2 text-slate-600 font-medium truncate font-mono">
-                        <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                        <span className="truncate">{lead.email}</span>
-                      </div>
+                  {/* Action Row */}
+                  <div className="pt-2 flex items-center justify-end gap-1.5 border-t border-slate-100">
+                    {onOpenBlast && (
+                      <button
+                        type="button"
+                        onClick={onOpenBlast}
+                        className="py-1.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                        title="Send WhatsApp Blast Template"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>Blast</span>
+                      </button>
                     )}
 
-                    {/* Address */}
-                    {lead.address && (
-                      <div className="flex items-start gap-2 text-slate-500 text-[11px] font-medium leading-tight pt-1">
-                        <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{lead.address}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    {/* Direct WhatsApp Chat */}
+                    <a
+                      href={`https://wa.me/${cleanPhone}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
+                      title="Chat on WhatsApp"
+                    >
+                      <WhatsApp className="w-3.5 h-3.5 text-emerald-600" />
+                    </a>
 
-                {/* Read Rate Badge */}
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Read Rate</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black font-mono flex items-center gap-1">
-                    <Activity className="w-3 h-3 text-emerald-600" />
-                    <span>{lead.read_rate || '95%'}</span>
-                  </span>
-                </div>
+                    {/* Direct Phone Call */}
+                    <a
+                      href={`tel:${lead.phone}`}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors"
+                      title="Direct Call"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                    </a>
 
-                {/* Direct Action Buttons: WhatsApp Blast, Direct Chat, Call, Edit, Delete */}
-                <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-slate-100">
-                  {/* WhatsApp Blast Trigger */}
-                  {onOpenBlast && (
+                    {/* Edit */}
                     <button
                       type="button"
-                      onClick={onOpenBlast}
-                      className="py-1.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
-                      title="Send WhatsApp Blast Template"
+                      onClick={() => handleEditClick(lead)}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 border border-slate-200 transition-colors cursor-pointer"
+                      title="Edit Lead"
                     >
-                      <Send className="w-3 h-3" />
-                      <span>Blast</span>
+                      <Edit3 className="w-3.5 h-3.5" />
                     </button>
-                  )}
 
-                  {/* Direct WhatsApp Chat */}
-                  <a
-                    href={`https://wa.me/${cleanPhone}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
-                    title="Chat on WhatsApp"
-                  >
-                    <WhatsApp className="w-3.5 h-3.5 text-emerald-600" />
-                  </a>
+                    {/* Delete */}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteLead(lead.id, lead.name)}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
+                      title="Delete Lead"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-                  {/* Direct Phone Call */}
-                  <a
-                    href={`tel:${lead.phone}`}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors"
-                    title="Direct Call"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                  </a>
-
-                  {/* Edit */}
-                  <button
-                    type="button"
-                    onClick={() => handleEditClick(lead)}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 border border-slate-200 transition-colors cursor-pointer"
-                    title="Edit Lead"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteLead(lead.id, lead.name)}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
-                    title="Delete Lead"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
                 </div>
+              );
+            })}
+          </div>
 
+          {/* Pagination Footer Controls */}
+          {filteredLeads.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-slate-900 font-extrabold">{paginatedLeads.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredLeads.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredLeads.length}</span> leads
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

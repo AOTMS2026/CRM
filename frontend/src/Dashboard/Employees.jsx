@@ -17,7 +17,9 @@ import {
   Check, 
   Award,
   Filter,
-  UserCheck
+  UserCheck,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
@@ -247,6 +249,19 @@ export default function Employees() {
     return roleMatches && matchesSearch;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedRoleFilter, selectedDeptFilter]);
+
+  const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE) || 1;
+  const paginatedEmployees = filteredEmployees.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       
@@ -380,113 +395,155 @@ export default function Employees() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredEmployees.map((emp) => {
-            const initials = emp.name ? emp.name.charAt(0).toUpperCase() : 'E';
-            const cleanPhone = (emp.phone || '').replace(/\D/g, '');
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginatedEmployees.map((emp) => {
+              const initials = emp.name ? emp.name.charAt(0).toUpperCase() : 'E';
+              const cleanPhone = (emp.phone || '').replace(/\D/g, '');
 
-            const roleBadgeStyle = {
-              admin: 'bg-rose-100 text-rose-800 border-rose-300',
-              manager: 'bg-purple-100 text-purple-800 border-purple-300',
-              employee: 'bg-sky-100 text-sky-800 border-sky-300',
-              user: 'bg-slate-100 text-slate-800 border-slate-300'
-            }[emp.role] || 'bg-slate-100 text-slate-800 border-slate-300';
+              const roleBadgeStyle = {
+                admin: 'bg-rose-100 text-rose-800 border-rose-300',
+                manager: 'bg-purple-100 text-purple-800 border-purple-300',
+                employee: 'bg-sky-100 text-sky-800 border-sky-300',
+                user: 'bg-slate-100 text-slate-800 border-slate-300'
+              }[emp.role] || 'bg-slate-100 text-slate-800 border-slate-300';
 
-            return (
-              <div
-                key={emp._id || emp.id}
-                className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-200 flex flex-col justify-between space-y-4 group"
-              >
-                <div className="space-y-3">
-                  
-                  {/* Avatar, System Role & Status */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white font-black text-lg flex items-center justify-center shadow-md">
-                        {initials}
-                      </div>
-                      <div>
-                        <h3 className="text-base font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors">
-                          {emp.name}
-                        </h3>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{emp.companyName || 'AOTMS Enterprise'}</span>
+              return (
+                <div
+                  key={emp._id || emp.id}
+                  className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-xl hover:border-sky-300 transition-all duration-200 p-6 flex flex-col justify-between space-y-4 group relative overflow-hidden"
+                >
+                  {/* Top Accent Gradient Bar */}
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-sky-500 via-tech_orange to-amber-500" />
+
+                  <div className="space-y-4 pt-1">
+                    
+                    {/* Header Avatar & Role Chip */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center text-lg font-black shadow-md shrink-0 group-hover:scale-105 transition-transform">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-black text-slate-900 text-base truncate group-hover:text-sky-600 transition-colors">
+                            {emp.name}
+                          </h3>
+                          <p className="text-xs text-tech_orange font-bold font-mono truncate">
+                            {emp.designation || 'Team Member'}
+                          </p>
                         </div>
                       </div>
+
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider shrink-0 border ${roleBadgeStyle}`}>
+                        {emp.role || 'employee'}
+                      </span>
                     </div>
 
-                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-extrabold uppercase border ${roleBadgeStyle}`}>
-                      {emp.role || 'employee'}
-                    </span>
-                  </div>
-
-                  {/* Designation Work Tag */}
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-900 font-extrabold">
-                      <Award className="w-4 h-4 text-tech_orange" />
-                      <span>{emp.designation || 'Operations Specialist'}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-medium pl-5">
-                      Department: <span className="text-slate-800 font-semibold">{emp.department || 'General Operations'}</span>
-                    </div>
-                  </div>
-
-                  {/* Contact Info: Email & Phone */}
-                  <div className="space-y-1.5 text-xs pt-1">
-                    <div className="flex items-center gap-2 text-slate-700 font-medium font-mono truncate">
-                      <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                      <span className="truncate">{emp.email}</span>
+                    {/* Department Tag */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Department</span>
+                      <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-extrabold text-[11px] border border-slate-200">
+                        {emp.department || 'General'}
+                      </span>
                     </div>
 
-                    {emp.phone && (
-                      <div className="flex items-center gap-2 text-emerald-700 font-bold font-mono">
-                        <Phone className="w-3.5 h-3.5 shrink-0" />
-                        <span>+91 {emp.phone}</span>
+                    {/* Contact Info Box */}
+                    <div className="space-y-2 text-xs p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <div className="flex items-center justify-between gap-2 truncate">
+                        <span className="text-slate-400 font-bold uppercase text-[10px]">Email:</span>
+                        <span className="font-semibold text-slate-800 truncate" title={emp.email}>{emp.email}</span>
                       </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-400 font-bold uppercase text-[10px]">Phone:</span>
+                        <span className="font-bold text-slate-900 font-mono">+91 {emp.phone}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-400 font-bold uppercase text-[10px]">Company:</span>
+                        <span className="font-semibold text-slate-700">{emp.companyName || 'AOTMS'}</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    {cleanPhone ? (
+                      <a
+                        href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                        title="Chat on WhatsApp"
+                      >
+                        <WhatsApp className="w-4 h-4 text-emerald-600" />
+                        <span>WhatsApp</span>
+                      </a>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-medium">No Direct Chat</span>
                     )}
+
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => setEditEmployee({ ...emp })}
+                        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
+                        title="Edit Employee Designation & Profile"
+                      >
+                        <Edit3 className="w-4 h-4 text-sky-600" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeleteEmployee(emp)}
+                        className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
+                        title="Delete Employee Record"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
+
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Card Footer Actions */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  {emp.phone && (
-                    <a
-                      href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center gap-1.5 border border-emerald-200 transition-colors"
-                      title="Direct WhatsApp Chat with Employee"
-                    >
-                      <WhatsApp className="w-4 h-4 text-emerald-600" />
-                      <span>Chat</span>
-                    </a>
-                  )}
-
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <button
-                      type="button"
-                      onClick={() => setEditEmployee({ ...emp })}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Edit Employee Designation & Profile"
-                    >
-                      <Edit3 className="w-4 h-4 text-sky-600" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setDeleteEmployee(emp)}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Delete Employee Record"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
+          {/* Pagination Footer Controls */}
+          {filteredEmployees.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs gap-3">
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-slate-900 font-extrabold">{paginatedEmployees.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredEmployees.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredEmployees.length}</span> employees
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
