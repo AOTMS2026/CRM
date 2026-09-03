@@ -134,11 +134,13 @@ export default function WhatsappBlast() {
     fetchData();
   }, []);
 
+  const getItemId = (item) => String(item?._id || item?.id || item?.phone || '');
+
   // Switch Recipient Type
   const handleSwitchRecipientType = (type) => {
     setRecipientType(type);
     const targetList = type === 'contacts' ? contacts : leads;
-    setSelectedIds(targetList.map(item => item.id));
+    setSelectedIds(targetList.map(item => getItemId(item)));
   };
 
   // Active Recipient List
@@ -153,21 +155,25 @@ export default function WhatsappBlast() {
     return matchesStatus && matchesSearch;
   });
 
-  const isAllSelected = filteredRecipients.length > 0 && filteredRecipients.every(item => item.id && selectedIds.includes(String(item.id)));
+  const isAllSelected = filteredRecipients.length > 0 && filteredRecipients.every(item => selectedIds.includes(getItemId(item)));
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
-      const filteredIds = new Set(filteredRecipients.map(fr => String(fr.id)));
+      const filteredIds = new Set(filteredRecipients.map(fr => getItemId(fr)));
       setSelectedIds(prev => prev.filter(id => !filteredIds.has(id)));
     } else {
-      const combined = Array.from(new Set([...selectedIds, ...filteredRecipients.map(item => String(item.id))]));
+      const combined = Array.from(new Set([...selectedIds, ...filteredRecipients.map(item => getItemId(item))]));
       setSelectedIds(combined);
     }
   };
 
-  const toggleSelectItem = (id) => {
-    if (!id) return;
-    const strId = String(id);
+  const deselectAll = () => {
+    setSelectedIds([]);
+  };
+
+  const toggleSelectItem = (itemOrId) => {
+    const strId = typeof itemOrId === 'object' ? getItemId(itemOrId) : String(itemOrId || '');
+    if (!strId) return;
     setSelectedIds(prev => 
       prev.includes(strId) ? prev.filter(i => i !== strId) : [...prev, strId]
     );
@@ -396,16 +402,28 @@ export default function WhatsappBlast() {
               </button>
             </div>
 
-            {/* Select All & Search */}
+            {/* Select All, Unselect All & Search */}
             <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={toggleSelectAll}
-                className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer hover:text-emerald-700"
-              >
-                {isAllSelected ? <CheckSquare className="w-4 h-4 text-emerald-600" /> : <Square className="w-4 h-4 text-slate-400" />}
-                <span>Select All ({filteredRecipients.length})</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer hover:text-emerald-700"
+                >
+                  {isAllSelected ? <CheckSquare className="w-4 h-4 text-emerald-600" /> : <Square className="w-4 h-4 text-slate-400" />}
+                  <span>Select All ({filteredRecipients.length})</span>
+                </button>
+
+                {selectedIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={deselectAll}
+                    className="text-[11px] font-bold text-rose-600 hover:text-rose-700 underline cursor-pointer"
+                  >
+                    Unselect All
+                  </button>
+                )}
+              </div>
 
               <select
                 value={statusFilter}
@@ -443,16 +461,17 @@ export default function WhatsappBlast() {
             {/* Recipients List */}
             <div className="space-y-2 flex-1 overflow-y-auto max-h-[380px] scrollbar-thin">
               {filteredRecipients.map((item) => {
-                const isSelected = selectedIds.includes(item.id);
+                const itemId = getItemId(item);
+                const isSelected = selectedIds.includes(itemId);
                 const itemStatus = item.status || item.pipeline_stage || 'Active';
 
                 return (
                   <div
-                    key={item.id}
-                    onClick={() => toggleSelectItem(item.id)}
+                    key={itemId}
+                    onClick={() => toggleSelectItem(itemId)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                       isSelected
-                        ? 'bg-emerald-50/40 border-emerald-300 text-slate-900'
+                        ? 'bg-emerald-50/40 border-emerald-300 text-slate-900 ring-1 ring-emerald-400/30'
                         : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'
                     }`}
                   >
