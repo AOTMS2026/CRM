@@ -216,3 +216,108 @@ class MetaWhatsAppClient:
                 "success": False,
                 "error": str(exc)
             }
+
+    @classmethod
+    async def send_template_message(
+        cls,
+        access_token: str,
+        phone_number_id: str,
+        to_phone: str,
+        template_name: str,
+        language_code: str = "en_US",
+        body_parameters: Optional[List[str]] = None,
+        header_image_url: Optional[str] = None,
+        graph_version: str = "v21.0"
+    ) -> Dict[str, Any]:
+        """
+        Send an approved WhatsApp template message to a recipient phone number.
+        Endpoint: POST /{graph_version}/{phone_number_id}/messages
+        """
+        url = f"{cls.BASE_URL}/{graph_version}/{phone_number_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {access_token.strip()}",
+            "Content-Type": "application/json"
+        }
+
+        # Clean recipient phone number (remove +, spaces, hyphens)
+        clean_to = "".join(filter(str.isdigit, to_phone))
+        if len(clean_to) == 10:
+            clean_to = f"91{clean_to}"
+
+        components = []
+
+        # 1. Header component for IMAGE templates
+        if header_image_url:
+            if str(header_image_url).isdigit():
+                components.append({
+                    "type": "header",
+                    "parameters": [
+                        {
+                            "type": "image",
+                            "image": {"id": str(header_image_url)}
+                        }
+                    ]
+                })
+            elif str(header_image_url).startswith("http"):
+                components.append({
+                    "type": "header",
+                    "parameters": [
+                        {
+                            "type": "image",
+                            "image": {"link": str(header_image_url)}
+                        }
+                    ]
+                })
+
+        # 2. Body component ONLY if parameters exist
+        if body_parameters and len(body_parameters) > 0:
+            components.append({
+                "type": "body",
+                "parameters": [{"type": "text", "text": str(p)} for p in body_parameters]
+            })
+
+        template_obj = {
+            "name": template_name,
+            "language": {"code": language_code}
+        }
+        if components:
+            template_obj["components"] = components
+
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": clean_to,
+            "type": "template",
+            "template": template_obj
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.post(url, headers=headers, json=payload)
+                data = response.json()
+
+                if response.status_code in [200, 201]:
+                    msg_id = None
+                    if "messages" in data and len(data["messages"]) > 0:
+                        msg_id = data["messages"][0].get("id")
+                    return {
+                        "success": True,
+                        "message_id": msg_id,
+                        "recipient": clean_to,
+                        "raw": data
+                    }
+                else:
+                    err_obj = data.get("error", {})
+                    user_msg = err_obj.get("error_user_msg") or err_obj.get("message", "Failed to send WhatsApp message via Meta Cloud API.")
+                    return {
+                        "success": False,
+                        "error": user_msg,
+                        "recipient": clean_to,
+                        "raw": data
+                    }
+        except httpx.RequestError as exc:
+            return {
+                "success": False,
+                "error": f"Network connection error: {str(exc)}",
+                "recipient": clean_to
+            }

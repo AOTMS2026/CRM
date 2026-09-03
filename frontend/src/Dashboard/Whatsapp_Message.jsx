@@ -57,9 +57,8 @@ export default function WhatsappMessage() {
     body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
     footer_text: 'Reply STOP to unsubscribe • AOTMS',
     buttons: [
-      { type: 'WHATSAPP_CALL', text: 'Call on WhatsApp', phone_number: '+919876543210', url: '', contact_name: '' },
-      { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+919876543210', url: '', contact_name: '' },
-      { type: 'CONTACT', text: 'Share Contact Info', phone_number: '+919876543210', url: '', contact_name: 'AOTMS Official' }
+      { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918121016848', url: '', contact_name: '' },
+      { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.aotms.com', contact_name: '' }
     ],
     sample_values: ['John', 'AOTMS2026']
   });
@@ -406,9 +405,8 @@ export default function WhatsappMessage() {
                 body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
                 footer_text: 'Reply STOP to unsubscribe • AOTMS',
                 buttons: [
-                  { type: 'WHATSAPP_CALL', text: 'Call on WhatsApp', phone_number: '+919876543210', url: '', contact_name: '' },
-                  { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+919876543210', url: '', contact_name: '' },
-                  { type: 'CONTACT', text: 'Share Contact Info', phone_number: '+919876543210', url: '', contact_name: 'AOTMS Official' }
+                  { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918121016848', url: '', contact_name: '' },
+                  { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.aotms.com', contact_name: '' }
                 ],
                 sample_values: ['John', 'AOTMS2026']
               });
@@ -503,15 +501,26 @@ export default function WhatsappMessage() {
                       {tmpl.category}
                     </span>
 
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
+                      tmpl.status === 'APPROVED' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${tmpl.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
                       <span>{tmpl.status || 'APPROVED'}</span>
                     </span>
                   </div>
 
-                  <h3 className="text-sm font-extrabold text-slate-900 font-mono tracking-tight group-hover:text-emerald-700 transition-colors">
-                    {tmpl.name}
-                  </h3>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-extrabold text-slate-900 font-mono tracking-tight group-hover:text-emerald-700 transition-colors">
+                      {tmpl.name}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        Meta ID: {tmpl.meta_template_id || (tmpl.id && tmpl.id.startsWith('tmpl_') ? tmpl.id.replace('tmpl_', '') : tmpl.id) || 'Active'}
+                      </span>
+                    </div>
+                  </div>
 
                   {/* Header preview tag */}
                   {tmpl.header_type !== 'NONE' && (
@@ -1113,7 +1122,7 @@ export default function WhatsappMessage() {
                 className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
               >
                 {submitting ? <RotateCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                <span>{submitting ? 'Saving to Meta & Neon DB...' : 'Create Template on Meta'}</span>
+                <span>{submitting ? 'Saving to Meta...' : 'Create Template on Meta'}</span>
               </button>
             </div>
 

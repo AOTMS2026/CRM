@@ -167,10 +167,14 @@ app.add_middleware(
 
 app.include_router(graphql_app, prefix="/graphql")
 
-# Mount Clean Architecture WhatsApp Meta Cloud Integration Router
+# Mount Clean Architecture WhatsApp Meta Cloud Integration Router & Leads/Contacts Pipeline Routers
 from whatsapp import whatsapp_router
+from whatsapp.leads_router import leads_router
+from whatsapp.contacts_router import contacts_router
 app.include_router(whatsapp_router, prefix="/api/integrations/whatsapp", tags=["whatsapp-integration"])
 app.include_router(whatsapp_router, prefix="/api/whatsapp", tags=["whatsapp-webhook-alias"])
+app.include_router(leads_router, prefix="/api/leads", tags=["leads-pipeline"])
+app.include_router(contacts_router, prefix="/api/contacts", tags=["contacts-management"])
 app.include_router(whatsapp_router, prefix="", tags=["whatsapp-direct-alias"])
 
 @app.get("/")

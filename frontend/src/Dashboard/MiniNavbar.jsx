@@ -2,9 +2,11 @@ import React from 'react';
 import { 
   Users, 
   Target, 
+  BookUser,
   Briefcase, 
   PhoneCall, 
   MessageSquare, 
+  Send,
   CheckSquare, 
   CreditCard, 
   Settings,
@@ -15,7 +17,9 @@ import { IoLogoInstagram as Instagram } from 'react-icons/io5';
 export const navTabs = [
   { id: 'users', label: 'User Management', icon: Users },
   { id: 'integrations', label: 'Integrations', icon: Plug},
+  { id: 'contacts', label: 'Contacts', icon: BookUser, badge: 'Meta & Excel' },
   { id: 'leads', label: 'Leads & Pipeline', icon: Target },
+  { id: 'whatsapp-blast', label: 'WhatsApp Blast', icon: Send, badge: 'Meta Engine' },
   { id: 'employees', label: 'Employees', icon: Briefcase },
   { id: 'ai-calling', label: 'AI Calling', icon: PhoneCall },
   { id: 'whatsapp', label: 'Whatsapp_Messages', icon: MessageSquare},

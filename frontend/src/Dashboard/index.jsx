@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import DashboardNavbar from './DashboardNavbar';
 import MiniNavbar from './MiniNavbar';
 import WhatsappMessage from './Whatsapp_Message';
+import LeadsPipeline from './LeadsPipeline';
+import WhatsappBlast from './WhatsappBlast';
+import Contacts from './Contacts';
 import { 
   Users, 
   Target, 
@@ -1237,59 +1240,24 @@ export default function DashboardPage() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 2: LEADS & PIPELINE                                                   */}
+        {/* TAB 1B: CONTACTS (META ACCOUNTS, IMAGE UPLOAD, EXCEL IMPORT)             */}
+        {/* ========================================================================= */}
+        {activeTab === 'contacts' && (
+          <Contacts onOpenBlast={() => setActiveTab('whatsapp-blast')} />
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 2: LEADS & PIPELINE (User Management Card Format + 2-Col Add Form)    */}
         {/* ========================================================================= */}
         {activeTab === 'leads' && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">WhatsApp Lead Pipeline</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Automated stage-by-stage progression from WhatsApp inquiry to won enrollment.</p>
-              </div>
-              <button className="px-4 py-2 rounded-xl bg-tech_orange hover:bg-tech_orange-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm">
-                <Plus className="w-4 h-4" />
-                <span>Add Lead</span>
-              </button>
-            </div>
+          <LeadsPipeline onOpenBlast={() => setActiveTab('whatsapp-blast')} />
+        )}
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[
-                { stage: 'Inquiries', count: 24, border: 'border-t-sky-500', items: [
-                  { name: 'Dr. Srinivas Rao', budget: '₹1,50,000', score: '94%' },
-                  { name: 'Arjun Mehra', budget: '₹85,000', score: '82%' }
-                ]},
-                { stage: 'AI Qualified', count: 18, border: 'border-t-amber-500', items: [
-                  { name: 'Priya Kulkarni', budget: '₹2,20,000', score: '98%' },
-                  { name: 'Farhan Akhtar', budget: '₹60,000', score: '76%' }
-                ]},
-                { stage: 'Demo Confirmed', count: 9, border: 'border-t-purple-500', items: [
-                  { name: 'Sanjay Dutt', budget: '₹5,00,000', score: '96%' }
-                ]},
-                { stage: 'Won / Enrolled', count: 42, border: 'border-t-emerald-500', items: [
-                  { name: 'Deepa Patel', budget: '₹3,40,000', score: '100%' },
-                  { name: 'Karthik Raja', budget: '₹1,80,000', score: '100%' }
-                ]},
-              ].map((col, idx) => (
-                <div key={idx} className={`p-5 rounded-2xl bg-white border-t-4 ${col.border} border-x border-b border-slate-200 shadow-sm space-y-3.5`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-900">{col.stage}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-mono text-slate-700 font-bold border border-slate-200">{col.count}</span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {col.items.map((lead, i) => (
-                      <div key={i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-tech_orange/50 transition-all cursor-pointer">
-                        <div className="text-xs font-bold text-slate-900">{lead.name}</div>
-                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 text-[10px]">
-                          <span className="text-emerald-600 font-bold font-mono">{lead.budget}</span>
-                          <span className="px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 font-mono border border-sky-200">Score {lead.score}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* ========================================================================= */}
+        {/* TAB 2B: WHATSAPP BLAST (SELECT TEMPLATES -> SELECT CONTACTS -> TRIGGER)   */}
+        {/* ========================================================================= */}
+        {activeTab === 'whatsapp-blast' && (
+          <WhatsappBlast />
         )}
 
         {/* ========================================================================= */}
