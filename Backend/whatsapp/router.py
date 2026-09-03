@@ -142,32 +142,47 @@ def get_whatsapp_message_logs(phone: Optional[str] = None):
 async def receive_meta_webhook(payload: dict):
     """Receive incoming WhatsApp messages and status payloads from Meta Webhooks."""
     import json
-    print(f"[WHATSAPP WEBHOOK EVENT] Received Webhook Payload:\n{json.dumps(payload, indent=2)}")
+    print(f"[WHATSAPP WEBHOOK EVENT] Full Webhook Payload:\n{json.dumps(payload, indent=2)}")
 
     try:
-        # Extract status updates from Meta payload structure
         entry_list = payload.get("entry", [])
         for entry in entry_list:
             for change in entry.get("changes", []):
                 val = change.get("value", {})
                 statuses = val.get("statuses", [])
+                
+                if statuses:
+                    print(f"[WHATSAPP STATUS DEBUG] Complete Statuses Array:\n{json.dumps(statuses, indent=2)}")
+
                 for st in statuses:
-                    wamid = st.get("id")
-                    wh_status = st.get("status") # 'sent', 'delivered', 'read', 'failed'
+                    s_id = st.get("id")
+                    s_status = st.get("status")
+                    s_recipient = st.get("recipient_id")
+                    s_timestamp = st.get("timestamp")
+                    s_errors = st.get("errors")
+                    s_conversation = st.get("conversation")
+
+                    print(f"[WHATSAPP STATUS DEBUG] Detail:")
+                    print(f"  id: {s_id}")
+                    print(f"  status: {s_status}")
+                    print(f"  recipient_id: {s_recipient}")
+                    print(f"  timestamp: {s_timestamp}")
+                    if s_errors is not None:
+                        print(f"  errors: {json.dumps(s_errors)}")
+                    if s_conversation is not None:
+                        print(f"  conversation: {json.dumps(s_conversation)}")
+
                     err_code = None
                     err_msg = None
-
-                    errors = st.get("errors", [])
-                    if errors and len(errors) > 0:
-                        first_err = errors[0]
+                    if s_errors and len(s_errors) > 0:
+                        first_err = s_errors[0]
                         err_code = first_err.get("code")
                         err_msg = first_err.get("title") or first_err.get("message") or first_err.get("error_data", {}).get("details")
 
-                    if wamid and wh_status:
-                        print(f"[META WEBHOOK STATUS MATCHED] wamid={wamid} -> status={wh_status}, error_code={err_code}")
+                    if s_id and s_status:
                         WhatsAppIntegrationService.update_webhook_status(
-                            wamid=wamid,
-                            webhook_status=wh_status,
+                            wamid=s_id,
+                            webhook_status=s_status,
                             error_code=err_code,
                             error_message=err_msg
                         )
