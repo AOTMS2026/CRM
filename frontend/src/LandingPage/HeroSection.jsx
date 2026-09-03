@@ -46,13 +46,7 @@ export default function HeroSection() {
       <div className="absolute inset-0 flex items-center justify-center z-10 px-4 sm:px-6 lg:px-8 pointer-events-none pt-12">
         <div className="max-w-4xl mx-auto text-center space-y-6">
           
-          {/* Top Pill Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate_dark-300/80 border border-white/20 text-xs font-semibold text-slate-200 shadow-xl backdrop-blur-xl pointer-events-auto">
-            <span className="w-2 h-2 rounded-full bg-tech_orange animate-pulse" />
-            <span className="text-white font-bold tracking-wide">ENTERPRISE WHATSAPP CRM</span>
-            <span className="text-white/40">•</span>
-            <span className="text-slate-300 font-mono">Company Edition</span>
-          </div>
+          <br /><br />
 
           {/* Main Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.12] drop-shadow-lg">
