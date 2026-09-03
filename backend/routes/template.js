@@ -185,10 +185,54 @@ router.delete('/schedule/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// PUT /api/template/:id - Update template details or status
+router.put('/:id', async (req, res) => {
+  try {
+    const { name, category, language, message, footer, imageUrl, metaStatus, status } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (category !== undefined) updateData.category = category;
+    if (language !== undefined) updateData.language = language;
+    if (message !== undefined) {
+      updateData.message = String(message).trim();
+      updateData.title = String(message).trim();
+    }
+    if (footer !== undefined) updateData.footer = String(footer).trim();
+    if (imageUrl !== undefined) updateData.imageUrl = String(imageUrl).trim();
+    if (metaStatus !== undefined) updateData.metaStatus = metaStatus;
+    if (status !== undefined) updateData.status = status;
+
+    let template = null;
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      template = await Template.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    }
+    if (!template) {
+      template = await Template.findOneAndUpdate(
+        { $or: [{ name: req.params.id }, { metaTemplateId: req.params.id }] },
+        updateData,
+        { new: true }
+      );
+    }
+
+    if (!template) return res.status(404).json({ success: false, message: 'Template not found' });
+    res.json({ success: true, template, message: 'Template updated successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
-    await Template.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'Template deleted' });
+    let deleted = null;
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      deleted = await Template.findByIdAndDelete(req.params.id);
+    }
+    if (!deleted) {
+      deleted = await Template.findOneAndDelete({
+        $or: [{ name: req.params.id }, { metaTemplateId: req.params.id }]
+      });
+    }
+    res.json({ success: true, message: 'Template deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

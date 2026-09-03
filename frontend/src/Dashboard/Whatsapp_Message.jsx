@@ -106,6 +106,38 @@ export default function WhatsappMessage() {
 
   const [syncingMeta, setSyncingMeta] = useState(false);
 
+  const mapTemplateFromDb = (t) => {
+    const bodyComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'BODY') : null;
+    const footerComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'FOOTER') : null;
+    const headerComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'HEADER') : null;
+    const buttonsComp = Array.isArray(t.components) ? t.components.find(c => c.type === 'BUTTONS') : null;
+
+    let headerType = t.header_type || (t.imageUrl ? 'IMAGE' : (headerComp ? (headerComp.format || 'NONE') : 'NONE'));
+    let headerText = t.header_text || (headerComp?.format === 'TEXT' ? (headerComp.text || '') : '');
+    let headerImageUrl = t.imageUrl || t.header_image_url || (headerComp?.example?.header_handle?.[0] || '');
+    let headerContent = headerImageUrl || headerText || t.header_content || '';
+    let bodyText = t.message || bodyComp?.text || t.body_text || t.title || 'Hello {{1}}!';
+    let footerText = t.footer || footerComp?.text || t.footer_text || '';
+    let buttonsList = t.buttons || (buttonsComp?.buttons || []);
+
+    return {
+      _id: t._id,
+      id: t.metaTemplateId || t._id,
+      name: t.name || t.title || 'template',
+      category: t.category || 'MARKETING',
+      language: t.language || 'en_US',
+      status: t.metaStatus || t.status || 'APPROVED',
+      header_type: headerType,
+      header_text: headerText,
+      header_image_url: headerImageUrl,
+      header_content: headerContent,
+      body_text: bodyText,
+      footer_text: footerText,
+      buttons: buttonsList,
+      meta_template_id: t.metaTemplateId || t._id
+    };
+  };
+
   // Real-time API: Fetch templates directly from backend API
   const fetchTemplates = async () => {
     setRefreshing(true);
@@ -113,7 +145,8 @@ export default function WhatsappMessage() {
       const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates`);
       const data = await res.json();
       if (res.ok && data && data.success && Array.isArray(data.templates)) {
-        setTemplates(data.templates);
+        const mapped = data.templates.map(mapTemplateFromDb);
+        setTemplates(mapped);
       } else {
         setTemplates([]);
       }
@@ -135,10 +168,11 @@ export default function WhatsappMessage() {
       });
       const data = await res.json();
       if (res.ok && data && data.success && Array.isArray(data.templates)) {
-        setTemplates(data.templates);
-        showToast(`Real-time Sync: Fetched ${data.templates.length} templates from Meta Account!`, "success");
+        const mapped = data.templates.map(mapTemplateFromDb);
+        setTemplates(mapped);
+        showToast(`Real-time Sync: Fetched ${mapped.length} templates from Meta Account!`, "success");
       } else {
-        throw new Error(data.detail || "Failed to sync templates from Meta.");
+        throw new Error(data.message || data.detail || "Failed to sync templates from Meta.");
       }
     } catch (err) {
       showToast(err.message || "Error syncing templates with Meta API", "error");
@@ -147,11 +181,30 @@ export default function WhatsappMessage() {
     }
   };
 
+  // Update Template Status live in MongoDB
+  const handleUpdateStatus = async (tmpl, newStatus) => {
+    const targetId = tmpl._id || tmpl.id || tmpl.name;
+    try {
+      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/${targetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metaStatus: newStatus, status: newStatus.toLowerCase() })
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast(`Template '${tmpl.name}' status updated to ${newStatus}!`, "success");
+        await fetchTemplates();
+      } else {
+        throw new Error(result.message || "Failed to update status.");
+      }
+    } catch (err) {
+      showToast(err.message || "Error updating template status.", "error");
+    }
+  };
+
   useEffect(() => {
     fetchTemplates();
   }, []);
-
-
 
   // Handle image upload from file picker
   const handleImageFileChange = (e) => {
@@ -213,20 +266,21 @@ export default function WhatsappMessage() {
     }
   };
 
-  // Real-time API: Delete template directly via API
-  const handleDeleteTemplate = async (templateName) => {
-    if (!window.confirm(`Are you sure you want to delete template '${templateName}' from Meta & CRM?`)) return;
+  // Delete Template directly via API
+  const handleDeleteTemplate = async (tmpl) => {
+    const targetId = tmpl._id || tmpl.id || tmpl.name;
+    if (!window.confirm(`Are you sure you want to delete template '${tmpl.name}'?`)) return;
 
     try {
-      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/${templateName}`, {
+      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/${targetId}`, {
         method: 'DELETE'
       });
       const result = await res.json();
       if (res.ok && result.success) {
-        showToast(`Template '${templateName}' deleted from Meta & CRM.`, "success");
+        showToast(`Template '${tmpl.name}' deleted successfully.`, "success");
         await fetchTemplates();
       } else {
-        throw new Error(result.detail || "Failed to delete template from Meta.");
+        throw new Error(result.message || "Failed to delete template.");
       }
     } catch (err) {
       showToast(err.message || "Error deleting template from API", "error");
@@ -246,8 +300,8 @@ export default function WhatsappMessage() {
       category: tmpl.category || 'MARKETING',
       language: tmpl.language || 'en_US',
       header_type: tmpl.header_type || 'NONE',
-      header_text: tmpl.header_type === 'TEXT' ? tmpl.header_content : '',
-      header_image_url: tmpl.header_type === 'IMAGE' ? tmpl.header_content : '',
+      header_text: tmpl.header_text || '',
+      header_image_url: tmpl.header_image_url || tmpl.header_content || '',
       body_text: tmpl.body_text || '',
       footer_text: tmpl.footer_text || '',
       buttons: parsedButtons,
@@ -501,14 +555,24 @@ export default function WhatsappMessage() {
                       {tmpl.category}
                     </span>
 
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
-                      tmpl.status === 'APPROVED' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${tmpl.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-                      <span>{tmpl.status || 'APPROVED'}</span>
-                    </span>
+                    <select
+                      value={tmpl.status || 'APPROVED'}
+                      onChange={(e) => handleUpdateStatus(tmpl, e.target.value)}
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border cursor-pointer focus:outline-none transition-colors ${
+                        tmpl.status === 'APPROVED' 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : tmpl.status === 'PENDING'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : tmpl.status === 'REJECTED'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      <option value="APPROVED">APPROVED ✓</option>
+                      <option value="PENDING">PENDING ⏳</option>
+                      <option value="REJECTED">REJECTED ❌</option>
+                      <option value="DRAFT">DRAFT 📝</option>
+                    </select>
                   </div>
 
                   <div className="space-y-1">
@@ -577,7 +641,7 @@ export default function WhatsappMessage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeleteTemplate(tmpl.name)}
+                      onClick={() => handleDeleteTemplate(tmpl)}
                       className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
                       title="Delete from Meta & DB"
                     >
@@ -1160,14 +1224,14 @@ export default function WhatsappMessage() {
               style={{ maxHeight: '460px' }}
             >
               <div className="bg-white rounded-2xl rounded-tl-none p-3.5 shadow-sm border border-slate-200/60 space-y-2">
-                {previewTemplate.header_type === 'IMAGE' && previewTemplate.header_content && (
-                  <div className="rounded-xl overflow-hidden max-h-48 w-full bg-slate-100">
-                    <img src={previewTemplate.header_content} alt="Header" className="w-full h-full object-cover" />
+                {previewTemplate.header_type === 'IMAGE' && (previewTemplate.header_image_url || previewTemplate.header_content) && (
+                  <div className="rounded-xl overflow-hidden max-h-48 w-full bg-slate-100 border border-slate-200">
+                    <img src={previewTemplate.header_image_url || previewTemplate.header_content} alt="Header" className="w-full h-full object-cover" />
                   </div>
                 )}
-                {previewTemplate.header_type === 'TEXT' && previewTemplate.header_content && (
-                  <h4 className="text-xs font-black text-slate-900 pb-1 border-b border-slate-100">
-                    {previewTemplate.header_content}
+                {previewTemplate.header_type === 'TEXT' && (previewTemplate.header_text || previewTemplate.header_content) && (
+                  <h4 className="text-xs font-black text-slate-900 pb-1 border-b border-slate-100 font-sans">
+                    {previewTemplate.header_text || previewTemplate.header_content}
                   </h4>
                 )}
                 <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-line font-normal">
