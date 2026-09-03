@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IoChevronDownOutline, IoHelpCircleOutline } from 'react-icons/io5';
+import { IoChevronDownOutline, IoHelpCircleOutline, IoSparkles } from 'react-icons/io5';
 
 export default function FAQSection() {
   const [openIdx, setOpenIdx] = useState(0);
@@ -7,70 +7,82 @@ export default function FAQSection() {
   const faqs = [
     {
       q: 'Will my WhatsApp number get banned for sending bulk messages?',
-      a: 'No! Unlike amateur bulk senders that flood WhatsApp servers and trigger instant bans, AutoMachine uses an enterprise-grade Redis Leaky Bucket rate limiter with human typing simulations (random 3-7s jitter delays) and daily warm-up schedules. We have maintained a 0.00% ban rate across millions of messages.'
+      a: 'No! AutoMachine uses official Meta WhatsApp Cloud API templates with automated rate pacing. Unlike unofficial third-party senders that flood servers and get numbers blocked, our platform complies 100% with official Meta guidelines.'
     },
     {
-      q: 'Does AutoMachine understand Tenglish and Indian regional dialects?',
-      a: 'Yes, natively! Our conversational AI engine is trained on Romanized regional languages (like Tenglish - "Price entha bro?", "Details pampandi"), colloquial Hindi, and casual English. It accurately recognizes intent without forcing customers to speak strict formal English.'
+      q: 'Does AOTMS CRM support multi-agent team inbox access?',
+      a: 'Yes, natively! Multiple customer success agents and sales managers can log in simultaneously to reply, assign leads, log daily calling updates (1st, 2nd, final notes), and track member conversion rates.'
     },
     {
-      q: 'Can multiple agents and employees reply from the same WhatsApp number?',
-      a: 'Absolutely. Our Shared Team Inbox lets your entire customer success and sales team log into one unified dashboard. You can assign conversations, leave internal private notes, and view real-time delivery status without handing out your physical phone.'
+      q: 'Can I upload contacts and leads via Excel files?',
+      a: 'Absolutely! Our leads workspace includes a 1-click "Template Download" button and an "Upload Excel" option. You can bulk import thousands of contacts with automated 10-digit Indian phone validation.'
+    },
+    {
+      q: 'How does the Pay_SIP mutual fund payment reminder system work?',
+      a: 'The Pay_SIP module tracks monthly mutual fund installment debit dates, folio numbers, and amounts. It generates automated 1-click WhatsApp payment reminders directly to your clients.'
     },
     {
       q: 'Do I need developer skills or coding knowledge to get started?',
-      a: 'Not at all. You can configure complete chatbots, broadcast campaigns, and automated auto-replies using our visual dashboard. However, if you are a developer, we provide full FastAPI REST endpoints, Strawberry GraphQL schemas, and Webhook triggers.'
-    },
-    {
-      q: 'Can I connect AutoMachine to my Shopify, WooCommerce, or CRM database?',
-      a: 'Yes! We provide ready-to-use webhooks. Whenever a customer places an order, abandons a checkout cart, or requests an invoice, your backend or eCommerce store triggers an automated WhatsApp message with zero delay.'
+      a: 'Not at all. You can manage leads, send broadcasts, and track employee performance visually through our dashboard. However, if you are a developer, we provide full REST API endpoints and webhooks.'
     },
     {
       q: 'How does the 14-day free trial work?',
-      a: 'You get full access to all Growth plan features for 14 days without entering any credit card information. If you love it, choose a plan at the end of the trial; if not, your account simply downgrades with zero commitment.'
+      a: 'You get full access to all Growth plan features for 14 days without entering any credit card information. Choose a plan at the end of the trial with zero commitment.'
     }
   ];
 
   return (
-    <section id="faq" className="py-24 bg-prussian_blue-200/30 relative border-t border-deep_space_blue/50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="faq" className="py-24 bg-slate-950 text-white relative border-t border-emerald-500/20">
+      
+      {/* Background Accent */}
+      <div className="absolute top-1/2 left-10 w-96 h-96 bg-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header */}
         <div className="text-center mb-16 space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full nova-pill text-xs font-bold text-muted_teal tracking-wide uppercase">
-            <IoHelpCircleOutline className="text-sm" /> Got Questions?
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-extrabold text-emerald-300 uppercase tracking-wider shadow-md">
+            <IoHelpCircleOutline className="text-amber-400 text-base" /> 
+            <span>GOT QUESTIONS?</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-tan-900 tracking-tight">
-            Frequently Asked <span className="gradient-text-peach">Questions</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+            Frequently Asked <span className="bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-300 bg-clip-text text-transparent">Questions</span>
           </h2>
-          <p className="text-base sm:text-lg text-tan-800 leading-relaxed font-normal">
-            Everything you need to know about the product, anti-ban guarantees, and getting started.
+          <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+            Everything you need to know about Meta Cloud API compliance, bulk imports, and employee tracking.
           </p>
         </div>
 
-        {/* Accordion with Nova Cards */}
+        {/* Accordion with Luminous Cards */}
         <div className="space-y-4">
           {faqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div
                 key={idx}
-                className="rounded-2xl nova-card border border-muted_teal/20 overflow-hidden transition-all duration-200"
+                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                  isOpen 
+                    ? 'bg-slate-900 border-emerald-500/60 shadow-xl shadow-emerald-500/10' 
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                }`}
               >
                 <button
+                  type="button"
                   onClick={() => setOpenIdx(isOpen ? null : idx)}
-                  className="w-full p-6 text-left flex items-center justify-between gap-4 text-tan-900 hover:text-tan transition-colors"
+                  className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer"
                 >
-                  <span className="font-bold text-base sm:text-lg">{faq.q}</span>
-                  <IoChevronDownOutline
-                    className={`text-xl flex-shrink-0 transition-transform duration-300 text-muted_teal ${
-                      isOpen ? 'rotate-180 text-burnt_peach' : ''
-                    }`}
-                  />
+                  <span className="font-bold text-base sm:text-lg text-white">
+                    {faq.q}
+                  </span>
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 ${
+                    isOpen ? 'bg-amber-500 text-slate-950 rotate-180 font-black' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    <IoChevronDownOutline className="text-base" />
+                  </div>
                 </button>
 
                 {isOpen && (
-                  <div className="px-6 pb-6 text-sm text-tan-800 leading-relaxed font-normal border-t border-muted_teal/15 pt-4 animate-in fade-in duration-200">
+                  <div className="px-5 sm:px-6 pb-6 pt-1 text-sm text-slate-300 leading-relaxed border-t border-slate-800/80 animate-in fade-in duration-150">
                     {faq.a}
                   </div>
                 )}

@@ -1,242 +1,129 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
-  IoSend, 
-  IoSparkles, 
-  IoCheckmarkDone, 
-  IoRefreshOutline, 
-  IoLogoWhatsapp,
-  IoHardwareChipOutline,
-  IoPulse
+  IoLogoWhatsapp, 
+  IoShieldCheckmarkOutline, 
+  IoGitNetworkOutline, 
+  IoStatsChartOutline,
+  IoRocketOutline,
+  IoCheckmarkCircle,
+  IoFlashOutline,
+  IoServerOutline,
+  IoPeopleOutline,
+  IoSparkles
 } from 'react-icons/io5';
-import { checkBackendHealth, sendLiveMessage, API_BASE_URL } from '../services/api';
 
 export default function LiveSimulatorSection() {
-  const [backendStatus, setBackendStatus] = useState('checking');
-  const [messages, setMessages] = useState([
+  const cloudFeatures = [
     {
-      sender: 'bot',
-      text: 'Namaste! Welcome to AutoMachine AI demo. Connected to live Render API. Type anything or click one of the quick prompts below (English or Tenglish supported)!',
-      time: 'Just now',
-      intent: 'Greeting / System Welcome'
-    }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-
-  useEffect(() => {
-    checkBackendHealth().then((res) => {
-      if (res?.status === 'healthy') {
-        setBackendStatus('online');
-      } else {
-        setBackendStatus('fallback');
-      }
-    });
-  }, []);
-
-  const presetScenarios = [
-    {
-      label: 'Pricing (Tenglish)',
-      query: 'Cost entha bro? Monthly plans unnaya?',
-      reply: 'Mana Starter plan $29/mo nundi start avtundi! Anti-ban protection, unlimited automated replies, and 24/7 AI chat support included. Free 14-day trial kuda undi bro! 🎉',
-      intent: 'Intent: Pricing & Subscriptions (Tenglish) • 99.8% Match'
+      title: 'Meta WhatsApp Cloud API Broadcasts',
+      desc: 'High-speed template messaging powered directly by Meta Cloud API. Zero ban risk with automated rate pacing and sample variable replacement.',
+      icon: <IoRocketOutline className="text-2xl text-amber-400" />,
+      badge: 'Meta Official API',
+      badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
     },
     {
-      label: 'Anti-Ban Safety',
-      query: 'Will my WhatsApp account get banned for bulk broadcast?',
-      reply: 'Never with AutoMachine! We use Redis Leaky-Bucket pacing + random human typing jitter (3-7 seconds). Over 10M+ messages sent with a 0.00% ban rate.',
-      intent: 'Intent: Security & Anti-Ban Inquiry • 99.5% Match'
+      title: 'Multi-Agent Team Inbox Studio',
+      desc: 'Equip your sales reps, support team, and managers to reply from one shared WhatsApp number simultaneously with role-based access control.',
+      icon: <IoPeopleOutline className="text-2xl text-emerald-400" />,
+      badge: 'Team Workspace',
+      badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
     },
     {
-      label: 'Order Status',
-      query: 'Track my order #WM-84920 please',
-      reply: 'Order #WM-84920 has been dispatched via BlueDart Express! Expected delivery tomorrow by 3:00 PM. Tracking link sent to your SMS as well. 📦',
-      intent: 'Intent: Order Tracking & CRM Webhook • 99.9% Match'
+      title: 'Daily Calling & Lead Conversion Tracker',
+      desc: 'Log 1st, 2nd, and final calling notes per lead. Track employee daily performance and member joined rates with automatic deduplication.',
+      icon: <IoStatsChartOutline className="text-2xl text-sky-400" />,
+      badge: 'Employee Analytics',
+      badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40'
     },
     {
-      label: 'Business Hours',
-      query: 'Repu office open untunda? Can I call tomorrow?',
-      reply: 'Yes! Monday to Saturday morning 9:00 AM nundi evening 7:00 PM varaku team available untundi. But our AI bot replies 24/7 without sleep! 🚀',
-      intent: 'Intent: Business Hours (Tenglish) • 98.7% Match'
+      title: 'Automated Pay_SIP Installment Alerts',
+      desc: 'Send automated monthly mutual fund installment alerts and 1-click WhatsApp payment reminders with dynamic customer folio numbers.',
+      icon: <IoGitNetworkOutline className="text-2xl text-teal-400" />,
+      badge: 'SIP Automation',
+      badgeClass: 'bg-teal-500/20 text-teal-300 border-teal-500/40'
     }
   ];
 
-  const handleSend = async (textToSend) => {
-    const text = textToSend || inputValue;
-    if (!text.trim()) return;
-
-    const userMsg = {
-      sender: 'user',
-      text: text,
-      time: 'Just now'
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputValue('');
-    setIsTyping(true);
-
-    const matched = presetScenarios.find(p => p.query.toLowerCase() === text.toLowerCase());
-    const liveResponse = !matched ? await sendLiveMessage(text) : null;
-
-    setTimeout(() => {
-      setIsTyping(false);
-      const botMsg = {
-        sender: 'bot',
-        text: matched 
-          ? matched.reply 
-          : liveResponse 
-          ? `${liveResponse.reply} — Processed via live Render FastAPI backend! ⚡` 
-          : `Thank you for your inquiry: "${text}". AutoMachine AI classified this intent and synced with your database via live FastAPI in 280ms!`,
-        time: 'Just now',
-        intent: matched ? matched.intent : 'Intent: CRM Live Lead Qualification • Verified via Render Backend'
-      };
-      setMessages((prev) => [...prev, botMsg]);
-    }, 750);
-  };
-
-  const handleReset = () => {
-    setMessages([
-      {
-        sender: 'bot',
-        text: 'Namaste! Welcome to AutoMachine AI demo. Type anything or click one of the quick prompts below (English or Tenglish supported)!',
-        time: 'Just now',
-        intent: 'Greeting / System Welcome'
-      }
-    ]);
-  };
-
   return (
-    <section id="simulator" className="py-24 relative overflow-hidden">
+    <section id="features-engine" className="py-24 relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
       
-      {/* Background ambient accent */}
-      <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-burnt_peach/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      {/* Luminous Background Accent Light Glows */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[450px] h-[450px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full nova-pill text-xs font-bold text-tan tracking-wide uppercase">
-            <IoHardwareChipOutline className="text-sm text-burnt_peach" />
-            <span>Interactive Simulator</span>
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-extrabold text-emerald-300 tracking-wider uppercase shadow-md backdrop-blur-md">
+            <IoSparkles className="text-sm text-amber-400 animate-spin" />
+            <span>PRODUCTION CLOUD ENGINE</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-tan-900 tracking-tight">
-            Try The <span className="gradient-text-peach">Live Automation Simulator</span> Right Now
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+            Built On <span className="bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-300 bg-clip-text text-transparent">Official Meta Cloud API</span> Architecture
           </h2>
-          <p className="text-base sm:text-lg text-tan-800 leading-relaxed font-normal">
-            Test how our AI engine understands human queries, handles regional Tenglish phrasing, and sends instant automated responses with zero lag.
+          <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+            Eliminate unofficial tools and spreadsheet trackers. Power your entire enterprise WhatsApp marketing, customer support, and sales pipeline on official Meta Cloud infrastructure.
           </p>
         </div>
 
-        {/* Simulator Container - Nova Card */}
-        <div className="max-w-4xl mx-auto nova-card rounded-3xl border border-muted_teal/35 shadow-2xl overflow-hidden">
-          
-          {/* Top Bar */}
-          <div className="bg-deep_space_blue/90 px-6 py-4 border-b border-muted_teal/20 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-burnt_peach to-tan flex items-center justify-center text-prussian_blue-100 shadow-md border border-white/20">
-                <IoLogoWhatsapp className="text-2xl" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-bold text-tan-900 text-sm sm:text-base">Nova Live Console</h4>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border flex items-center gap-1.5 ${
-                    backendStatus === 'online' 
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
-                      : 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${backendStatus === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                    {backendStatus === 'online' ? 'RENDER LIVE' : 'SYNCING'}
+        {/* 4 Feature Cards Grid with Bright Neon Aesthetics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+          {cloudFeatures.map((feat, idx) => (
+            <div 
+              key={idx}
+              className="p-8 rounded-3xl bg-slate-900/90 border border-emerald-500/30 hover:border-emerald-400 shadow-2xl hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] transition-all duration-300 group flex flex-col justify-between space-y-5"
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="p-3.5 rounded-2xl bg-slate-800 border border-emerald-500/20 group-hover:border-emerald-400/60 group-hover:scale-105 transition-all shadow-md">
+                    {feat.icon}
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold border shadow-xs ${feat.badgeClass}`}>
+                    {feat.badge}
                   </span>
                 </div>
-                <p className="text-xs text-muted_teal font-mono flex items-center gap-1">
-                  <span>FastAPI + GraphQL</span>
-                  <span>•</span>
-                  <a href="https://crm-fee1.onrender.com/docs" target="_blank" rel="noreferrer" className="text-tech_orange hover:underline">
-                    crm-fee1.onrender.com
-                  </a>
+
+                <h3 className="text-xl font-black text-white group-hover:text-emerald-400 transition-colors">
+                  {feat.title}
+                </h3>
+
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  {feat.desc}
                 </p>
               </div>
+
+              <div className="pt-4 border-t border-slate-800 flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
+                <IoCheckmarkCircle className="text-base" />
+                <span>Verified Meta Production Feature</span>
+              </div>
             </div>
+          ))}
+        </div>
 
-            <button
-              onClick={handleReset}
-              className="px-3.5 py-1.5 rounded-xl nova-pill hover:bg-deep_space_blue text-xs font-mono font-semibold text-tan-800 flex items-center gap-1.5 transition-colors border border-muted_teal/20"
-            >
-              <IoRefreshOutline className="text-sm text-burnt_peach" /> Reset Session
-            </button>
-          </div>
-
-          {/* Preset Prompts - Nova Pill Chips */}
-          <div className="bg-prussian_blue-300/80 px-6 py-3 border-b border-muted_teal/15 flex items-center gap-2 overflow-x-auto">
-            <span className="text-xs font-mono font-bold text-tan-800 whitespace-nowrap">Try Prompts:</span>
-            {presetScenarios.map((p, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSend(p.query)}
-                className="whitespace-nowrap px-3 py-1 rounded-full text-xs font-semibold nova-pill hover:bg-burnt_peach hover:text-prussian_blue-100 text-tan-900 border border-muted_teal/20 hover:border-burnt_peach transition-all duration-200"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Chat Messages Feed */}
-          <div className="p-6 h-96 overflow-y-auto space-y-4 bg-prussian_blue-100/70">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-              >
-                {msg.sender === 'bot' && (
-                  <div className="flex items-center gap-1.5 mb-1 ml-1 text-[11px] font-mono text-tan font-semibold">
-                    <IoSparkles className="text-xs text-burnt_peach" />
-                    <span>{msg.intent}</span>
-                  </div>
-                )}
-
-                <div
-                  className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed shadow-md ${
-                    msg.sender === 'user'
-                      ? 'bg-deep_space_blue text-tan-900 rounded-tr-sm border border-muted_teal/35'
-                      : 'bg-gradient-to-r from-deep_space_blue to-prussian_blue-400 text-tan-900 rounded-tl-sm border border-burnt_peach/35'
-                  }`}
-                >
-                  <p className="font-medium">{msg.text}</p>
-                  <div className="text-[10px] opacity-70 text-right mt-1.5 flex items-center justify-end gap-1 font-mono">
-                    <span>{msg.time}</span>
-                    {msg.sender === 'user' && <IoCheckmarkDone className="text-muted_teal text-xs" />}
-                  </div>
-                </div>
+        {/* Live Infrastructure Summary Banner */}
+        <div className="p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-850 to-amber-950/80 border border-amber-500/30 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-emerald-500 text-slate-950 flex items-center justify-center text-2xl font-black shadow-lg shrink-0">
+              <IoServerOutline />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-lg font-black text-white">Live Render Production Backend</h4>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
               </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex items-center gap-2 p-3 max-w-[150px] rounded-2xl nova-pill text-tan text-xs font-mono font-semibold animate-pulse border border-tan/30">
-                <IoSparkles className="animate-spin text-sm text-burnt_peach" />
-                <span>Nova AI typing...</span>
-              </div>
-            )}
+              <p className="text-xs text-slate-300 font-mono mt-0.5">
+                https://crm-1-62pl.onrender.com • MongoDB Atlas Connected • 99.99% Uptime SLA
+              </p>
+            </div>
           </div>
 
-          {/* Input Box with Nova Styling */}
-          <div className="p-4 bg-deep_space_blue/90 border-t border-muted_teal/20 flex items-center gap-3">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask anything in English or Tenglish (e.g. 'Price entha?')..."
-              className="flex-1 bg-prussian_blue-200 text-tan-900 placeholder:text-tan-800/60 text-sm px-4 py-3 rounded-xl border border-muted_teal/20 focus:outline-none focus:border-burnt_peach transition-colors font-sans"
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!inputValue.trim() || isTyping}
-              className="nova-btn-shimmer px-5 py-3 rounded-xl bg-burnt_peach hover:bg-burnt_peach-400 disabled:opacity-50 text-prussian_blue-100 font-bold text-xs uppercase tracking-wider shadow-lg shadow-burnt_peach/25 flex items-center gap-2 transition-all border-t border-white/20"
-            >
-              <span>Transmit</span>
-              <IoSend className="text-xs" />
-            </button>
-          </div>
-
+          <a
+            href="/signup"
+            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 hover:from-amber-600 hover:to-teal-600 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 border border-white/20 transition-all cursor-pointer shrink-0"
+          >
+            🚀 Launch Enterprise Instance
+          </a>
         </div>
 
       </div>
