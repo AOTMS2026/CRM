@@ -137,7 +137,7 @@ export default function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
       
       {/* Top Bright Gradient Accent Line Bar */}
-      <div className="h-[3px] w-full bg-gradient-to-r from-amber-500 via-emerald-400 via-teal-400 to-amber-500 shadow-sm" />
+      <div className="h-[3.5px] w-full bg-gradient-to-r from-amber-500 via-emerald-400 via-teal-400 to-amber-500 shadow-sm" />
 
       {/* Main Glassmorphic Navigation Bar */}
       <div 
@@ -442,4 +442,3 @@ export default function Navbar() {
     </header>
   );
 }
-
