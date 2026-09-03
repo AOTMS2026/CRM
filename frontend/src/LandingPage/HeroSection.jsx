@@ -11,7 +11,7 @@ import {
 
 export default function HeroSection() {
   return (
-    <section className="relative w-full h-screen min-h-[700px] overflow-hidden bg-slate_dark">
+    <section className="relative w-full h-screen min-h-[750px] overflow-hidden bg-slate_dark">
       {/* Full-Screen Interactive 3D WebGL Wave Background */}
       <div className="absolute inset-0 w-full h-full">
         <GradientWaves

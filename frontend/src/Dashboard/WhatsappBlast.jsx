@@ -37,9 +37,9 @@ export default function WhatsappBlast() {
 
   const getApiBase = () => {
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return 'http://127.0.0.1:8000';
+      return 'http://localhost:5000';
     }
-    return import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com';
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   };
 
   const showToast = (msg, type = 'success') => {
@@ -237,43 +237,6 @@ export default function WhatsappBlast() {
           </button>
         </div>
       )}
-
-      {/* Quick Test Message Widget Banner for 7995232673 */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-900 via-slate-900 to-teal-950 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-            <WhatsApp className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <div className="text-xs font-black tracking-wide text-emerald-300 uppercase font-mono">
-              Live Test Message Sender (Instant Verification)
-            </div>
-            <p className="text-[11px] text-slate-300 mt-0.5">
-              Send a real Meta WhatsApp test template message directly to any phone number (Default: 7995232673).
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <input
-            type="tel"
-            placeholder="7995232673"
-            value={testPhone}
-            onChange={(e) => setTestPhone(e.target.value)}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-mono font-bold text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-emerald-400 w-full sm:w-44"
-          />
-          <button
-            type="button"
-            onClick={handleSendSingleTest}
-            disabled={sendingTest}
-            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50 shrink-0"
-          >
-            {sendingTest ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            <span>{sendingTest ? 'Sending...' : 'Send Test WhatsApp'}</span>
-          </button>
-        </div>
-      </div>
-
       {/* Header Bar */}
       <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">

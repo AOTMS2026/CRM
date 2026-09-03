@@ -35,10 +35,10 @@ export default function AuthPage({ defaultMode = 'signin' }) {
     setLoading(true);
     setServerMessage(null);
 
-    // Dynamic endpoint (Local vs Cloud)
+    // Dynamic endpoint (Local Node.js Express vs Cloud)
     const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-      ? 'http://127.0.0.1:8000'
-      : (import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com');
+      ? 'http://localhost:5000'
+      : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
     try {
       if (isSignUp) {
@@ -47,7 +47,7 @@ export default function AuthPage({ defaultMode = 'signin' }) {
           throw new Error("Passwords do not match. Please re-enter.");
         }
 
-        // Real Sign Up directly saving into Neon PostgreSQL + issuing 7-day JWT
+        // Real Sign Up directly saving into backend + issuing 7-day JWT
         const response = await fetch(`${API_BASE}/api/auth/sign-up`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -56,13 +56,14 @@ export default function AuthPage({ defaultMode = 'signin' }) {
             email: formData.email,
             password: formData.password,
             companyName: formData.companyName,
-            phone: formData.phone
+            phone: formData.phone,
+            role: formData.role || 'employee'
           })
         });
 
         const result = await response.json();
         if (!response.ok) {
-          throw new Error(result.detail || 'Registration failed');
+          throw new Error(result.message || result.detail || 'Registration failed');
         }
 
         // Store 7-day JWT Token and user profile
@@ -72,13 +73,14 @@ export default function AuthPage({ defaultMode = 'signin' }) {
           window.dispatchEvent(new Event('auth-change'));
         }
 
+        const userRole = result.user?.role?.toLowerCase() || 'employee';
         setServerMessage({
           type: 'success',
-          text: `Account created in Neon Database! Welcome, ${result.user?.name || 'Admin'}!`
+          text: `Account created successfully! Redirecting to ${userRole.toUpperCase()} Panel...`
         });
-        setTimeout(() => navigate('/'), 1800);
+        setTimeout(() => navigate(`/dashboard?panel=${userRole}`), 1200);
       } else {
-        // Real Sign In directly verifying from Neon PostgreSQL + issuing 7-day JWT
+        // Real Sign In directly verifying from backend + issuing 7-day JWT
         const response = await fetch(`${API_BASE}/api/auth/sign-in`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -90,7 +92,7 @@ export default function AuthPage({ defaultMode = 'signin' }) {
 
         const result = await response.json();
         if (!response.ok) {
-          throw new Error(result.detail || 'Invalid email or password');
+          throw new Error(result.message || result.detail || 'Invalid email or password');
         }
 
         if (result.token) {
@@ -99,11 +101,12 @@ export default function AuthPage({ defaultMode = 'signin' }) {
           window.dispatchEvent(new Event('auth-change'));
         }
 
+        const userRole = result.user?.role?.toLowerCase() || 'employee';
         setServerMessage({
           type: 'success',
-          text: `Signed in successfully! Welcome back, ${result.user?.name || ''}!`
+          text: `Signed in successfully! Welcome to ${userRole.toUpperCase()} Panel, ${result.user?.name || ''}!`
         });
-        setTimeout(() => navigate('/'), 1500);
+        setTimeout(() => navigate(`/dashboard?panel=${userRole}`), 1200);
       }
     } catch (err) {
       setServerMessage({
@@ -146,13 +149,13 @@ export default function AuthPage({ defaultMode = 'signin' }) {
             <img 
               src="/logo.png" 
               alt="Academy of Tech Masters" 
-              className="h-9 sm:h-10 mx-auto w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"
+              className="h-10 sm:h-12 mx-auto w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"
             />
           </Link>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
             {isSignUp ? 'Create Company Account' : 'Welcome Back'}
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-sm text-slate-300">
             {isSignUp 
               ? 'Start your enterprise trial on the WhatsApp Automation CRM.' 
               : 'Sign in to access your company dashboard and live chat inbox.'}
@@ -160,30 +163,30 @@ export default function AuthPage({ defaultMode = 'signin' }) {
         </div>
 
         {/* Tab Switcher: Sign In vs Sign Up */}
-        <div className="grid grid-cols-2 p-1 rounded-xl bg-slate_dark-400/90 border border-white/10 mb-6 text-xs font-semibold max-w-sm mx-auto">
+        <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-slate_dark-400/90 border border-white/10 mb-6 text-sm font-bold max-w-sm mx-auto">
           <button
             type="button"
             onClick={() => { setIsSignUp(false); setServerMessage(null); }}
-            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all cursor-pointer ${
               !isSignUp 
-                ? 'bg-tech_orange text-white shadow-md shadow-tech_orange/30 font-bold' 
+                ? 'bg-tech_orange text-white shadow-md shadow-tech_orange/30 font-extrabold' 
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <LogIn className="w-3.5 h-3.5" />
+            <LogIn className="w-4 h-4" />
             <span>Sign In</span>
           </button>
 
           <button
             type="button"
             onClick={() => { setIsSignUp(true); setServerMessage(null); }}
-            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all cursor-pointer ${
               isSignUp 
-                ? 'bg-tech_blue text-white shadow-md shadow-tech_blue/30 font-bold' 
+                ? 'bg-tech_blue text-white shadow-md shadow-tech_blue/30 font-extrabold' 
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <UserPlus className="w-3.5 h-3.5" />
+            <UserPlus className="w-4 h-4" />
             <span>Register</span>
           </button>
         </div>
@@ -240,22 +243,27 @@ export default function AuthPage({ defaultMode = 'signin' }) {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Company Name<span className="text-tech_orange">*</span>
+                    System Role <span className="text-tech_orange">*</span>
                   </label>
                   <div className="relative">
-                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <select
-                      {...register('companyName', { required: 'Please select an organization' })}
-                      defaultValue="AOTMS"
-                      className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate_dark-400/90 border border-white/10 text-xs text-white focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all appearance-none cursor-pointer"
+                      {...register('role')}
+                      defaultValue="admin"
+                      className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate_dark-400/90 border border-white/10 text-xs text-white focus:outline-none focus:border-tech_blue focus:ring-1 focus:ring-tech_blue transition-all appearance-none cursor-pointer font-bold"
                     >
-                      <option value="AOTMS" className="bg-slate_dark-300 text-white font-semibold">
-                        AOTMS
+                      <option value="admin" className="bg-slate_dark-300 text-white font-semibold">
+                        🛡️ Admin (Full Control Panel)
+                      </option>
+                      <option value="manager" className="bg-slate_dark-300 text-white font-semibold">
+                        💼 Manager (Leads & Blasts Panel)
+                      </option>
+                      <option value="employee" className="bg-slate_dark-300 text-white font-semibold">
+                        👤 Employee (Chat & Tasks Panel)
                       </option>
                     </select>
                     <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>
-                  {errors.companyName && <p className="text-[11px] text-rose-400 mt-1">{errors.companyName.message}</p>}
                 </div>
 
                 <div>
@@ -429,18 +437,18 @@ export default function AuthPage({ defaultMode = 'signin' }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-lg shadow-tech_orange/30 border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0 mt-4"
+            className="w-full py-3.5 px-4 rounded-xl text-sm font-extrabold uppercase tracking-wider text-white bg-gradient-to-r from-tech_orange to-tech_orange-600 hover:from-tech_orange-600 hover:to-tech_orange shadow-lg shadow-tech_orange/30 border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0 mt-5"
           >
             {loading ? (
               <span className="animate-pulse font-mono">Authenticating...</span>
             ) : isSignUp ? (
               <>
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4.5 h-4.5" />
                 <span>Create Company Account</span>
               </>
             ) : (
               <>
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-4.5 h-4.5" />
                 <span>Sign In to CRM</span>
               </>
             )}
@@ -448,14 +456,14 @@ export default function AuthPage({ defaultMode = 'signin' }) {
         </form>
 
         {/* Bottom Toggle Note */}
-        <div className="mt-6 text-center text-xs text-slate-400 pt-4 border-t border-white/10">
+        <div className="mt-6 text-center text-sm text-slate-300 pt-4 border-t border-white/10">
           {isSignUp ? (
             <p>
               Already have an enterprise account?{' '}
               <button 
                 type="button" 
                 onClick={() => { setIsSignUp(false); setServerMessage(null); }}
-                className="text-tech_orange font-semibold hover:underline cursor-pointer"
+                className="text-tech_orange font-bold hover:underline cursor-pointer"
               >
                 Sign In here
               </button>
@@ -466,7 +474,7 @@ export default function AuthPage({ defaultMode = 'signin' }) {
               <button 
                 type="button" 
                 onClick={() => { setIsSignUp(true); setServerMessage(null); }}
-                className="text-tech_blue-700 font-semibold hover:underline cursor-pointer"
+                className="text-tech_blue-700 font-bold hover:underline cursor-pointer"
               >
                 Register for Free Trial
               </button>

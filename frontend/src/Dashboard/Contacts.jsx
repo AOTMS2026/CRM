@@ -7,18 +7,19 @@ import {
   Trash2, 
   Phone, 
   Mail, 
-  MapPin, 
   X, 
   CheckCircle2, 
   AlertCircle, 
   Upload, 
-  Download, 
   FileSpreadsheet, 
-  Image as ImageIcon, 
   Send,
   User,
   Check,
-  Activity
+  Activity,
+  Filter,
+  Tag,
+  Shield,
+  Download
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
@@ -27,6 +28,7 @@ export default function Contacts({ onOpenBlast }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIdentity, setSelectedIdentity] = useState('ALL');
   
   // Modals & Toast State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -34,33 +36,29 @@ export default function Contacts({ onOpenBlast }) {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Normal Form Fill State
+  // Form State (All Required Fields)
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
-    address: '',
-    image_url: '',
-    status: 'Active',
-    read_rate: '100%'
+    identity: 'SAP FICO'
   });
 
   const [phoneError, setPhoneError] = useState('');
   const [emailError, setEmailError] = useState('');
 
-  // Excel Upload Preview State
+  // Excel Upload State
   const [excelPreviewData, setExcelPreviewData] = useState([]);
   const [excelFileName, setExcelFileName] = useState('');
   const [importingExcel, setImportingExcel] = useState(false);
 
   const fileInputRef = useRef(null);
-  const metaImageInputRef = useRef(null);
 
   const getApiBase = () => {
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return 'http://127.0.0.1:8000';
+      return 'http://localhost:5000';
     }
-    return import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com';
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   };
 
   const showToastMsg = (msg, type = 'success') => {
@@ -94,19 +92,24 @@ export default function Contacts({ onOpenBlast }) {
   // STRICT 10-DIGIT MOBILE & EMAIL VALIDATION
   // ---------------------------------------------------------------------------
   const handlePhoneChange = (e) => {
-    const val = e.target.value;
-    setFormData(prev => ({ ...prev, phone: val }));
-
-    const digitsOnly = val.replace(/\D/g, '');
-    let clean10 = digitsOnly;
-    if (digitsOnly.startsWith('91') && digitsOnly.length === 12) {
-      clean10 = digitsOnly.slice(2);
+    const raw = e.target.value;
+    // Strip all non-digit characters
+    let digits = raw.replace(/\D/g, '');
+    
+    // If starting with country code 91 and > 10 digits, strip leading 91
+    if (digits.startsWith('91') && digits.length > 10) {
+      digits = digits.slice(2);
     }
 
+    // STRICT MAX 10 DIGITS — Reject any 11th digit from even being entered or displayed!
+    const clean10 = digits.slice(0, 10);
+
+    setFormData(prev => ({ ...prev, phone: clean10 }));
+
     if (!clean10) {
-      setPhoneError('Mobile number is required.');
+      setPhoneError('Mobile number is required (10 digits).');
     } else if (clean10.length !== 10) {
-      setPhoneError(`Mobile number must be exactly 10 digits (${clean10.length}/10 digits).`);
+      setPhoneError(`Exactly 10 digits required (${clean10.length}/10 entered).`);
     } else if (!['6', '7', '8', '9'].includes(clean10[0])) {
       setPhoneError('Indian mobile numbers must start with 6, 7, 8, or 9.');
     } else {
@@ -118,38 +121,38 @@ export default function Contacts({ onOpenBlast }) {
     const val = e.target.value;
     setFormData(prev => ({ ...prev, email: val }));
 
-    if (val && val.trim()) {
+    if (!val || !val.trim()) {
+      setEmailError('Email address is required.');
+    } else {
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(val.trim())) {
         setEmailError('Enter a valid email address (e.g., name@domain.com).');
       } else {
         setEmailError('');
       }
-    } else {
-      setEmailError('');
     }
   };
 
-  // Meta Profile Picture Upload Handler
-  const handleImageFileSelected = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // ---------------------------------------------------------------------------
+  // EXCEL / CSV TEMPLATE DOWNLOAD & PARSER
+  // ---------------------------------------------------------------------------
+  const handleDownloadTemplate = () => {
+    const csvContent = "First name,Phone,Email,Identity\n" +
+      "Dr. Srinivas Rao,9876543210,srinivas.rao@hospital.org,VIP Client\n" +
+      "Kavita Menon,9812345678,kavita.m@techcorp.in,Vendor\n" +
+      "Sneha Agarwal,9988776655,sneha.a@gmail.com,Lead";
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToastMsg("Image size must be under 5MB.", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormData(prev => ({ ...prev, image_url: event.target?.result || '' }));
-    };
-    reader.readAsDataURL(file);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'contacts_upload_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToastMsg("Downloaded contact sheet template (First name, Phone, Email, Identity)!", "success");
   };
 
-  // ---------------------------------------------------------------------------
-  // EXCEL / CSV SHEET PARSER
-  // ---------------------------------------------------------------------------
   const handleExcelFileUploaded = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -176,13 +179,17 @@ export default function Contacts({ onOpenBlast }) {
     for (let i = 1; i < lines.length; i++) {
       const parts = lines[i].split(',').map(p => p.replace(/^"|"$/g, '').trim());
       if (parts.length >= 2) {
+        let rawPhone = parts[1] || '';
+        let digits = rawPhone.replace(/\D/g, '');
+        if (digits.startsWith('91') && digits.length > 10) digits = digits.slice(2);
+        const clean10 = digits.slice(0, 10);
+        const formattedPhone = clean10 ? `+91 ${clean10}` : rawPhone;
+
         parsed.push({
           name: parts[0] || `Contact ${i}`,
-          phone: parts[1] || '',
+          phone: formattedPhone,
           email: parts[2] || '',
-          address: parts[3] || '',
-          status: parts[4] || 'Active',
-          read_rate: parts[5] || '100%'
+          identity: parts[3] || 'Client'
         });
       }
     }
@@ -198,15 +205,15 @@ export default function Contacts({ onOpenBlast }) {
 
     setImportingExcel(true);
     try {
-      const res = await fetch(`${getApiBase()}/api/contacts/import-excel`, {
+      const res = await fetch(`${getApiBase()}/api/contacts/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contacts: excelPreviewData })
+        body: JSON.stringify({ contacts: excelPreviewData, source: 'excel' })
       });
 
       const result = await res.json();
       if (res.ok && result.success) {
-        showToastMsg(result.message || `Imported ${result.imported_count} contacts successfully!`, "success");
+        showToastMsg(result.message || `Imported contacts successfully!`, "success");
         setShowUploadExcelModal(false);
         setExcelPreviewData([]);
         setExcelFileName('');
@@ -221,16 +228,16 @@ export default function Contacts({ onOpenBlast }) {
     }
   };
 
-  // Download Sample Template CSV
-  const handleDownloadSampleTemplate = () => {
-    window.open(`${getApiBase()}/api/contacts/download-sample-csv`, '_blank');
-  };
-
   // ---------------------------------------------------------------------------
   // CREATE CONTACT SUBMIT
   // ---------------------------------------------------------------------------
   const handleSubmitContact = async (e) => {
     e.preventDefault();
+    if (!formData.name.trim() || !formData.phone || !formData.email.trim() || !formData.identity.trim()) {
+      showToastMsg("All fields marked with * are required.", "error");
+      return;
+    }
+
     if (phoneError || emailError) {
       showToastMsg("Please fix validation errors before saving.", "error");
       return;
@@ -241,28 +248,26 @@ export default function Contacts({ onOpenBlast }) {
       const res = await fetch(`${getApiBase()}/api/contacts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          phone: formData.phone,
+          email: formData.email.trim(),
+          identity: formData.identity.trim(),
+          source: 'manual'
+        })
       });
 
       const result = await res.json();
       if (res.ok && result.success) {
-        showToastMsg(result.message || `Contact created successfully!`, "success");
+        showToastMsg(result.message || `Contact '${formData.name}' created in MongoDB!`, "success");
         setShowAddModal(false);
-        setFormData({
-          name: '',
-          phone: '',
-          email: '',
-          address: '',
-          image_url: '',
-          status: 'Active',
-          read_rate: '100%'
-        });
+        setFormData({ name: '', phone: '', email: '', identity: 'Client' });
         await fetchContacts();
       } else {
-        throw new Error(result.detail || "Failed to create contact.");
+        throw new Error(result.message || "Failed to create contact.");
       }
     } catch (err) {
-      showToastMsg(err.message || "Error creating contact.", "error");
+      showToastMsg(err.message || "Error creating contact in database.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -283,11 +288,35 @@ export default function Contacts({ onOpenBlast }) {
     }
   };
 
+  // Extract unique identities dynamically with strict case-insensitive deduplication
+  const availableIdentities = (() => {
+    const defaultList = ['ALL', 'Client', 'VIP', 'Lead', 'Vendor'];
+    const seenLower = new Set(defaultList.map(item => item.toLowerCase()));
+    const dynamicList = [];
+
+    contacts.forEach(c => {
+      const tag = (c.identity || '').trim();
+      if (tag && !seenLower.has(tag.toLowerCase())) {
+        seenLower.add(tag.toLowerCase());
+        dynamicList.push(tag);
+      }
+    });
+
+    return [...defaultList, ...dynamicList];
+  })();
+
+  // Filter contacts by Search Query & Identity
   const filteredContacts = contacts.filter(c => {
-    return (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (c.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (c.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (c.address || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const contactIdentity = c.identity || 'Client';
+    const matchesIdentity = selectedIdentity === 'ALL' || contactIdentity.toLowerCase() === selectedIdentity.toLowerCase();
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = 
+      (c.name || '').toLowerCase().includes(query) ||
+      (c.phone || '').toLowerCase().includes(query) ||
+      (c.email || '').toLowerCase().includes(query) ||
+      contactIdentity.toLowerCase().includes(query);
+
+    return matchesIdentity && matchesSearch;
   });
 
   return (
@@ -320,25 +349,25 @@ export default function Contacts({ onOpenBlast }) {
                 WhatsApp Meta Account Contacts
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-300 font-mono">
-                {contacts.length} Meta Accounts
+                {filteredContacts.length} Contacts
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Normal form fill with Meta profile picture upload, Excel sheet bulk upload, sample template downloader, and direct WhatsApp Blast triggering.
+              Manage audience contacts with custom Identities, strict 10-digit mobile validation, and Excel bulk upload.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Download Excel Sample Template */}
+          {/* Download Template Button */}
           <button
             type="button"
-            onClick={handleDownloadSampleTemplate}
+            onClick={handleDownloadTemplate}
             className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-200 shadow-2xs"
-            title="Download ready-to-use CSV Excel sample contact template file"
+            title="Download sample CSV format (First name, Phone, Email, Identity)"
           >
             <Download className="w-4 h-4 text-emerald-600" />
-            <span>Download Sample Excel Template</span>
+            <span>Download Template</span>
           </button>
 
           {/* Upload Excel Sheet Modal Trigger */}
@@ -354,7 +383,12 @@ export default function Contacts({ onOpenBlast }) {
           {/* Normal Form Fill Add Contact */}
           <button
             type="button"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setFormData({ name: '', phone: '', email: '', identity: 'Client' });
+              setPhoneError('');
+              setEmailError('');
+              setShowAddModal(true);
+            }}
             className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
           >
             <Plus className="w-4 h-4" />
@@ -363,31 +397,58 @@ export default function Contacts({ onOpenBlast }) {
         </div>
       </div>
 
-      {/* Search & Actions Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
+      {/* Search & Identity Filter Toolbar */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        {/* Search Input */}
+        <div className="relative w-full md:w-80">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search contacts by name, 10-digit phone, email, address..."
+            placeholder="Search contacts by name, 10-digit phone, email, identity..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 shadow-xs"
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-sky-500 shadow-xs"
           />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Identity Filters (Pills Showing Existing & Custom Identities) */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1 shrink-0">
+            <Tag className="w-3.5 h-3.5 text-tech_orange" /> Identity:
+          </span>
+          {availableIdentities.map((identity) => (
+            <button
+              key={identity}
+              onClick={() => setSelectedIdentity(identity)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                selectedIdentity === identity
+                  ? 'bg-slate-900 text-white shadow-sm font-mono'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'
+              }`}
+            >
+              {identity === 'ALL' ? 'All Identities' : identity}
+            </button>
+          ))}
         </div>
 
         <button
           type="button"
           onClick={fetchContacts}
           disabled={refreshing}
-          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 shadow-xs"
+          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 shadow-xs shrink-0"
         >
           <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-sky-600' : ''}`} />
-          <span>Refresh List</span>
+          <span>Refresh</span>
         </button>
       </div>
 
-      {/* CONTACTS CARDS GRID (User Management Style) */}
+      {/* CONTACTS CARDS GRID */}
       {loading ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
           <RotateCw className="w-6 h-6 animate-spin text-sky-600 mx-auto mb-2" />
@@ -400,7 +461,9 @@ export default function Contacts({ onOpenBlast }) {
           </div>
           <h3 className="text-sm font-bold text-slate-800">No Meta Contacts found</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Add your first contact via normal form fill or upload a mass contact Excel sheet.
+            {searchQuery || selectedIdentity !== 'ALL'
+              ? 'Try clearing your search or identity filter.'
+              : 'Add your first contact via normal form fill or upload an Excel sheet.'}
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
@@ -423,28 +486,26 @@ export default function Contacts({ onOpenBlast }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {filteredContacts.map((contact) => {
             const cleanPhone = (contact.phone || '').replace(/[^0-9]/g, '');
+            const initials = contact.name ? contact.name.charAt(0).toUpperCase() : 'C';
 
             return (
               <div
-                key={contact.id}
-                className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-sky-300 transition-all duration-200 flex flex-col justify-between space-y-4 group"
+                key={contact._id || contact.id}
+                className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-sky-300 transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden"
               >
                 <div className="space-y-3">
-                  {/* Avatar (Uploaded Meta Image or Initial) & Status */}
+                  
+                  {/* Initials Avatar, Identity Tag & Status */}
                   <div className="flex items-start justify-between">
-                    <div className="relative w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-                      {contact.image_url ? (
-                        <img src={contact.image_url} alt={contact.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-sky-100 text-sky-800 font-black text-lg flex items-center justify-center">
-                          {(contact.name || 'C').charAt(0)}
-                        </div>
-                      )}
-                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500" />
+                    <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-tech_orange p-[2px] shadow-sm group-hover:scale-105 transition-transform">
+                      <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center text-base font-black text-slate-900">
+                        {initials}
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-emerald-500" />
                     </div>
 
-                    <span className="px-2.5 py-0.5 rounded-full font-bold text-[10px] font-mono border bg-emerald-50 text-emerald-700 border-emerald-200">
-                      {contact.status || 'Active'}
+                    <span className="px-2.5 py-1 rounded-full font-extrabold text-[10px] font-mono border bg-sky-50 text-sky-700 border-sky-200">
+                      🏷️ {contact.identity || 'Client'}
                     </span>
                   </div>
 
@@ -455,11 +516,11 @@ export default function Contacts({ onOpenBlast }) {
                     </h3>
                   </div>
 
-                  {/* Phone, Email, Address */}
+                  {/* Phone & Email Details */}
                   <div className="space-y-1.5 text-xs pt-1">
                     <div className="flex items-center gap-2 text-emerald-700 font-bold font-mono">
                       <Phone className="w-3.5 h-3.5 shrink-0" />
-                      <span>{contact.phone}</span>
+                      <span>+91 {contact.phone}</span>
                     </div>
 
                     {contact.email && (
@@ -468,28 +529,20 @@ export default function Contacts({ onOpenBlast }) {
                         <span className="truncate">{contact.email}</span>
                       </div>
                     )}
-
-                    {contact.address && (
-                      <div className="flex items-start gap-2 text-slate-500 text-[11px] font-medium leading-tight pt-1">
-                        <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{contact.address}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Read Rate Badge */}
+                {/* Read Rate / Segment Badge */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Read Rate</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black font-mono flex items-center gap-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Segment</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black font-mono flex items-center gap-1 uppercase">
                     <Activity className="w-3 h-3 text-emerald-600" />
-                    <span>{contact.read_rate || '100%'}</span>
+                    <span>{contact.segment || 'New'}</span>
                   </span>
                 </div>
 
                 {/* Action Buttons: WhatsApp Blast, Direct Chat, Call, Delete */}
                 <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-slate-100">
-                  {/* WhatsApp Blast Trigger */}
                   {onOpenBlast && (
                     <button
                       type="button"
@@ -504,7 +557,7 @@ export default function Contacts({ onOpenBlast }) {
 
                   {/* Direct Chat */}
                   <a
-                    href={`https://wa.me/${cleanPhone}`}
+                    href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}`}
                     target="_blank"
                     rel="noreferrer"
                     className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
@@ -525,7 +578,7 @@ export default function Contacts({ onOpenBlast }) {
                   {/* Delete */}
                   <button
                     type="button"
-                    onClick={() => handleDeleteContact(contact.id, contact.name)}
+                    onClick={() => handleDeleteContact(contact._id || contact.id, contact.name)}
                     className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
                     title="Delete Contact"
                   >
@@ -540,24 +593,25 @@ export default function Contacts({ onOpenBlast }) {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 1: NORMAL FORM FILL WITH META ACCOUNT IMAGE UPLOAD                   */}
+      {/* MODAL 1: ADD CONTACT FORM (LIGHT GRADIENT BG, ALL REQUIRED *, STRICT 10-DIGIT) */}
       {/* ========================================================================= */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
+          
+          <div className="relative w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6 my-auto text-slate-900">
             
-            {/* Header */}
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-md">
                   <BookUser className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
-                    Add Meta Contact (Normal Form Fill)
+                  <h3 className="text-lg font-black text-slate-900">
+                    Add New Contact Profile
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Upload Meta profile picture, enter 10-digit mobile number, email, and address.
+                  <p className="text-xs text-slate-500 font-medium">
+                    All fields marked with <span className="text-rose-500 font-bold">*</span> are required for database store.
                   </p>
                 </div>
               </div>
@@ -565,135 +619,134 @@ export default function Contacts({ onOpenBlast }) {
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer border border-slate-200"
+                className="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 border border-slate-300 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmitContact} id="contact-form" className="p-6 space-y-4">
+            {/* Professional Form */}
+            <form onSubmit={handleSubmitContact} id="contact-form" className="space-y-4 text-xs">
               
-              {/* Meta Account Image Upload */}
+              {/* Full Name */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Meta Account Profile Picture Upload
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Full Name <span className="text-rose-500 font-bold">*</span>
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
-                    {formData.image_url ? (
-                      <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="w-6 h-6 text-slate-400" />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <input
-                      type="file"
-                      ref={metaImageInputRef}
-                      accept="image/*"
-                      onChange={handleImageFileSelected}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => metaImageInputRef.current?.click()}
-                      className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs inline-flex items-center gap-2 border border-slate-200 transition-colors cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-sky-600" />
-                      <span>{formData.image_url ? 'Change Image' : 'Select Image File'}</span>
-                    </button>
-                    <p className="text-[10px] text-slate-400 mt-1 font-medium">Supports JPG, PNG, WEBP up to 5MB</p>
-                  </div>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ramesh Kumar"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-medium text-xs placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 shadow-2xs transition-all"
+                  />
                 </div>
               </div>
 
-              {/* Full Name */}
+              {/* WhatsApp Mobile Number (+91 STRICT 10 DIGITS ONLY) */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Full Name <span className="text-rose-500">*</span>
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  WhatsApp Mobile Number <span className="text-rose-500 font-bold">*</span>
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Vikramaditya Verma"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              {/* WhatsApp Mobile Number (10 Digits Only) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  WhatsApp Mobile Number (10 Digits Only) <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 flex items-center gap-1 text-slate-700 font-mono font-semibold pointer-events-none">
+                    <Phone className="w-4 h-4 text-emerald-600" />
+                    <span>+91</span>
+                  </div>
                   <input
-                    type="tel"
+                    type="text"
                     required
-                    placeholder="9876543210 (10 digits starting with 6,7,8,9)"
+                    maxLength={10}
+                    placeholder="9876543210 (Strictly 10 digits)"
                     value={formData.phone}
                     onChange={handlePhoneChange}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border text-xs font-mono font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none ${
-                      phoneError ? 'border-rose-500' : 'border-slate-200 focus:border-sky-500'
+                    className={`w-full pl-16 pr-4 py-2.5 rounded-xl bg-white border text-slate-900 font-mono font-medium text-xs placeholder-slate-400 focus:outline-none shadow-2xs transition-all ${
+                      phoneError ? 'border-rose-500 focus:ring-2 focus:ring-rose-500/10' : 'border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10'
                     }`}
                   />
                 </div>
                 {phoneError ? (
-                  <p className="text-[10px] text-rose-600 font-bold mt-1">{phoneError}</p>
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{phoneError}</span>
+                  </p>
                 ) : (
-                  <p className="text-[10px] text-emerald-600 font-semibold mt-1">✓ Formatted as +91 XXXXX XXXXX (10 digits only)</p>
+                  <p className="text-[10px] text-emerald-700 font-medium mt-1.5 flex items-center gap-1 font-mono">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Formatted as +91 {formData.phone || 'XXXXXXXXXX'} (Max 10 digits strictly enforced)</span>
+                  </p>
                 )}
               </div>
 
-              {/* Email */}
+              {/* Email Address */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Email Address
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Email Address <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="email"
-                    placeholder="vikram@enterprise.in"
+                    required
+                    placeholder="ramesh@company.com"
                     value={formData.email}
                     onChange={handleEmailChange}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border text-xs font-mono text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none ${
-                      emailError ? 'border-rose-500' : 'border-slate-200 focus:border-sky-500'
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border text-slate-900 font-mono font-medium text-xs placeholder-slate-400 focus:outline-none shadow-2xs transition-all ${
+                      emailError ? 'border-rose-500 focus:ring-2 focus:ring-rose-500/10' : 'border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10'
                     }`}
                   />
                 </div>
-                {emailError && <p className="text-[10px] text-rose-600 font-bold mt-1">{emailError}</p>}
+                {emailError && <p className="text-[11px] text-rose-600 font-semibold mt-1.5">{emailError}</p>}
               </div>
 
-              {/* Address */}
+              {/* Identity Field (Adding custom Identity string) */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Address
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Identity (Category Tag) <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                  <textarea
-                    rows={2}
-                    placeholder="Residential or business address..."
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-sky-500"
+                  <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tech_orange" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. VIP, Client, Lead, Doctor, Vendor, Partner..."
+                    value={formData.identity}
+                    onChange={(e) => setFormData({ ...formData, identity: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-medium text-xs placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 shadow-2xs transition-all"
                   />
+                </div>
+
+                {/* Identity Quick Click Suggestions */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-2">
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase">Quick Fill:</span>
+                  {['Client', 'SAP Fico', 'VIP', 'Lead', 'Vendor', 'Doctor', 'Partner'].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, identity: tag })}
+                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer ${
+                        formData.identity === tag
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-900 hover:text-white'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
                 </div>
               </div>
 
             </form>
 
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
+            {/* Modal Actions */}
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-300 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -702,10 +755,10 @@ export default function Contacts({ onOpenBlast }) {
                 type="submit"
                 form="contact-form"
                 disabled={submitting || !!phoneError || !!emailError}
-                className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
               >
                 {submitting ? <RotateCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                <span>{submitting ? 'Saving...' : 'Save Meta Contact'}</span>
+                <span>{submitting ? 'Storing in Database...' : 'Save Contact Profile'}</span>
               </button>
             </div>
 
@@ -714,106 +767,92 @@ export default function Contacts({ onOpenBlast }) {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: UPLOAD EXCEL SHEET MASS CONTACT IMPORT                           */}
+      {/* MODAL 2: UPLOAD EXCEL SHEET                                               */}
       {/* ========================================================================= */}
       {showUploadExcelModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto p-6 sm:p-8 space-y-6">
             
-            {/* Header */}
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
                   <FileSpreadsheet className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
-                    Upload Contact Excel Sheet
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Upload your mass contact CSV or Excel sheet file for instant database import.
-                  </p>
+                  <h3 className="text-lg font-black text-slate-900">Upload Excel Contact Sheet</h3>
+                  <p className="text-xs text-slate-500">Upload CSV file to import multiple WhatsApp contacts.</p>
                 </div>
+              </div>
+              <button onClick={() => setShowUploadExcelModal(false)} className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Download Template Notice Banner */}
+            <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div>
+                <div className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  <span>Required Excel / CSV Column Format</span>
+                </div>
+                <p className="text-[11px] text-emerald-800 mt-0.5 font-medium">
+                  Columns: <strong className="font-mono text-emerald-950">First name, Phone, Email, Identity</strong>
+                </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => {
-                  setShowUploadExcelModal(false);
-                  setExcelPreviewData([]);
-                  setExcelFileName('');
-                }}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer border border-slate-200"
+                onClick={handleDownloadTemplate}
+                className="px-4 py-2 rounded-xl bg-white hover:bg-emerald-100 text-emerald-900 font-extrabold text-xs flex items-center gap-1.5 border border-emerald-300 shadow-2xs cursor-pointer shrink-0"
               >
-                <X className="w-4 h-4" />
+                <Download className="w-4 h-4 text-emerald-600" />
+                <span>Download Template</span>
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
-              {/* File Upload Box */}
-              <div className="p-6 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-emerald-50/30 transition-all text-center space-y-3">
-                <FileSpreadsheet className="w-10 h-10 text-emerald-600 mx-auto" />
+            <div className="space-y-4">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".csv,.xlsx,.xls"
+                onChange={handleExcelFileUploaded}
+                className="hidden"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="p-8 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-emerald-50/30 text-center space-y-3 cursor-pointer transition-colors"
+              >
+                <Upload className="w-8 h-8 text-emerald-600 mx-auto" />
                 <div>
-                  <div className="text-xs font-extrabold text-slate-800">
-                    {excelFileName ? `Selected: ${excelFileName}` : 'Select or Drag & Drop Excel / CSV Sheet'}
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1">Columns: Name, Phone (10 digits), Email, Address, Status</p>
-                </div>
-
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept=".csv, .xlsx, .xls"
-                  onChange={handleExcelFileUploaded}
-                  className="hidden"
-                />
-
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Choose Excel File</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleDownloadSampleTemplate}
-                    className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download Demo Template</span>
-                  </button>
+                  <span className="text-xs font-extrabold text-slate-800">
+                    {excelFileName ? excelFileName : 'Click to select CSV or Excel contact sheet file'}
+                  </span>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Supports CSV files with columns: Name, Phone, Email, Identity</p>
                 </div>
               </div>
 
-              {/* Preview Table */}
               {excelPreviewData.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                    <span>Preview Contacts ({excelPreviewData.length} Found)</span>
-                    <span className="text-emerald-700 font-mono text-[11px]">Ready to Import</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-extrabold text-slate-800">Preview ({excelPreviewData.length} Contacts Found)</span>
                   </div>
-
-                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-100 text-slate-700 font-mono text-[10px] uppercase">
+                  <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0">
                         <tr>
-                          <th className="p-2 border-b">Name</th>
-                          <th className="p-2 border-b">Phone</th>
-                          <th className="p-2 border-b">Email</th>
-                          <th className="p-2 border-b">Address</th>
+                          <th className="p-2.5">Name</th>
+                          <th className="p-2.5">Phone</th>
+                          <th className="p-2.5">Email</th>
+                          <th className="p-2.5">Identity</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 font-medium text-[11px]">
-                        {excelPreviewData.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50">
-                            <td className="p-2 font-bold text-slate-900">{row.name}</td>
-                            <td className="p-2 font-mono text-emerald-700 font-bold">{row.phone}</td>
-                            <td className="p-2 text-slate-500">{row.email}</td>
-                            <td className="p-2 text-slate-500 truncate max-w-[150px]">{row.address}</td>
+                      <tbody className="divide-y divide-slate-100 text-slate-700 font-mono">
+                        {excelPreviewData.slice(0, 10).map((row, idx) => (
+                          <tr key={idx}>
+                            <td className="p-2.5 font-sans font-bold text-slate-900">{row.name}</td>
+                            <td className="p-2.5 text-emerald-700 font-bold">{row.phone}</td>
+                            <td className="p-2.5">{row.email}</td>
+                            <td className="p-2.5">{row.identity || 'Client'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -823,28 +862,22 @@ export default function Contacts({ onOpenBlast }) {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  setShowUploadExcelModal(false);
-                  setExcelPreviewData([]);
-                  setExcelFileName('');
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                onClick={() => setShowUploadExcelModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
                 onClick={handleBulkImportSubmit}
                 disabled={importingExcel || excelPreviewData.length === 0}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-2 shadow-sm disabled:opacity-50"
               >
                 {importingExcel ? <RotateCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                <span>{importingExcel ? 'Importing...' : `Import ${excelPreviewData.length} Contacts to Database`}</span>
+                <span>{importingExcel ? 'Importing...' : 'Confirm Bulk Import'}</span>
               </button>
             </div>
 

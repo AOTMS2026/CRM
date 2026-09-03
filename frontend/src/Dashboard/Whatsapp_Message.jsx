@@ -93,9 +93,9 @@ export default function WhatsappMessage() {
 
   const getApiBase = () => {
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return 'http://127.0.0.1:8000';
+      return 'http://localhost:5000';
     }
-    return import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com';
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   };
 
   const showToast = (msg, type = 'success') => {
@@ -364,7 +364,7 @@ export default function WhatsappMessage() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Real-time API sync with Meta Cloud API. Upload local images, configure action buttons, and manage official approved templates.
+                Real-time API sync with Meta Cloud API.
               </p>
             </div>
           </div>

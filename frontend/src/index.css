@@ -160,13 +160,27 @@
   color-scheme: dark;
 }
 
+html {
+  font-size: 19px; /* Overall website text size boost across Auth, Dashboard, Navbars, Content, and Tables */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   margin: 0;
   padding: 0;
   background-color: #080d1a;
   color: #f8fafc;
   font-family: 'Nunito Sans', sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
   overflow-x: hidden;
+}
+
+/* Form controls & interactive elements global size enhancement */
+input, select, textarea, button {
+  font-family: inherit;
 }
 
 /* Atmospheric Calm SaaS Navbar Styles */

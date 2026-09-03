@@ -50,9 +50,9 @@ export default function LeadsPipeline({ onOpenBlast }) {
 
   const getApiBase = () => {
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return 'http://127.0.0.1:8000';
+      return 'http://localhost:5000';
     }
-    return import.meta.env.VITE_API_BASE_URL || 'https://crm-fee1.onrender.com';
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   };
 
   const showToastMsg = (msg, type = 'success') => {
@@ -280,7 +280,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              User Management Style Card view, strict 10-digit (+91) mobile number validation, 3 status pipeline (Inquiries, Demo, Enrolled), and direct WhatsApp Blast integration.
+              User Management Style Card view,status pipeline (Inquiries, Demo, Enrolled), and direct WhatsApp Blast integration.
             </p>
           </div>
         </div>
@@ -295,7 +295,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
             title="Remove redundant duplicate lead records"
           >
             <ShieldCheck className={`w-4 h-4 ${deduplicating ? 'animate-spin text-rose-600' : 'text-slate-500'}`} />
-            <span>{deduplicating ? 'Cleaning Duplicates...' : 'Remove Duplicate Data'}</span>
+           
           </button>
 
           <button
@@ -314,7 +314,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Lead</span>
+            <span>AddLead</span>
           </button>
         </div>
       </div>

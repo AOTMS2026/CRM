@@ -161,7 +161,7 @@ export default function Navbar() {
                     onMouseLeave={handleMouseLeave}
                   >
                     <button
-                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[15px] font-medium transition-colors duration-150 ${
+                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-base font-bold transition-colors duration-150 ${
                         activeDropdown === 'solutions' 
                           ? 'text-white bg-slate_dark-400' 
                           : 'text-slate-200 hover:text-white hover:bg-slate_dark-400/60'
@@ -169,7 +169,7 @@ export default function Navbar() {
                     >
                       <span>{link.name}</span>
                       <IoChevronDown 
-                        className={`text-xs text-tech_blue-700 transition-transform duration-200 ${
+                        className={`text-sm text-tech_blue-700 transition-transform duration-200 ${
                           activeDropdown === 'solutions' ? 'rotate-180 text-tech_orange' : ''
                         }`} 
                       />
@@ -190,7 +190,7 @@ export default function Navbar() {
                                 {item.icon}
                               </div>
                               <div>
-                                <div className="text-sm font-semibold text-white group-hover:text-tech_orange transition-colors">
+                                <div className="text-base font-bold text-white group-hover:text-tech_orange transition-colors">
                                   {item.title}
                                 </div>
                                 <div className="text-xs text-slate-300 leading-normal mt-0.5">
@@ -210,7 +210,7 @@ export default function Navbar() {
                 <a
                   key={link.name}
                   href={link.href}
-                  className="px-4 py-2.5 rounded-lg text-[15px] font-medium text-slate-200 hover:text-white hover:bg-slate_dark-400/60 transition-colors duration-150"
+                  className="px-4 py-2.5 rounded-lg text-base font-bold text-slate-200 hover:text-white hover:bg-slate_dark-400/60 transition-colors duration-150"
                 >
                   {link.name}
                 </a>
