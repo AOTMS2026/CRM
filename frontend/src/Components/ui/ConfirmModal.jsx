@@ -8,7 +8,7 @@ export default function ConfirmModal({
   message = "Are you sure you want to proceed?",
   confirmText = "OK",
   cancelText = "Cancel",
-  type = "primary", // "primary", "danger", "warning"
+  type = "primary",
   loading = false,
   onConfirm,
   onCancel

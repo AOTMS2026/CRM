@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
-import ConfirmModal from '../components/ui/ConfirmModal';
+import ConfirmModal from '../Components/ui/ConfirmModal';
 
 export default function WhatsappMessage() {
   const [templates, setTemplates] = useState([]);
