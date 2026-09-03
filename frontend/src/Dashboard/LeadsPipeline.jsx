@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Target, 
   Plus, 
@@ -16,11 +16,23 @@ import {
   Send,
   AlertCircle,
   Eye,
-  Activity,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Download,
+  Upload,
+  FileSpreadsheet,
+  User,
+  Tag,
+  LayoutGrid,
+  List,
+  Filter,
+  Award,
+  Clock,
+  Check
 } from 'lucide-react';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
+
+import ConfirmModal from '../Components/ui/ConfirmModal';
 
 export default function LeadsPipeline({ onOpenBlast }) {
   const [leads, setLeads] = useState([]);
@@ -29,21 +41,31 @@ export default function LeadsPipeline({ onOpenBlast }) {
   const [deduplicating, setDeduplicating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState('ALL');
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
   
   // Modals & Toast State
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, name: '' });
 
-  // Form State (Cleaned per user specs: name, email, phone, address, status, read_rate)
+  // File Upload Ref
+  const fileInputRef = useRef(null);
+
+  // Form State (Cleaned per user specs: identity, employeeName, leadStatusUpdate, secondUpdate, finalUpdate, status)
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     address: '',
-    status: 'Inquiries',
-    read_rate: '95%'
+    identity: 'SAP FICO',
+    employeeName: 'Jayaveer',
+    leadStatusUpdate: '',
+    secondUpdate: '',
+    finalUpdate: '',
+    status: 'Intrest'
   });
 
   // Validation States
@@ -83,6 +105,107 @@ export default function LeadsPipeline({ onOpenBlast }) {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  // ---------------------------------------------------------------------------
+  // SAMPLE EXCEL / CSV TEMPLATE DOWNLOAD ("Template Download")
+  // ---------------------------------------------------------------------------
+  const handleDownloadTemplate = () => {
+    const csvContent = "Name,Phone,Email,Address,Identity,Employee Name,Lead Status Update,2nd Update,Final Update,Status\n" +
+      "Jayaveer Lead,9876543210,jayaveer@example.com,Hyderabad,SAP FICO,Jayaveer,First call connected - interested in SAP,Sent course syllabus & fee details,Confirmed enrollment date,Intrest\n" +
+      "Rahul Sharma,8121016848,rahul@example.com,Bangalore,VIP,Anjali,Call back requested tomorrow,Discussed pricing plans,Attended live demo session,Pipeline\n" +
+      "Suresh Kumar,9123456789,suresh@example.com,Mumbai,Client,Raman,Not reachable on 1st try,Sent WhatsApp message,Not interested currently,Not Intrest\n";
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Leads_Import_Template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToastMsg("Sample Leads Excel/CSV Template downloaded!", "success");
+  };
+
+  // ---------------------------------------------------------------------------
+  // FILE UPLOAD FOR LEADS EXCEL / CSV IMPORT
+  // ---------------------------------------------------------------------------
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const text = evt.target.result;
+        const lines = text.split(/\r\n|\n/);
+        if (lines.length < 2) {
+          showToastMsg("File is empty or contains no lead rows.", "error");
+          return;
+        }
+
+        const parsedLeads = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const row = lines[i].split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
+          if (row.length < 2) continue;
+
+          const name = row[0] || 'Imported Lead';
+          const rawPhone = (row[1] || '').replace(/\D/g, '');
+          const phone = rawPhone.length > 10 && rawPhone.startsWith('91') ? rawPhone.slice(2) : rawPhone;
+          const email = row[2] || '';
+          const address = row[3] || '';
+          const identity = row[4] || 'SAP FICO';
+          const employeeName = row[5] || 'Jayaveer';
+          const leadStatusUpdate = row[6] || '';
+          const secondUpdate = row[7] || '';
+          const finalUpdate = row[8] || '';
+          const status = row[9] || 'Intrest';
+
+          if (phone.length === 10 && ['6','7','8','9'].includes(phone[0])) {
+            parsedLeads.push({
+              name,
+              phone,
+              email,
+              address,
+              identity,
+              employeeName,
+              leadStatusUpdate,
+              secondUpdate,
+              finalUpdate,
+              status
+            });
+          }
+        }
+
+        if (parsedLeads.length === 0) {
+          showToastMsg("No valid 10-digit mobile leads found in uploaded file.", "error");
+          return;
+        }
+
+        let addedCount = 0;
+        for (const leadData of parsedLeads) {
+          try {
+            const res = await fetch(`${getApiBase()}/api/leads`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(leadData)
+            });
+            if (res.ok) addedCount++;
+          } catch (err) {
+            // Ignore individual duplicate errors
+          }
+        }
+
+        showToastMsg(`Successfully imported ${addedCount} leads from file!`, "success");
+        await fetchLeads();
+      } catch (err) {
+        showToastMsg("Error parsing uploaded Excel file.", "error");
+      }
+    };
+
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   // ---------------------------------------------------------------------------
   // STRICT 10-DIGIT MOBILE & EMAIL VALIDATION
@@ -133,7 +256,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
       const res = await fetch(`${getApiBase()}/api/leads/deduplicate`, { method: 'POST' });
       const result = await res.json();
       if (res.ok && result.success) {
-        showToastMsg(result.message || `Removed ${result.duplicates_removed} duplicate records!`, "success");
+        showToastMsg(result.message || `Removed ${result.removedCount || 0} duplicate records!`, "success");
         await fetchLeads();
       } else {
         throw new Error(result.detail || "Failed to remove duplicates.");
@@ -162,11 +285,15 @@ export default function LeadsPipeline({ onOpenBlast }) {
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
-        status: formData.status || 'Inquiries',
-        read_rate: formData.read_rate || '95%'
+        identity: formData.identity,
+        employeeName: formData.employeeName,
+        leadStatusUpdate: formData.leadStatusUpdate,
+        secondUpdate: formData.secondUpdate,
+        finalUpdate: formData.finalUpdate,
+        status: formData.status || 'Intrest'
       };
 
-      const url = editingLead ? `${getApiBase()}/api/leads/${editingLead.id}` : `${getApiBase()}/api/leads`;
+      const url = editingLead ? `${getApiBase()}/api/leads/${editingLead._id || editingLead.id}` : `${getApiBase()}/api/leads`;
       const method = editingLead ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -182,7 +309,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
         setEditingLead(null);
         await fetchLeads();
       } else {
-        throw new Error(result.detail || "Failed to save lead.");
+        throw new Error(result.message || "Failed to save lead.");
       }
     } catch (err) {
       showToastMsg(err.message || "Error saving lead.", "error");
@@ -191,18 +318,44 @@ export default function LeadsPipeline({ onOpenBlast }) {
     }
   };
 
-  const handleDeleteLead = async (leadId, leadName) => {
-    if (!window.confirm(`Are you sure you want to delete '${leadName}'?`)) return;
-
+  const handleStageChange = async (lead, newStatus) => {
     try {
-      const res = await fetch(`${getApiBase()}/api/leads/${leadId}`, { method: 'DELETE' });
+      const res = await fetch(`${getApiBase()}/api/leads/${lead._id || lead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
       const result = await res.json();
       if (res.ok && result.success) {
-        showToastMsg(`Lead '${leadName}' deleted successfully.`, "success");
+        showToastMsg(`Lead '${lead.name}' status updated to ${newStatus}!`, "success");
+        setLeads(prev => prev.map(l => (l._id || l.id) === (lead._id || lead.id) ? { ...l, status: newStatus } : l));
+      }
+    } catch (err) {
+      showToastMsg("Failed to update status.", "error");
+    }
+  };
+
+  const handleDeleteLead = (leadId, leadName) => {
+    setDeleteConfirm({
+      isOpen: true,
+      id: leadId,
+      name: leadName
+    });
+  };
+
+  const confirmDeleteLead = async () => {
+    if (!deleteConfirm.id) return;
+    try {
+      const res = await fetch(`${getApiBase()}/api/leads/${deleteConfirm.id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToastMsg(`Lead '${deleteConfirm.name}' deleted successfully.`, "success");
         await fetchLeads();
       }
     } catch (err) {
       showToastMsg(err.message || "Error deleting lead.", "error");
+    } finally {
+      setDeleteConfirm({ isOpen: false, id: null, name: '' });
     }
   };
 
@@ -213,8 +366,12 @@ export default function LeadsPipeline({ onOpenBlast }) {
       phone: lead.phone || '',
       email: lead.email || '',
       address: lead.address || '',
-      status: lead.status || lead.pipeline_stage || 'Inquiries',
-      read_rate: lead.read_rate || '95%'
+      identity: lead.identity || 'SAP FICO',
+      employeeName: lead.employeeName || 'Jayaveer',
+      leadStatusUpdate: lead.leadStatusUpdate || '',
+      secondUpdate: lead.secondUpdate || '',
+      finalUpdate: lead.finalUpdate || '',
+      status: lead.status || 'Intrest'
     });
     setPhoneError('');
     setEmailError('');
@@ -228,24 +385,70 @@ export default function LeadsPipeline({ onOpenBlast }) {
       phone: '',
       email: '',
       address: '',
-      status: 'Inquiries',
-      read_rate: '95%'
+      identity: 'SAP FICO',
+      employeeName: 'Jayaveer',
+      leadStatusUpdate: '',
+      secondUpdate: '',
+      finalUpdate: '',
+      status: 'Intrest'
     });
     setPhoneError('');
     setEmailError('');
     setShowAddModal(true);
   };
 
-  const statusOptions = ['Inquiries', 'Demo', 'Enrolled'];
+  const statusOptions = ['Intrest', 'Not Intrest', 'Pipeline', 'Total', 'Inquiries', 'Demo', 'Enrolled'];
 
+  // Extract unique Employee Names for Tracker
+  const employeeNamesList = useMemo(() => {
+    const namesSet = new Set(['Jayaveer', 'Raman', 'Anjali', 'Kiran', 'Suresh']);
+    leads.forEach(l => {
+      if (l.employeeName && l.employeeName.trim()) {
+        namesSet.add(l.employeeName.trim());
+      }
+    });
+    return Array.from(namesSet);
+  }, [leads]);
+
+  // Compute Employee Daily Calling Performance Stats
+  const employeeStats = useMemo(() => {
+    const map = {};
+    employeeNamesList.forEach(emp => {
+      map[emp] = { total: 0, interested: 0, pipeline: 0, joined: 0 };
+    });
+
+    leads.forEach(l => {
+      const emp = (l.employeeName && l.employeeName.trim()) ? l.employeeName.trim() : 'Jayaveer';
+      if (!map[emp]) {
+        map[emp] = { total: 0, interested: 0, pipeline: 0, joined: 0 };
+      }
+      map[emp].total += 1;
+      const st = (l.status || '').toLowerCase();
+      if (st.includes('intrest') || st.includes('interest')) map[emp].interested += 1;
+      if (st.includes('pipe') || st.includes('demo') || st.includes('inquir')) map[emp].pipeline += 1;
+      if (st.includes('enrol') || st.includes('joined') || st.includes('total') || st.includes('won')) map[emp].joined += 1;
+    });
+
+    return map;
+  }, [leads, employeeNamesList]);
+
+  // Filtered Leads
   const filteredLeads = leads.filter(lead => {
-    const currStatus = (lead.status || lead.pipeline_stage || 'Inquiries').toUpperCase();
+    const currStatus = (lead.status || 'Intrest').toUpperCase();
     const matchesStatus = selectedStatus === 'ALL' || currStatus === selectedStatus.toUpperCase();
-    const matchesSearch = (lead.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (lead.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (lead.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (lead.address || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    
+    const currEmp = (lead.employeeName || 'Jayaveer').toUpperCase();
+    const matchesEmployee = selectedEmployeeFilter === 'ALL' || currEmp === selectedEmployeeFilter.toUpperCase();
+
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = (lead.name || '').toLowerCase().includes(query) ||
+                          (lead.phone || '').toLowerCase().includes(query) ||
+                          (lead.email || '').toLowerCase().includes(query) ||
+                          (lead.identity || '').toLowerCase().includes(query) ||
+                          (lead.employeeName || '').toLowerCase().includes(query) ||
+                          (lead.address || '').toLowerCase().includes(query);
+    
+    return matchesStatus && matchesEmployee && matchesSearch;
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -253,7 +456,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedStatus]);
+  }, [searchQuery, selectedStatus, selectedEmployeeFilter]);
 
   const totalPages = Math.ceil(filteredLeads.length / ITEMS_PER_PAGE) || 1;
   const paginatedLeads = filteredLeads.slice(
@@ -261,12 +464,42 @@ export default function LeadsPipeline({ onOpenBlast }) {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const getStatusBadgeClass = (statusStr) => {
+    const st = (statusStr || '').toLowerCase();
+    if (st.includes('intrest') && !st.includes('not')) return 'bg-emerald-50 text-emerald-800 border-emerald-300';
+    if (st.includes('not intrest')) return 'bg-rose-50 text-rose-800 border-rose-300';
+    if (st.includes('pipe')) return 'bg-sky-50 text-sky-800 border-sky-300';
+    if (st.includes('enrol') || st.includes('joined')) return 'bg-purple-50 text-purple-800 border-purple-300';
+    return 'bg-amber-50 text-amber-800 border-amber-300';
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       
+      {/* Custom In-App Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Lead Record"
+        message={`Are you sure you want to permanently delete lead '${deleteConfirm.name}' from MongoDB?`}
+        type="danger"
+        confirmText="OK, Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteLead}
+        onCancel={() => setDeleteConfirm({ isOpen: false, id: null, name: '' })}
+      />
+
+      {/* Hidden File Input for Excel Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept=".csv, .xlsx, .xls"
+        className="hidden"
+      />
+
       {/* Toast Alert Banner */}
       {toast && (
-        <div className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between shadow-md transition-all animate-in fade-in ${
+        <div className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between shadow-md transition-all ${
           toast.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
         }`}>
           <div className="flex items-center gap-2.5">
@@ -280,69 +513,179 @@ export default function LeadsPipeline({ onOpenBlast }) {
       )}
 
       {/* Header Bar */}
-      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-            <Target className="w-5 h-5" />
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-800">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-inner">
+            <Target className="w-7 h-7" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                WhatsApp Lead Management Studio
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 font-mono">
-                {leads.length} Contacts
+              <h1 className="text-xl font-black tracking-tight">Leads & Employee Pipeline Studio</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                {leads.length} Active Leads
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              User Management Style Card view,status pipeline (Inquiries, Demo, Enrolled), and direct WhatsApp Blast integration.
+            <p className="text-xs text-slate-300 mt-0.5 max-w-xl">
+              Track daily employee calling updates (1st Update, 2nd Update, Final Update), employee lead conversions, and Cards / Table view mode.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          
+          {/* Cards vs Table View Toggle */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-800 border border-slate-700">
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'cards' 
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-xs' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Switch to Cards View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'table' 
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-xs' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Switch to Table View"
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+          </div>
+
+          {/* Download Sample Excel Template Button */}
+          <button
+            type="button"
+            onClick={handleDownloadTemplate}
+            className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+            title="Download Sample Excel Import Template"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span>Template Download</span>
+          </button>
+
+          {/* Import Excel Button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+            className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+            title="Upload & Import Leads Excel Sheet"
+          >
+            <Upload className="w-3.5 h-3.5 text-sky-400" />
+            <span>Upload Excel</span>
+          </button>
+
           {/* Deduplicate Button */}
           <button
             type="button"
             onClick={handleRemoveDuplicates}
             disabled={deduplicating}
-            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-200 shadow-2xs"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
             title="Remove redundant duplicate lead records"
           >
-            <ShieldCheck className={`w-4 h-4 ${deduplicating ? 'animate-spin text-rose-600' : 'text-slate-500'}`} />
-           
+            <ShieldCheck className={`w-3.5 h-3.5 ${deduplicating ? 'animate-spin text-rose-400' : 'text-rose-400'}`} />
+            <span>Purge Dupes</span>
           </button>
 
+          {/* Refresh */}
           <button
             type="button"
             onClick={fetchLeads}
             disabled={refreshing}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-amber-600' : ''}`} />
+            <RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-amber-400' : ''}`} />
             <span>Refresh</span>
           </button>
 
+          {/* Add Lead */}
           <button
             type="button"
             onClick={openNewLeadModal}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
           >
             <Plus className="w-4 h-4" />
-            <span>AddLead</span>
+            <span>Add Lead</span>
           </button>
         </div>
       </div>
 
-      {/* Filter & Search Bar (Only 3 Status Stages: Inquiries, Demo, Enrolled) */}
+      {/* ========================================================================= */}
+      {/* EMPLOYEE DAILY CALLING & LEAD JOINED PERFORMANCE TRACKER                  */}
+      {/* ========================================================================= */}
+      <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Award className="w-4 h-4 text-tech_orange" />
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Employee Daily Calling & Lead Conversion Summary</h3>
+          </div>
+          <span className="text-[11px] font-mono text-slate-400 font-bold">Tracked by Employee Name</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {employeeNamesList.map(empName => {
+            const stats = employeeStats[empName] || { total: 0, interested: 0, pipeline: 0, joined: 0 };
+            return (
+              <div 
+                key={empName}
+                onClick={() => setSelectedEmployeeFilter(selectedEmployeeFilter === empName ? 'ALL' : empName)}
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 ${
+                  selectedEmployeeFilter === empName 
+                    ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-400/20' 
+                    : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-black text-xs flex items-center justify-center">
+                      {empName.charAt(0)}
+                    </div>
+                    <span className="font-extrabold text-xs text-slate-900 truncate">{empName}</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-200 text-slate-700">
+                    {stats.total} Leads
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1 text-[10px] pt-1 border-t border-slate-200/60 font-mono">
+                  <div className="text-center">
+                    <span className="block text-slate-400 font-semibold">Intrest</span>
+                    <span className="font-black text-emerald-700">{stats.interested}</span>
+                  </div>
+                  <div className="text-center border-x border-slate-200">
+                    <span className="block text-slate-400 font-semibold">Pipeline</span>
+                    <span className="font-black text-sky-700">{stats.pipeline}</span>
+                  </div>
+                  <div className="text-center">
+                    <span className="block text-slate-400 font-semibold">Joined</span>
+                    <span className="font-black text-amber-700 font-bold">🌟 {stats.joined}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* 3 Status Stage Pills */}
+        {/* Status Stage Pills */}
         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
           {['ALL', ...statusOptions].map((stg) => (
             <button
               key={stg}
               onClick={() => setSelectedStatus(stg)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
                 selectedStatus.toUpperCase() === stg.toUpperCase()
                   ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -358,7 +701,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by name, 10-digit phone, email, address..."
+            placeholder="Search name, phone, identity, employee..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-xs"
@@ -366,20 +709,22 @@ export default function LeadsPipeline({ onOpenBlast }) {
         </div>
       </div>
 
-      {/* USER MANAGEMENT STYLE LEAD CARDS GRID */}
+      {/* ========================================================================= */}
+      {/* MAIN LEAD LISTING (CARDS VS TABLE VIEW MODE)                              */}
+      {/* ========================================================================= */}
       {loading ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
           <RotateCw className="w-6 h-6 animate-spin text-amber-600 mx-auto mb-2" />
-          <p className="text-xs text-slate-500 font-semibold">Loading Leads from Neon Database...</p>
+          <p className="text-xs text-slate-500 font-semibold">Loading Leads from MongoDB Atlas...</p>
         </div>
       ) : filteredLeads.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
             <Target className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-bold text-slate-800">No leads found</h3>
+          <h3 className="text-sm font-bold text-slate-800">No leads found matching criteria</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Click Add Lead to create a new contact with name, phone, email, address, and status.
+            Try resetting your search query or status filter, or click Add Lead to create a new profile.
           </p>
           <button
             onClick={openNewLeadModal}
@@ -389,43 +734,50 @@ export default function LeadsPipeline({ onOpenBlast }) {
             <span>Add First Lead</span>
           </button>
         </div>
-      ) : (
+      ) : viewMode === 'cards' ? (
+        
+        /* CARD STYLE GRID VIEW */
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {paginatedLeads.map((lead) => {
               const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
-              const leadStatus = lead.status || lead.pipeline_stage || 'Inquiries';
+              const leadStatus = lead.status || 'Intrest';
 
               return (
                 <div
-                  key={lead.id}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-amber-300 transition-all duration-200 flex flex-col justify-between space-y-4 group"
+                  key={lead._id || lead.id}
+                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-amber-300 transition-all duration-200 flex flex-col justify-between space-y-4 group relative overflow-hidden"
                 >
-                  <div className="space-y-3">
-                    {/* Header Avatar & Status Badge (Inquiries, Demo, Enrolled) */}
+                  {/* Top Gradient Bar */}
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 to-emerald-500" />
+
+                  <div className="space-y-3 pt-1">
+                    
+                    {/* Header Avatar & Status Dropdown Selector */}
                     <div className="flex items-start justify-between">
-                      <div className="relative w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 text-amber-900 flex items-center justify-center text-lg font-black shadow-xs group-hover:scale-105 transition-transform">
-                        {(lead.name || 'L').charAt(0)}
-                        <span className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                          leadStatus === 'Enrolled' ? 'bg-emerald-500' :
-                          leadStatus === 'Demo' ? 'bg-purple-500' : 'bg-sky-500'
-                        }`} />
+                      <div className="relative w-11 h-11 rounded-2xl bg-amber-100/80 border border-amber-200 text-amber-900 flex items-center justify-center text-base font-black shadow-xs group-hover:scale-105 transition-transform">
+                        {(lead.name || 'L').charAt(0).toUpperCase()}
                       </div>
 
-                      {/* Interactive Stage Selector */}
                       <select
                         value={leadStatus}
                         onChange={(e) => handleStageChange(lead, e.target.value)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold cursor-pointer border focus:outline-none transition-all shadow-2xs ${
-                          leadStatus === 'Enrolled' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' :
-                          leadStatus === 'Demo' ? 'bg-purple-50 text-purple-800 border-purple-300' :
-                          'bg-sky-50 text-sky-800 border-sky-300'
-                        }`}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold cursor-pointer border focus:outline-none transition-all shadow-2xs ${getStatusBadgeClass(leadStatus)}`}
                       >
-                        <option value="Inquiries">Inquiries</option>
-                        <option value="Demo">Demo</option>
-                        <option value="Enrolled">Enrolled</option>
+                        {statusOptions.map(stg => (
+                          <option key={stg} value={stg}>{stg}</option>
+                        ))}
                       </select>
+                    </div>
+
+                    {/* Identity Chip & Assigned Employee */}
+                    <div className="flex items-center justify-between text-xs gap-1">
+                      <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                        🏷️ {lead.identity || 'SAP FICO'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                        👤 {lead.employeeName || 'Jayaveer'}
+                      </span>
                     </div>
 
                     {/* Lead Name */}
@@ -436,7 +788,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
                     </div>
 
                     {/* Phone & Email */}
-                    <div className="space-y-1 text-xs pt-1">
+                    <div className="space-y-1 text-xs">
                       <div className="flex items-center gap-2 text-slate-700 font-bold font-mono">
                         <Phone className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         <span>+91 {lead.phone}</span>
@@ -448,15 +800,32 @@ export default function LeadsPipeline({ onOpenBlast }) {
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Read Rate / Engagement Badge */}
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Read Rate</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black font-mono flex items-center gap-1">
-                      <Activity className="w-3 h-3 text-emerald-600" />
-                      <span>{lead.read_rate || '95%'}</span>
-                    </span>
+                    {/* 3 Calling Updates Timeline (1st, 2nd, Final) */}
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-[11px]">
+                      {lead.leadStatusUpdate && (
+                        <div className="flex items-start gap-1.5 text-slate-800 font-medium leading-tight">
+                          <span className="text-[10px] font-mono font-bold text-amber-600 uppercase shrink-0">1st:</span>
+                          <span className="line-clamp-2">{lead.leadStatusUpdate}</span>
+                        </div>
+                      )}
+                      {lead.secondUpdate && (
+                        <div className="flex items-start gap-1.5 text-slate-700 font-medium leading-tight">
+                          <span className="text-[10px] font-mono font-bold text-sky-600 uppercase shrink-0">2nd:</span>
+                          <span className="line-clamp-2">{lead.secondUpdate}</span>
+                        </div>
+                      )}
+                      {lead.finalUpdate && (
+                        <div className="flex items-start gap-1.5 text-slate-900 font-extrabold leading-tight">
+                          <span className="text-[10px] font-mono font-bold text-emerald-600 uppercase shrink-0">Final:</span>
+                          <span className="line-clamp-2">{lead.finalUpdate}</span>
+                        </div>
+                      )}
+                      {!lead.leadStatusUpdate && !lead.secondUpdate && !lead.finalUpdate && (
+                        <span className="text-[10px] text-slate-400 italic">No calling updates logged yet.</span>
+                      )}
+                    </div>
+
                   </div>
 
                   {/* Action Row */}
@@ -475,7 +844,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
 
                     {/* Direct WhatsApp Chat */}
                     <a
-                      href={`https://wa.me/${cleanPhone}`}
+                      href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}`}
                       target="_blank"
                       rel="noreferrer"
                       className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
@@ -498,7 +867,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
                       type="button"
                       onClick={() => handleEditClick(lead)}
                       className="p-2 rounded-xl bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 border border-slate-200 transition-colors cursor-pointer"
-                      title="Edit Lead"
+                      title="Edit Lead Details"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
@@ -506,7 +875,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
                     {/* Delete */}
                     <button
                       type="button"
-                      onClick={() => handleDeleteLead(lead.id, lead.name)}
+                      onClick={() => handleDeleteLead(lead._id || lead.id, lead.name)}
                       className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
                       title="Delete Lead"
                     >
@@ -554,10 +923,170 @@ export default function LeadsPipeline({ onOpenBlast }) {
             </div>
           )}
         </div>
+
+      ) : (
+
+        /* TABLE VIEW MODE */
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <th className="py-4 px-6">Lead Name & Mobile</th>
+                    <th className="py-4 px-6">Identity</th>
+                    <th className="py-4 px-6">Employee</th>
+                    <th className="py-4 px-6">Calling Updates (1st, 2nd, Final)</th>
+                    <th className="py-4 px-6">Status</th>
+                    <th className="py-4 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {paginatedLeads.map((lead) => {
+                    const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
+                    const leadStatus = lead.status || 'Intrest';
+
+                    return (
+                      <tr key={lead._id || lead.id} className="hover:bg-slate-50/80 transition-colors group">
+                        
+                        {/* Lead Name & Mobile */}
+                        <td className="py-4 px-6">
+                          <div className="space-y-0.5">
+                            <div className="font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors">
+                              {lead.name}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-slate-600 font-mono">
+                              <Phone className="w-3 h-3 text-amber-600 shrink-0" />
+                              <span>+91 {lead.phone}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Identity */}
+                        <td className="py-4 px-6">
+                          <span className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-xs font-bold font-mono">
+                            🏷️ {lead.identity || 'SAP FICO'}
+                          </span>
+                        </td>
+
+                        {/* Employee Name */}
+                        <td className="py-4 px-6">
+                          <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold font-mono">
+                            👤 {lead.employeeName || 'Jayaveer'}
+                          </span>
+                        </td>
+
+                        {/* Calling Updates (1st, 2nd, Final) */}
+                        <td className="py-4 px-6">
+                          <div className="space-y-1 text-xs max-w-xs">
+                            {lead.leadStatusUpdate && (
+                              <div className="text-slate-800"><strong className="text-amber-600">1st:</strong> {lead.leadStatusUpdate}</div>
+                            )}
+                            {lead.secondUpdate && (
+                              <div className="text-slate-700"><strong className="text-sky-600">2nd:</strong> {lead.secondUpdate}</div>
+                            )}
+                            {lead.finalUpdate && (
+                              <div className="text-slate-900 font-bold"><strong className="text-emerald-600">Final:</strong> {lead.finalUpdate}</div>
+                            )}
+                            {!lead.leadStatusUpdate && !lead.secondUpdate && !lead.finalUpdate && (
+                              <span className="text-slate-400 italic">No notes</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-4 px-6">
+                          <select
+                            value={leadStatus}
+                            onChange={(e) => handleStageChange(lead, e.target.value)}
+                            className={`px-2.5 py-1 rounded-full text-xs font-extrabold cursor-pointer border focus:outline-none transition-all shadow-2xs ${getStatusBadgeClass(leadStatus)}`}
+                          >
+                            {statusOptions.map(stg => (
+                              <option key={stg} value={stg}>{stg}</option>
+                            ))}
+                          </select>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <a
+                              href={`https://wa.me/${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                              title="Chat on WhatsApp"
+                            >
+                              <WhatsApp className="w-3.5 h-3.5" />
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => handleEditClick(lead)}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 text-slate-600 hover:text-sky-600 border border-slate-200 transition-colors cursor-pointer"
+                              title="Edit Lead"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteLead(lead._id || lead.id, lead.name)}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer"
+                              title="Delete Lead"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer Controls */}
+            {filteredLeads.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border-t border-slate-200/80 gap-3">
+                <div className="text-xs font-bold text-slate-500">
+                  Showing <span className="text-slate-900 font-extrabold">{paginatedLeads.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> to <span className="text-slate-900 font-extrabold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredLeads.length)}</span> of <span className="text-slate-900 font-extrabold">{filteredLeads.length}</span> leads
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Previous</span>
+                  </button>
+
+                  <span className="px-3.5 py-1.5 text-xs font-black text-slate-900 bg-slate-100 rounded-lg font-mono">
+                    Page {currentPage} of {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ========================================================================= */}
-      {/* ADD / EDIT LEAD MODAL (Name, Email, 10-Digit Phone, Address, Status, Read Rate) */}
+      {/* ADD / EDIT LEAD MODAL FORM                                                */}
       {/* ========================================================================= */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -571,10 +1100,10 @@ export default function LeadsPipeline({ onOpenBlast }) {
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900">
-                    {editingLead ? `Edit Lead: ${editingLead.name}` : 'Add WhatsApp Automation Lead'}
+                    {editingLead ? `Edit Lead: ${editingLead.name}` : 'Add New Lead Profile'}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Fill in name, email, 10-digit mobile number, address, and status stage.
+                    Fill in lead details, assigned employee, calling updates, and status.
                   </p>
                 </div>
               </div>
@@ -589,7 +1118,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
             </div>
 
             {/* Form Body */}
-            <form onSubmit={handleSubmitLead} id="lead-form" className="p-6 space-y-4">
+            <form onSubmit={handleSubmitLead} id="lead-form" className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               
               {/* 1. Full Name */}
               <div>
@@ -599,14 +1128,14 @@ export default function LeadsPipeline({ onOpenBlast }) {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Dr. Srinivas Rao"
+                  placeholder="e.g. Jayaveer Lead"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-amber-500"
                 />
               </div>
 
-              {/* 2. WhatsApp Mobile Number (10 Digits Only) */}
+              {/* 2. WhatsApp Mobile Number */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
                   WhatsApp Mobile Number (10 Digits Only) <span className="text-rose-500">*</span>
@@ -616,7 +1145,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
                   <input
                     type="tel"
                     required
-                    placeholder="9876543210 (10 digits starting with 6,7,8,9)"
+                    placeholder="9876543210 (10 digits)"
                     value={formData.phone}
                     onChange={handlePhoneChange}
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border text-xs font-mono font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none ${
@@ -631,49 +1160,117 @@ export default function LeadsPipeline({ onOpenBlast }) {
                 )}
               </div>
 
-              {/* 3. Corporate / Personal Email */}
+              {/* 3. Identity Tag */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Email Address
+                  Identity Tag
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="e.g. SAP FICO, VIP, Client, Lead, Vendor"
+                  value={formData.identity}
+                  onChange={(e) => setFormData({ ...formData, identity: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
+                />
+                <div className="flex items-center gap-1.5 flex-wrap pt-1.5">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Quick Fill:</span>
+                  {['SAP FICO', 'Client', 'VIP', 'Lead', 'Vendor'].map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, identity: tag })}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Assigned Employee Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">
+                  Assigned Employee Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Jayaveer, Raman, Anjali, Kiran"
+                  value={formData.employeeName}
+                  onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
+                />
+                <div className="flex items-center gap-1.5 flex-wrap pt-1.5">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Quick Select Employee:</span>
+                  {['Jayaveer', 'Raman', 'Anjali', 'Kiran', 'Suresh'].map(emp => (
+                    <button
+                      key={emp}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, employeeName: emp })}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer"
+                    >
+                      {emp}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5. 1st Calling Update (Lead Status Update) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">
+                  Lead Status (1st Calling Update)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 1st call connected, interested in SAP course"
+                  value={formData.leadStatusUpdate}
+                  onChange={(e) => setFormData({ ...formData, leadStatusUpdate: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {/* 6. 2nd Update */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">
+                  2nd Update
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Discussed pricing & syllabus details"
+                  value={formData.secondUpdate}
+                  onChange={(e) => setFormData({ ...formData, secondUpdate: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {/* 7. Final Update */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">
+                  Final Update
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Confirmed enrollment / Paid registration fee"
+                  value={formData.finalUpdate}
+                  onChange={(e) => setFormData({ ...formData, finalUpdate: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {/* 8. Email Address & Address */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">Email Address</label>
                   <input
                     type="email"
-                    placeholder="srinivas@apollohospitals.com"
+                    placeholder="jayaveer@example.com"
                     value={formData.email}
                     onChange={handleEmailChange}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border text-xs font-mono text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none ${
-                      emailError ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-amber-500'
-                    }`}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
-                {emailError && <p className="text-[10px] text-rose-600 font-bold mt-1">{emailError}</p>}
-              </div>
 
-              {/* 4. Address (Replaced Company) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Address
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                  <textarea
-                    rows={2}
-                    placeholder="Full residential or business address..."
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              {/* 5. Status Stage (Inquiries, Demo, Enrolled ONLY) */}
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Status Stage
-                  </label>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -684,20 +1281,18 @@ export default function LeadsPipeline({ onOpenBlast }) {
                     ))}
                   </select>
                 </div>
+              </div>
 
-                {/* 6. Read Rate */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Read Rate %
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="95%"
-                    value={formData.read_rate}
-                    onChange={(e) => setFormData({ ...formData, read_rate: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+              {/* Address */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">Address</label>
+                <textarea
+                  rows={2}
+                  placeholder="Lead location / address..."
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-amber-500"
+                />
               </div>
 
             </form>
@@ -719,7 +1314,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
                 className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
               >
                 {submitting ? <RotateCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                <span>{submitting ? 'Saving to Neon DB...' : (editingLead ? 'Update Lead Record' : 'Save Lead to Database')}</span>
+                <span>{submitting ? 'Saving Lead...' : (editingLead ? 'Update Lead Record' : 'Save Lead Profile')}</span>
               </button>
             </div>
 

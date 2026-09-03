@@ -22,14 +22,35 @@ const LeadSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  identity: {
+    type: String,
+    default: 'SAP FICO',
+    trim: true,
+  },
+  employeeName: {
+    type: String,
+    default: 'Jayaveer',
+    trim: true,
+  },
+  leadStatusUpdate: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  secondUpdate: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  finalUpdate: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   status: {
     type: String,
-    enum: ['Inquiries', 'Qualified', 'Proposed', 'Won', 'Lost'],
-    default: 'Inquiries',
-  },
-  read_rate: {
-    type: String,
-    default: '95%',
+    default: 'Intrest',
+    trim: true,
   },
   notes: {
     type: String,

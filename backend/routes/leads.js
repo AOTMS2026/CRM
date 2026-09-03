@@ -35,7 +35,20 @@ router.get('/', async (req, res) => {
 
 // POST /api/leads - Create a new lead
 router.post('/', async (req, res) => {
-  const { name, phone, email, address, status, read_rate, notes, source } = req.body;
+  const { 
+    name, 
+    phone, 
+    email, 
+    address, 
+    identity,
+    employeeName,
+    leadStatusUpdate,
+    secondUpdate,
+    finalUpdate,
+    status, 
+    notes, 
+    source 
+  } = req.body;
 
   if (!name || !phone) {
     return res.status(400).json({ success: false, message: 'Name and phone number are required.' });
@@ -57,8 +70,12 @@ router.post('/', async (req, res) => {
     phone: formattedPhone,
     email: email ? email.toLowerCase().trim() : '',
     address: address ? address.trim() : '',
-    status: status || 'Inquiries',
-    read_rate: read_rate || '95%',
+    identity: identity ? identity.trim() : 'SAP FICO',
+    employeeName: employeeName ? employeeName.trim() : 'Jayaveer',
+    leadStatusUpdate: leadStatusUpdate ? leadStatusUpdate.trim() : '',
+    secondUpdate: secondUpdate ? secondUpdate.trim() : '',
+    finalUpdate: finalUpdate ? finalUpdate.trim() : '',
+    status: status || 'Intrest',
     notes: notes || '',
     source: source || 'crm',
   });
@@ -68,7 +85,20 @@ router.post('/', async (req, res) => {
 
 // PUT /api/leads/:id - Update lead details or stage
 router.put('/:id', async (req, res) => {
-  const { name, phone, email, address, status, read_rate, notes } = req.body;
+  const { 
+    name, 
+    phone, 
+    email, 
+    address, 
+    identity,
+    employeeName,
+    leadStatusUpdate,
+    secondUpdate,
+    finalUpdate,
+    status, 
+    notes 
+  } = req.body;
+  
   const updateData = {};
 
   if (name) updateData.name = name.trim();
@@ -80,8 +110,12 @@ router.put('/:id', async (req, res) => {
   }
   if (email !== undefined) updateData.email = email.toLowerCase().trim();
   if (address !== undefined) updateData.address = address.trim();
+  if (identity !== undefined) updateData.identity = identity.trim();
+  if (employeeName !== undefined) updateData.employeeName = employeeName.trim();
+  if (leadStatusUpdate !== undefined) updateData.leadStatusUpdate = leadStatusUpdate.trim();
+  if (secondUpdate !== undefined) updateData.secondUpdate = secondUpdate.trim();
+  if (finalUpdate !== undefined) updateData.finalUpdate = finalUpdate.trim();
   if (status) updateData.status = status;
-  if (read_rate !== undefined) updateData.read_rate = read_rate;
   if (notes !== undefined) updateData.notes = notes;
 
   const lead = await Lead.findByIdAndUpdate(req.params.id, updateData, { new: true });
