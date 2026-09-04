@@ -249,6 +249,33 @@ export default function WhatsappMessage() {
     reader.readAsDataURL(file);
   };
 
+  // Build Meta Components array from formData
+  const buildMetaComponents = (data) => {
+    const components = [];
+    if (data.header_type === 'TEXT' && data.header_text) {
+      components.push({ type: 'HEADER', format: 'TEXT', text: data.header_text });
+    } else if (data.header_type === 'IMAGE' || data.header_image_url) {
+      components.push({ type: 'HEADER', format: 'IMAGE' });
+    }
+    const bodyComp = { type: 'BODY', text: data.body_text || 'Hello {{1}}!' };
+    if (Array.isArray(data.sample_values) && data.sample_values.length > 0) {
+      bodyComp.example = { body_text: [data.sample_values] };
+    }
+    components.push(bodyComp);
+    if (data.footer_text) {
+      components.push({ type: 'FOOTER', text: data.footer_text });
+    }
+    if (Array.isArray(data.buttons) && data.buttons.length > 0) {
+      const formattedBtns = data.buttons.map(b => {
+        if (b.type === 'PHONE_NUMBER') return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone_number };
+        if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url };
+        return { type: 'QUICK_REPLY', text: b.text || 'Reply' };
+      });
+      components.push({ type: 'BUTTONS', buttons: formattedBtns });
+    }
+    return components;
+  };
+
   // Real-time API: Create template directly via API
   const handleCreateTemplate = async (e) => {
     e.preventDefault();
@@ -261,26 +288,57 @@ export default function WhatsappMessage() {
       return;
     }
 
-    try {
-      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, name: formattedName })
-      });
+    const components = buildMetaComponents(formData);
+    const payload = {
+      ...formData,
+      name: formattedName,
+      components
+    };
 
-      const result = await res.json();
-      if (res.ok && (result.success || result.template)) {
-        showToast(result.message || `Template '${formattedName}' created successfully on Meta!`, "success");
-        setShowCreateModal(false);
-        await fetchTemplates();
-      } else {
-        throw new Error(result.detail || result.message || "Failed to create template on Meta Cloud API.");
+    const endpoints = [
+      `${getApiBase()}/api/integrations/whatsapp/templates/meta`,
+      `${getApiBase()}/api/integrations/whatsapp/templates`,
+      `${getApiBase()}/api/template/meta`,
+      `${getApiBase()}/api/template`
+    ];
+
+    let lastError = null;
+    let successResult = null;
+
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.status === 404) {
+          continue;
+        }
+
+        const result = await res.json();
+        if (res.ok && (result.success || result.template)) {
+          successResult = result;
+          break;
+        } else {
+          lastError = new Error(result.detail || result.message || "Failed to create template on Meta Cloud API.");
+          break;
+        }
+      } catch (err) {
+        lastError = err;
       }
-    } catch (err) {
-      showToast(err.message || "Failed to create template on API", "error");
-    } finally {
-      setSubmitting(false);
     }
+
+    if (successResult) {
+      showToast(successResult.message || `Template '${formattedName}' created successfully on Meta!`, "success");
+      setShowCreateModal(false);
+      await fetchTemplates();
+    } else {
+      showToast(lastError?.message || "Failed to create template on API", "error");
+    }
+
+    setSubmitting(false);
   };
 
   // Delete Template directly via API
