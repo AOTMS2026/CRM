@@ -535,7 +535,19 @@ const syncMetaHandler = async (req, res) => {
       message: `Successfully synced ${all.length} templates for Meta Account (${currentWaba})!` 
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.response?.data?.error?.message || error.message });
+    console.error('❌ Meta Sync Warning (falling back to database templates):', error.response?.data || error.message);
+    try {
+      const existingTemplates = await Template.find({ isScheduled: { $ne: true } }).sort('-createdAt');
+      return res.json({
+        success: true,
+        count: 0,
+        templates: existingTemplates,
+        metaOffline: true,
+        message: 'Loaded templates from database. (Meta API offline or account unreachable: ' + (error.response?.data?.error?.message || error.message) + ')'
+      });
+    } catch (dbErr) {
+      res.status(500).json({ success: false, message: error.response?.data?.error?.message || error.message });
+    }
   }
 };
 

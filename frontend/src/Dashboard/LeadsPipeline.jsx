@@ -79,7 +79,7 @@ export default function LeadsPipeline({ onOpenBlast }) {
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       return 'http://localhost:5000';
     }
-    return 'http://localhost:5000';
+    return 'https://crm-1-62pl.onrender.com';
   };
 
   const showToastMsg = (msg, type = 'success') => {
