@@ -109,7 +109,7 @@ router.post('/webhook', async (req, res) => {
         if (errorCode) {
           console.error(`❌ Meta Error: [${errorCode}] ${errorMessage}`);
           if (errorCode === 131049) {
-            console.warn(`⚠️ [Meta Ecosystem Engagement Limit] Number ${phone} is currently throttled by Meta for MARKETING templates. Solution: Use a UTILITY category template or wait 24-48h.`);
+            console.warn(`⚠️ [Meta Marketing Limit - Error 131049] Number ${phone} reached Meta's daily marketing limit.\n👉 HOW TO UNBLOCK:\n 1) Ask ${phone} to reply 'HI' or click a link to message your WhatsApp number (resets restriction immediately).\n 2) Use UTILITY category template (delivered & read successfully).\n 3) Wait 24-48h for Meta limit reset.`);
           } else if (errorCode === 131026) {
             console.warn(`⚠️ [Meta Undelivered] Number ${phone} cannot receive messages (invalid number or recipient disabled messages).`);
           } else if (errorCode === 131047) {
