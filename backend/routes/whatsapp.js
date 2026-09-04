@@ -106,7 +106,16 @@ router.post('/webhook', async (req, res) => {
         }
         
         console.log(`\n📊 [WEBHOOK STATUS] ${phone} | ${status.toUpperCase()} | wamid: ${wamid}`);
-        if (errorCode) console.error(`❌ Meta Error: [${errorCode}] ${errorMessage}`);
+        if (errorCode) {
+          console.error(`❌ Meta Error: [${errorCode}] ${errorMessage}`);
+          if (errorCode === 131049) {
+            console.warn(`⚠️ [Meta Ecosystem Engagement Limit] Number ${phone} is currently throttled by Meta for MARKETING templates. Solution: Use a UTILITY category template or wait 24-48h.`);
+          } else if (errorCode === 131026) {
+            console.warn(`⚠️ [Meta Undelivered] Number ${phone} cannot receive messages (invalid number or recipient disabled messages).`);
+          } else if (errorCode === 131047) {
+            console.warn(`⚠️ [24h Window Expired] Freeform message failed because 24-hour customer service window closed. Use an approved Meta Template.`);
+          }
+        }
         
         const incomingPhoneId = body.entry[0].changes[0].value.metadata?.phone_number_id || process.env.META_WA_PHONE_NUMBER_ID;
         const incomingWabaId = body.entry[0].id || process.env.META_WA_BUSINESS_ACCOUNT_ID;
