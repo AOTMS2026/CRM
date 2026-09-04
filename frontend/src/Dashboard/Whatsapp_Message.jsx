@@ -60,6 +60,7 @@ export default function WhatsappMessage() {
   const previewModalChatRef = useRef(null);
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
 
   // Create Template Form State (Declared BEFORE useEffect)
   const [formData, setFormData] = useState({
@@ -77,6 +78,27 @@ export default function WhatsappMessage() {
     ],
     sample_values: ['John', 'AOTMS2026']
   });
+
+  const openCreateModal = () => {
+    setEditingTemplateId(null);
+    setSelectedFile(null);
+    setFormData({
+      name: '',
+      category: 'MARKETING',
+      language: 'en_US',
+      header_type: 'IMAGE',
+      header_text: '',
+      header_image_url: '',
+      body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
+      footer_text: 'Reply STOP to unsubscribe • AOTMS',
+      buttons: [
+        { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918121016848', url: '', contact_name: '' },
+        { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.aotms.com', contact_name: '' }
+      ],
+      sample_values: ['John', 'AOTMS2026']
+    });
+    setShowCreateModal(true);
+  };
 
   // Automatic smooth scroll behavior when content or buttons change
   useEffect(() => {
@@ -279,7 +301,7 @@ export default function WhatsappMessage() {
     return components;
   };
 
-  // Real-time API: Create template directly via API
+  // Real-time API: Create or Update template directly via API
   const handleCreateTemplate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -293,12 +315,17 @@ export default function WhatsappMessage() {
 
     const components = buildMetaComponents(formData);
 
-    const endpoints = [
-      `${getApiBase()}/api/integrations/whatsapp/templates/meta`,
-      `${getApiBase()}/api/integrations/whatsapp/templates`,
-      `${getApiBase()}/api/template/meta`,
-      `${getApiBase()}/api/template`
-    ];
+    const endpoints = editingTemplateId
+      ? [
+          `${getApiBase()}/api/integrations/whatsapp/templates/${editingTemplateId}`,
+          `${getApiBase()}/api/template/${editingTemplateId}`
+        ]
+      : [
+          `${getApiBase()}/api/integrations/whatsapp/templates/meta`,
+          `${getApiBase()}/api/integrations/whatsapp/templates`,
+          `${getApiBase()}/api/template/meta`,
+          `${getApiBase()}/api/template`
+        ];
 
     let lastError = null;
     let successResult = null;
@@ -306,6 +333,7 @@ export default function WhatsappMessage() {
     for (const url of endpoints) {
       try {
         let options;
+        const httpMethod = editingTemplateId ? 'PUT' : 'POST';
         if (selectedFile) {
           const bodyData = new FormData();
           bodyData.append('media', selectedFile);
@@ -316,19 +344,20 @@ export default function WhatsappMessage() {
           bodyData.append('header_text', formData.header_text || '');
           bodyData.append('body_text', formData.body_text || '');
           bodyData.append('footer_text', formData.footer_text || '');
+          bodyData.append('message', formData.body_text || '');
           bodyData.append('components', JSON.stringify(components));
           if (Array.isArray(formData.sample_values)) {
             bodyData.append('sample_values', JSON.stringify(formData.sample_values));
           }
           options = {
-            method: 'POST',
+            method: httpMethod,
             body: bodyData
           };
         } else {
           options = {
-            method: 'POST',
+            method: httpMethod,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...formData, name: formattedName, components })
+            body: JSON.stringify({ ...formData, message: formData.body_text, name: formattedName, components })
           };
         }
 
@@ -343,7 +372,7 @@ export default function WhatsappMessage() {
           successResult = result;
           break;
         } else {
-          lastError = new Error(result.detail || result.message || "Failed to create template on Meta Cloud API.");
+          lastError = new Error(result.detail || result.message || "Failed to process template on Meta Cloud API.");
           break;
         }
       } catch (err) {
@@ -352,12 +381,14 @@ export default function WhatsappMessage() {
     }
 
     if (successResult) {
-      showToast(successResult.message || `Template '${formattedName}' created successfully on Meta!`, "success");
+      const actionText = editingTemplateId ? 'updated' : 'created';
+      showToast(successResult.message || `Template '${formattedName}' ${actionText} successfully on Meta!`, "success");
       setShowCreateModal(false);
       setSelectedFile(null);
+      setEditingTemplateId(null);
       await fetchTemplates();
     } else {
-      showToast(lastError?.message || "Failed to create template on API", "error");
+      showToast(lastError?.message || "Failed to save template on API", "error");
     }
 
     setSubmitting(false);
@@ -386,7 +417,7 @@ export default function WhatsappMessage() {
       });
       const result = await res.json();
       if (res.ok && result.success) {
-        showToast(`Template '${tmpl.name}' deleted successfully.`, "success");
+        showToast(result.message || `Template '${tmpl.name}' deleted successfully from Meta & Database.`, "success");
         await fetchTemplates();
       } else {
         throw new Error(result.message || "Failed to delete template.");
@@ -404,15 +435,20 @@ export default function WhatsappMessage() {
       parsedButtons = [];
     }
 
+    const headerComp = tmpl.components?.find(c => c.type === 'HEADER');
+    const bodyComp = tmpl.components?.find(c => c.type === 'BODY');
+    const footerComp = tmpl.components?.find(c => c.type === 'FOOTER');
+
+    setEditingTemplateId(tmpl._id || tmpl.metaTemplateId || tmpl.name);
     setFormData({
       name: tmpl.name,
       category: tmpl.category || 'MARKETING',
       language: tmpl.language || 'en_US',
-      header_type: tmpl.header_type || 'NONE',
-      header_text: tmpl.header_text || '',
-      header_image_url: tmpl.header_image_url || tmpl.header_content || '',
-      body_text: tmpl.body_text || '',
-      footer_text: tmpl.footer_text || '',
+      header_type: headerComp ? headerComp.format : (tmpl.header_type || 'NONE'),
+      header_text: headerComp?.text || tmpl.header_text || '',
+      header_image_url: tmpl.imageUrl || tmpl.header_image_url || '',
+      body_text: bodyComp?.text || tmpl.body_text || tmpl.message || '',
+      footer_text: footerComp?.text || tmpl.footer_text || tmpl.footer || '',
       buttons: parsedButtons,
       sample_values: ['Customer', 'AOTMS2026']
     });
@@ -566,24 +602,7 @@ export default function WhatsappMessage() {
           {/* Create Template */}
           <button
             type="button"
-            onClick={() => {
-              setFormData({
-                name: '',
-                category: 'MARKETING',
-                language: 'en_US',
-                header_type: 'IMAGE',
-                header_text: '',
-                header_image_url: '',
-                body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
-                footer_text: 'Reply STOP to unsubscribe • AOTMS',
-                buttons: [
-                  { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918121016848', url: '', contact_name: '' },
-                  { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.aotms.com', contact_name: '' }
-                ],
-                sample_values: ['John', 'AOTMS2026']
-              });
-              setShowCreateModal(true);
-            }}
+            onClick={openCreateModal}
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer hover:shadow-md"
           >
             <Plus className="w-4 h-4" />
@@ -638,7 +657,7 @@ export default function WhatsappMessage() {
             Create your first official Meta WhatsApp template for Marketing broadcasts or Utility notifications.
           </p>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={openCreateModal}
             className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4" />

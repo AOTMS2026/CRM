@@ -178,10 +178,129 @@ const uploadMediaForSending = async (filePath, mimeType) => {
   }
 };
 
+/**
+ * Delete a template on Meta WhatsApp Cloud API by name or hsm_id
+ */
+const deleteTemplateFromMeta = async (name, metaTemplateId) => {
+  const token = process.env.META_WA_ACCESS_TOKEN;
+  const wabaId = process.env.META_WA_BUSINESS_ACCOUNT_ID;
+  const version = process.env.META_GRAPH_VERSION || 'v19.0';
+
+  if (!token || !wabaId) throw new Error('Missing Meta Access Token or WABA ID');
+
+  try {
+    const url = `https://graph.facebook.com/${version}/${wabaId}/message_templates`;
+    const params = { name };
+    if (metaTemplateId && !metaTemplateId.startsWith('local_')) {
+      params.hsm_id = metaTemplateId;
+    }
+    const response = await axios.delete(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      params
+    });
+    return response.data;
+  } catch (error) {
+    console.error('❌ [WA] Delete Meta Template Error:', error.response?.data || error.message);
+    if (metaTemplateId && !metaTemplateId.startsWith('local_')) {
+      try {
+        const response2 = await axios.delete(`https://graph.facebook.com/${version}/${metaTemplateId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        return response2.data;
+      } catch (err2) {
+        console.error('❌ [WA] Delete Meta Template by ID Error:', err2.response?.data || err2.message);
+        throw error;
+      }
+    }
+    throw error;
+  }
+};
+
+/**
+ * Edit / Update an existing template on Meta WhatsApp Cloud API
+ */
+const updateTemplateOnMeta = async (metaTemplateId, name, category, components) => {
+  const token = process.env.META_WA_ACCESS_TOKEN;
+  const version = process.env.META_GRAPH_VERSION || 'v19.0';
+
+  if (!token) throw new Error('Missing Meta Access Token');
+
+  const processedComponents = await Promise.all((components || []).map(async (c) => {
+    if (c.type === 'BODY' && c.text) {
+      const varMatches = c.text.match(/\{\{(\d+)\}\}/g);
+      if (varMatches && varMatches.length > 0 && (!c.example || !c.example.body_text)) {
+        return {
+          ...c,
+          example: {
+            body_text: [varMatches.map((_, idx) => `Customer ${idx + 1}`)]
+          }
+        };
+      }
+    }
+    if (c.type === 'HEADER') {
+      if (c.format === 'TEXT' && c.text) {
+        const varMatches = c.text.match(/\{\{(\d+)\}\}/g);
+        if (varMatches && varMatches.length > 0 && (!c.example || !c.example.header_text)) {
+          return {
+            ...c,
+            example: {
+              header_text: varMatches.map((_, idx) => `Header ${idx + 1}`)
+            }
+          };
+        }
+      } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(c.format)) {
+        const hasHandle = c.example && Array.isArray(c.example.header_handle) && c.example.header_handle.length > 0 && c.example.header_handle[0];
+        if (!hasHandle) {
+          try {
+            const dummyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+            const tempPath = path.join(__dirname, `../uploads/sample_header_${Date.now()}.png`);
+            fs.writeFileSync(tempPath, dummyPng);
+            const autoHandle = await uploadMediaToMeta(tempPath, 'image/png', dummyPng.length);
+            if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+            return {
+              ...c,
+              example: {
+                header_handle: [autoHandle]
+              }
+            };
+          } catch (handleErr) {
+            console.error('❌ Failed to generate auto header_handle:', handleErr.message);
+          }
+        }
+      }
+    }
+    return c;
+  }));
+
+  const payload = {
+    components: processedComponents
+  };
+  if (category) payload.category = category;
+
+  try {
+    if (metaTemplateId && !metaTemplateId.startsWith('local_')) {
+      const response = await axios.post(`https://graph.facebook.com/${version}/${metaTemplateId}`, payload, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } else {
+      return await createTemplateOnMeta(name, 'en_US', category || 'MARKETING', processedComponents);
+    }
+  } catch (error) {
+    console.error('❌ [WA] Update Meta Template Error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
 module.exports = {
   createTemplateOnMeta,
   getTemplateStatusFromMeta,
   uploadMediaToMeta,
   uploadMediaForSending,
-  fetchAllTemplatesFromMeta
+  fetchAllTemplatesFromMeta,
+  deleteTemplateFromMeta,
+  updateTemplateOnMeta
 };

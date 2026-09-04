@@ -6,7 +6,7 @@ const Template = require('../models/Template');
 const Contact  = require('../models/Contact');
 const { getClient, initWhatsApp, getStatus } = require('../utils/whatsappService');
 const { ConversationFlow } = require('../utils/conversationFlow');
-const { createTemplateOnMeta, getTemplateStatusFromMeta, uploadMediaToMeta, fetchAllTemplatesFromMeta } = require('../utils/metaTemplateService');
+const { createTemplateOnMeta, getTemplateStatusFromMeta, uploadMediaToMeta, fetchAllTemplatesFromMeta, deleteTemplateFromMeta, updateTemplateOnMeta } = require('../utils/metaTemplateService');
 const { uploadToCloudinary, uploadUrlToCloudinary } = require('../utils/cloudinaryService');
 
 const storage = multer.diskStorage({
@@ -185,10 +185,23 @@ router.delete('/schedule/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// PUT /api/template/:id - Update template details or status
+// PUT /api/template/:id - Update template details or status on both local database and Meta Cloud API
 router.put('/:id', async (req, res) => {
   try {
-    const { name, category, language, message, footer, imageUrl, metaStatus, status } = req.body;
+    let { name, category, language, message, footer, imageUrl, metaStatus, status, components, header_type, header_text } = req.body;
+    
+    let target = null;
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      target = await Template.findById(req.params.id);
+    }
+    if (!target) {
+      target = await Template.findOne({
+        $or: [{ name: req.params.id }, { metaTemplateId: req.params.id }]
+      });
+    }
+
+    if (!target) return res.status(404).json({ success: false, message: 'Template not found' });
+
     const updateData = {};
     if (name !== undefined) updateData.name = String(name).trim();
     if (category !== undefined) updateData.category = category;
@@ -202,37 +215,93 @@ router.put('/:id', async (req, res) => {
     if (metaStatus !== undefined) updateData.metaStatus = metaStatus;
     if (status !== undefined) updateData.status = status;
 
-    let template = null;
-    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      template = await Template.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    }
-    if (!template) {
-      template = await Template.findOneAndUpdate(
-        { $or: [{ name: req.params.id }, { metaTemplateId: req.params.id }] },
-        updateData,
-        { new: true }
-      );
+    // Construct updated Meta components if needed
+    let updatedComponents = components || target.components;
+    if (typeof updatedComponents === 'string') {
+      try { updatedComponents = JSON.parse(updatedComponents); } catch (e) {}
     }
 
-    if (!template) return res.status(404).json({ success: false, message: 'Template not found' });
-    res.json({ success: true, template, message: 'Template updated successfully' });
+    if ((message || header_type || footer) && (!updatedComponents || updatedComponents.length === 0)) {
+      updatedComponents = [];
+      const hType = header_type || 'NONE';
+      if (hType === 'TEXT' && header_text) {
+        updatedComponents.push({ type: 'HEADER', format: 'TEXT', text: header_text });
+      } else if (hType === 'IMAGE' || imageUrl) {
+        updatedComponents.push({ type: 'HEADER', format: 'IMAGE' });
+      }
+      const bodyText = message || target.message || 'Template message';
+      updatedComponents.push({ type: 'BODY', text: bodyText });
+      if (footer) {
+        updatedComponents.push({ type: 'FOOTER', text: footer });
+      }
+    }
+    if (updatedComponents) {
+      updateData.components = updatedComponents;
+    }
+
+    // 1. Update on Meta Cloud API
+    let metaMessage = '';
+    if (target.metaTemplateId || target.name) {
+      try {
+        const metaRes = await updateTemplateOnMeta(
+          target.metaTemplateId,
+          target.name,
+          category || target.category || 'MARKETING',
+          updatedComponents || target.components
+        );
+        if (metaRes && metaRes.status) {
+          updateData.metaStatus = metaRes.status;
+        } else {
+          updateData.metaStatus = 'PENDING';
+        }
+        metaMessage = ' and automatically updated on Meta Account!';
+      } catch (metaErr) {
+        console.error('❌ Failed to update template on Meta API:', metaErr.message);
+        metaMessage = ' (Local database updated; Meta API error: ' + (metaErr.response?.data?.error?.message || metaErr.message) + ')';
+      }
+    }
+
+    const updatedTemplate = await Template.findByIdAndUpdate(target._id, updateData, { new: true });
+    res.json({ success: true, template: updatedTemplate, message: `Template updated successfully${metaMessage}` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
+// DELETE /api/template/:id - Delete template from both Meta Cloud API and local database
 router.delete('/:id', async (req, res) => {
   try {
-    let deleted = null;
+    let target = null;
     if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      deleted = await Template.findByIdAndDelete(req.params.id);
+      target = await Template.findById(req.params.id);
     }
-    if (!deleted) {
-      deleted = await Template.findOneAndDelete({
+    if (!target) {
+      target = await Template.findOne({
         $or: [{ name: req.params.id }, { metaTemplateId: req.params.id }]
       });
     }
-    res.json({ success: true, message: 'Template deleted successfully' });
+
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'Template not found' });
+    }
+
+    // 1. Delete from Meta Cloud API
+    let metaDeleted = false;
+    let metaMessage = '';
+    if (target.name || target.metaTemplateId) {
+      try {
+        await deleteTemplateFromMeta(target.name, target.metaTemplateId);
+        metaDeleted = true;
+        metaMessage = ' from Meta Account and database';
+      } catch (metaErr) {
+        console.error('❌ Failed to delete template from Meta API:', metaErr.message);
+        metaMessage = ' from database (Meta API status: ' + (metaErr.response?.data?.error?.message || metaErr.message) + ')';
+      }
+    }
+
+    // 2. Delete from Local Database
+    await Template.findByIdAndDelete(target._id);
+    res.json({ success: true, message: `Template '${target.name}' deleted successfully${metaMessage}` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
