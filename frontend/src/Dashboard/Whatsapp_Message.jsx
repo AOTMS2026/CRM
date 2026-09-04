@@ -59,6 +59,7 @@ export default function WhatsappMessage() {
   const previewChatRef = useRef(null);
   const previewModalChatRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Create Template Form State (Declared BEFORE useEffect)
   const [formData, setFormData] = useState({
@@ -238,6 +239,8 @@ export default function WhatsappMessage() {
       return;
     }
 
+    setSelectedFile(file);
+
     const reader = new FileReader();
     reader.onload = (event) => {
       setFormData(prev => ({
@@ -289,11 +292,6 @@ export default function WhatsappMessage() {
     }
 
     const components = buildMetaComponents(formData);
-    const payload = {
-      ...formData,
-      name: formattedName,
-      components
-    };
 
     const endpoints = [
       `${getApiBase()}/api/integrations/whatsapp/templates/meta`,
@@ -307,11 +305,34 @@ export default function WhatsappMessage() {
 
     for (const url of endpoints) {
       try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        let options;
+        if (selectedFile) {
+          const bodyData = new FormData();
+          bodyData.append('media', selectedFile);
+          bodyData.append('name', formattedName);
+          bodyData.append('category', formData.category || 'MARKETING');
+          bodyData.append('language', formData.language || 'en_US');
+          bodyData.append('header_type', formData.header_type || 'IMAGE');
+          bodyData.append('header_text', formData.header_text || '');
+          bodyData.append('body_text', formData.body_text || '');
+          bodyData.append('footer_text', formData.footer_text || '');
+          bodyData.append('components', JSON.stringify(components));
+          if (Array.isArray(formData.sample_values)) {
+            bodyData.append('sample_values', JSON.stringify(formData.sample_values));
+          }
+          options = {
+            method: 'POST',
+            body: bodyData
+          };
+        } else {
+          options = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...formData, name: formattedName, components })
+          };
+        }
+
+        const res = await fetch(url, options);
 
         if (res.status === 404) {
           continue;
@@ -333,6 +354,7 @@ export default function WhatsappMessage() {
     if (successResult) {
       showToast(successResult.message || `Template '${formattedName}' created successfully on Meta!`, "success");
       setShowCreateModal(false);
+      setSelectedFile(null);
       await fetchTemplates();
     } else {
       showToast(lastError?.message || "Failed to create template on API", "error");

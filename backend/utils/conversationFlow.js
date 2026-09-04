@@ -65,7 +65,8 @@ const startMetaTemplate = async (phone, template) => {
         }
       }
       if (!mediaId && template.imageUrl.startsWith('/uploads/')) {
-        mediaLink = `https://zest-eat.onrender.com${template.imageUrl}`;
+        const baseHost = process.env.RENDER_EXTERNAL_URL || 'https://crm-1-62pl.onrender.com';
+        mediaLink = `${baseHost}${template.imageUrl}`;
       }
     }
 
