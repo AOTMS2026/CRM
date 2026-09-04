@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Pencil
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
 import ConfirmModal from '../Components/ui/ConfirmModal';
@@ -243,41 +244,91 @@ export default function Contacts({ onOpenBlast }) {
     setExcelFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result;
-      if (typeof text === 'string') {
-        parseCSVText(text);
+      const buffer = event.target?.result;
+      if (buffer) {
+        parseExcelOrCSVBuffer(buffer, file.name);
       }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
-  const parseCSVText = (text) => {
-    const lines = text.split(/\r\n|\n/).filter(line => line.trim().length > 0);
-    if (lines.length <= 1) {
-      showToastMsg("The uploaded CSV file is empty or has no data rows.", "error");
-      return;
-    }
+  const parseExcelOrCSVBuffer = (buffer, fileName = '') => {
+    try {
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) {
+        showToastMsg("No worksheet found in the uploaded file.", "error");
+        return;
+      }
+      const worksheet = workbook.Sheets[sheetName];
+      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
-    const parsed = [];
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(',').map(p => p.replace(/^"|"$/g, '').trim());
-      if (parts.length >= 2) {
-        let rawPhone = parts[1] || '';
+      if (!rawRows || rawRows.length === 0) {
+        showToastMsg("The uploaded file is empty or has no data.", "error");
+        return;
+      }
+
+      // Find the header row (first row containing recognized column names or text)
+      let headerRowIdx = 0;
+      for (let i = 0; i < Math.min(10, rawRows.length); i++) {
+        const rowStr = rawRows[i].map(c => String(c)).join(' ').toLowerCase();
+        if (rowStr.includes('name') || rowStr.includes('party') || rowStr.includes('phone') || rowStr.includes('mobile') || rowStr.includes('ledger') || rowStr.includes('contact')) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+
+      const headers = rawRows[headerRowIdx].map(h => String(h).trim());
+      const headerLower = headers.map(h => h.toLowerCase());
+
+      // Flexibly detect column indices for Name, Phone, Email, Identity
+      let nameIdx = headerLower.findIndex(h => h.includes('name') || h.includes('party') || h.includes('ledger') || h.includes('customer') || h.includes('client') || h.includes('contact'));
+      let phoneIdx = headerLower.findIndex(h => h.includes('phone') || h.includes('mobile') || h.includes('contact no') || h.includes('whatsapp') || h.includes('cell') || h.includes('num') || h.includes('number'));
+      let emailIdx = headerLower.findIndex(h => h.includes('email') || h.includes('mail'));
+      let identityIdx = headerLower.findIndex(h => h.includes('identity') || h.includes('group') || h.includes('category') || h.includes('type') || h.includes('role') || h.includes('status'));
+
+      // Smart Fallbacks if headers were not explicitly matched by string search
+      if (nameIdx === -1) nameIdx = 0;
+      if (phoneIdx === -1) phoneIdx = headers.length > 1 ? 1 : 0;
+      if (emailIdx === -1) emailIdx = headers.length > 2 ? 2 : -1;
+      if (identityIdx === -1) identityIdx = headers.length > 3 ? 3 : -1;
+
+      const parsed = [];
+      for (let i = headerRowIdx + 1; i < rawRows.length; i++) {
+        const row = rawRows[i];
+        if (!row || row.length === 0) continue;
+
+        const rawName = String(row[nameIdx] !== undefined ? row[nameIdx] : '').trim();
+        const rawPhone = String(row[phoneIdx] !== undefined ? row[phoneIdx] : '').trim();
+        const rawEmail = emailIdx !== -1 && row[emailIdx] !== undefined ? String(row[emailIdx]).trim() : '';
+        const rawIdentity = identityIdx !== -1 && row[identityIdx] !== undefined ? String(row[identityIdx]).trim() : 'Client';
+
+        if (!rawName && !rawPhone) continue; // Skip completely blank rows
+
         let digits = rawPhone.replace(/\D/g, '');
         if (digits.startsWith('91') && digits.length > 10) digits = digits.slice(2);
         const clean10 = digits.slice(0, 10);
         const formattedPhone = clean10 ? `+91 ${clean10}` : rawPhone;
 
         parsed.push({
-          name: parts[0] || `Contact ${i}`,
+          name: rawName || `Contact ${i}`,
           phone: formattedPhone,
-          email: parts[2] || '',
-          identity: parts[3] || 'Client'
+          email: rawEmail || '',
+          identity: rawIdentity || 'Client'
         });
       }
-    }
 
-    setExcelPreviewData(parsed);
+      if (parsed.length === 0) {
+        showToastMsg("No valid contact rows could be parsed from the file.", "error");
+        return;
+      }
+
+      setExcelPreviewData(parsed);
+      showToastMsg(`Parsed ${parsed.length} contacts successfully from ${fileName || 'file'}!`, "success");
+    } catch (err) {
+      console.error('Excel parse error:', err);
+      showToastMsg("Failed to parse file. Please upload a valid .xlsx, .xls, or .csv file.", "error");
+    }
   };
 
   const handleBulkImportSubmit = async () => {
