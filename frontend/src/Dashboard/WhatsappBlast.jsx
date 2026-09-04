@@ -49,10 +49,13 @@ export default function WhatsappBlast() {
   const [sendingTest, setSendingTest] = useState(false);
 
   const getApiBase = () => {
+    if (import.meta.env.VITE_API_BASE_URL) {
+      return import.meta.env.VITE_API_BASE_URL;
+    }
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       return 'http://localhost:5000';
     }
-    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    return 'http://localhost:5000';
   };
 
   const showToast = (msg, type = 'success') => {

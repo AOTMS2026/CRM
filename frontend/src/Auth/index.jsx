@@ -36,9 +36,9 @@ export default function AuthPage({ defaultMode = 'signin' }) {
     setServerMessage(null);
 
     // Dynamic endpoint (Local Node.js Express vs Cloud)
-    const API_BASE = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || ((typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
       ? 'http://localhost:5000'
-      : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
+      : 'http://localhost:5000');
 
     try {
       if (isSignUp) {

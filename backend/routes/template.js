@@ -248,17 +248,47 @@ router.get('/', async (req, res) => {
   res.json({ success: true, templates, currentWabaId: currentWaba });
 });
 
-// POST /api/template/meta
+// POST /api/template and /api/template/meta
 // Create a new template directly on Meta WhatsApp Cloud API
-router.post('/meta', upload.single('media'), async (req, res) => {
-  let { name, language, category, components } = req.body;
+const createMetaTemplateHandler = async (req, res) => {
+  let { name, language, category, components, header_type, header_text, header_image_url, body_text, footer_text, buttons, sample_values } = req.body;
   
+  if (!language) language = 'en_US';
+  if (!category) category = 'MARKETING';
+
   if (typeof components === 'string') {
-    components = JSON.parse(components);
+    try { components = JSON.parse(components); } catch (e) {}
   }
-  
-  if (!name || !language || !category || !components) {
-    return res.status(400).json({ success: false, message: 'Missing required Meta template fields' });
+
+  if (!components || !Array.isArray(components) || components.length === 0) {
+    if (body_text) {
+      components = [];
+      if (header_type === 'TEXT' && header_text) {
+        components.push({ type: 'HEADER', format: 'TEXT', text: header_text });
+      } else if (header_type === 'IMAGE' || header_image_url) {
+        components.push({ type: 'HEADER', format: 'IMAGE' });
+      }
+      const bodyComp = { type: 'BODY', text: body_text };
+      if (Array.isArray(sample_values) && sample_values.length > 0) {
+        bodyComp.example = { body_text: [sample_values] };
+      }
+      components.push(bodyComp);
+      if (footer_text) {
+        components.push({ type: 'FOOTER', text: footer_text });
+      }
+      if (Array.isArray(buttons) && buttons.length > 0) {
+        const formattedBtns = buttons.map(b => {
+          if (b.type === 'PHONE_NUMBER') return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone_number };
+          if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url };
+          return { type: 'QUICK_REPLY', text: b.text || 'Reply' };
+        });
+        components.push({ type: 'BUTTONS', buttons: formattedBtns });
+      }
+    }
+  }
+
+  if (!name || !components || !Array.isArray(components) || components.length === 0) {
+    return res.status(400).json({ success: false, message: 'Missing required Meta template fields (name, body text/components)' });
   }
 
   try {
@@ -306,7 +336,7 @@ router.post('/meta', upload.single('media'), async (req, res) => {
       metaStatus: metaResponse.status || 'PENDING',
       wabaId: process.env.META_WA_BUSINESS_ACCOUNT_ID || '',
       title: name, // fallback display
-      message: 'Meta Template', // fallback
+      message: Array.isArray(components) ? (components.find(c => c.type === 'BODY')?.text || 'Meta Template') : 'Meta Template',
       status: 'draft'
     });
     
@@ -338,7 +368,10 @@ router.post('/meta', upload.single('media'), async (req, res) => {
       return res.status(500).json({ success: false, message: error.message || 'Failed to create template' });
     }
   }
-});
+};
+
+router.post('/meta', upload.single('media'), createMetaTemplateHandler);
+router.post('/', upload.single('media'), createMetaTemplateHandler);
 
 // POST /api/template/import-meta
 // Import a template from Meta by its ID
