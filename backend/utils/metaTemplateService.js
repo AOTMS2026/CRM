@@ -1,5 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 const FormData = require('form-data');
 
 const getMetaConfig = () => {
@@ -23,8 +24,8 @@ const getMetaConfig = () => {
 const createTemplateOnMeta = async (name, language, category, components) => {
   const config = getMetaConfig();
   
-  // Ensure components with variables have proper example data required by Meta
-  const processedComponents = (components || []).map(c => {
+  // Ensure all components (BODY & HEADER) have proper example data required by Meta
+  const processedComponents = await Promise.all((components || []).map(async (c) => {
     if (c.type === 'BODY' && c.text) {
       const varMatches = c.text.match(/\{\{(\d+)\}\}/g);
       if (varMatches && varMatches.length > 0 && (!c.example || !c.example.body_text)) {
@@ -36,8 +37,42 @@ const createTemplateOnMeta = async (name, language, category, components) => {
         };
       }
     }
+
+    if (c.type === 'HEADER') {
+      if (c.format === 'TEXT' && c.text) {
+        const varMatches = c.text.match(/\{\{(\d+)\}\}/g);
+        if (varMatches && varMatches.length > 0 && (!c.example || !c.example.header_text)) {
+          return {
+            ...c,
+            example: {
+              header_text: varMatches.map((_, idx) => `Header ${idx + 1}`)
+            }
+          };
+        }
+      } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(c.format)) {
+        const hasHandle = c.example && Array.isArray(c.example.header_handle) && c.example.header_handle.length > 0 && c.example.header_handle[0];
+        if (!hasHandle) {
+          try {
+            // Generate a real Meta upload handle using a sample PNG buffer
+            const dummyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+            const tempPath = path.join(__dirname, `../uploads/sample_header_${Date.now()}.png`);
+            fs.writeFileSync(tempPath, dummyPng);
+            const autoHandle = await uploadMediaToMeta(tempPath, 'image/png', dummyPng.length);
+            if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+            return {
+              ...c,
+              example: {
+                header_handle: [autoHandle]
+              }
+            };
+          } catch (handleErr) {
+            console.error('❌ Failed to generate auto header_handle:', handleErr.message);
+          }
+        }
+      }
+    }
     return c;
-  });
+  }));
 
   const payload = {
     name,
