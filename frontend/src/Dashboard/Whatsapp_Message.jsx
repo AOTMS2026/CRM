@@ -47,6 +47,7 @@ export default function WhatsappMessage() {
   const [contactFilter, setContactFilter] = useState('ALL'); // ALL, SAP FICO, General, New
   const [chatMessageText, setChatMessageText] = useState('');
   const [selectedChatTemplate, setSelectedChatTemplate] = useState('');
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [sendingChatMsg, setSendingChatMsg] = useState(false);
   const [chatLogMap, setChatLogMap] = useState({});
   const chatBottomRef = useRef(null);
@@ -361,12 +362,12 @@ export default function WhatsappMessage() {
     }
   }, [viewMode, selectedContact?.phone]);
 
-  // Scroll chat window to bottom when messages change
+  // Scroll chat window to bottom ONLY when selecting a new contact or switching view mode (Auto-scroll turned OFF during background polling)
   useEffect(() => {
     if (viewMode === 'LIVE_CHAT' && chatBottomRef.current) {
       chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [selectedContact, chatLogMap, viewMode]);
+  }, [selectedContact?.phone, viewMode]);
 
   // Send Direct Text Message in Live WhatsApp Chat
   const handleSendDirectChatMessage = async (e) => {
@@ -1086,9 +1087,100 @@ export default function WhatsappMessage() {
                 </div>
 
                 {/* WhatsApp Web Bottom Action Bar (Clean White WhatsApp Theme) */}
-                <div className="p-3.5 bg-[#f0f2f5] border-t border-slate-200">
+                <div className="p-3.5 bg-[#f0f2f5] border-t border-slate-200 relative">
+                  
+                  {/* Small Template Picker Popover Dropdown */}
+                  {showTemplatePicker && (
+                    <div className="absolute bottom-16 left-3.5 right-3.5 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-30 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-[#00a884]" />
+                          <h4 className="text-xs font-black text-slate-900">
+                            Select Approved Meta Template for {selectedContact.name || selectedContact.phone}
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowTemplatePicker(false)}
+                          className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 max-h-52 overflow-y-auto">
+                        {templates.length === 0 ? (
+                          <p className="text-xs text-slate-500 text-center py-4">No approved templates available.</p>
+                        ) : (
+                          templates.map(t => {
+                            const isSelected = selectedChatTemplate === (t._id || t.id || t.metaTemplateId || t.name);
+                            return (
+                              <div
+                                key={t._id || t.id || t.name}
+                                onClick={() => setSelectedChatTemplate(t._id || t.id || t.metaTemplateId || t.name)}
+                                className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                  isSelected
+                                    ? 'bg-emerald-50 border-[#00a884] ring-1 ring-[#00a884]'
+                                    : 'bg-white border-slate-200 hover:bg-slate-50'
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-[#00a884] text-white uppercase">
+                                      {t.category}
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-900 truncate">{t.name}</span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 truncate mt-0.5">{t.body_text}</p>
+                                </div>
+                                <span className={`text-[10px] font-extrabold px-2 py-1 rounded-lg ${
+                                  isSelected ? 'bg-[#00a884] text-white' : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {isSelected ? 'Selected ✓' : 'Select'}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {selectedChatTemplate && (
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                          <span className="text-[11px] font-mono font-bold text-[#00a884]">Ready to Send to {selectedContact.name || selectedContact.phone}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSendTemplateInChat(selectedChatTemplate);
+                              setShowTemplatePicker(false);
+                            }}
+                            disabled={sendingChatMsg}
+                            className="px-4 py-2 rounded-xl bg-[#00a884] hover:bg-emerald-600 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Send Template Message</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Direct Text Message Form */}
                   <form onSubmit={handleSendDirectChatMessage} className="flex items-center gap-2">
+                    {/* Small Select Template Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowTemplatePicker(!showTemplatePicker)}
+                      className={`px-3 py-2.5 rounded-xl border text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-2xs ${
+                        showTemplatePicker || selectedChatTemplate
+                          ? 'bg-[#00a884] text-white border-[#00a884]'
+                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
+                      title="Select & Send Approved Meta Template"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="hidden sm:inline">Templates</span>
+                    </button>
+
                     <input
                       type="text"
                       placeholder={`Type a WhatsApp message to ${selectedContact.name || selectedContact.phone}...`}
