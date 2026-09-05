@@ -459,7 +459,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
             )}
 
             {/* Pagination Controls */}
-            {filteredPaysips.length > 0 && (
+            {filteredPayslips.length > 0 && (
               <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
                 <span className="text-slate-500 font-bold">Page {currentPage} of {totalPages}</span>
                 <div className="flex items-center gap-1">
@@ -518,18 +518,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                 {/* 1. Company Logo & Title Header */}
                 <div className="text-center space-y-1 mb-4 border-b border-black pb-3">
                   <div className="flex items-center justify-center gap-3">
-                    {/* Academy of Tech Masters Logo representation */}
-                    <div className="w-10 h-10 rounded-full border-2 border-orange-500 flex items-center justify-center bg-white text-blue-900 font-sans font-bold text-xs">
-                      &lt;/&gt;
-                    </div>
-                    <div className="text-left">
-                      <h2 className="text-base font-bold text-orange-600 uppercase font-sans tracking-wide leading-tight">
-                        ACADEMY OF TECH MASTERS
-                      </h2>
-                      <p className="text-[9px] font-bold text-blue-900 uppercase font-sans tracking-wider">
-                        LEARN TODAY, LEAD TOMORROW
-                      </p>
-                    </div>
+                    <img src="/logo.png" alt="Academy Of Tech Masters" className="h-10 w-auto object-contain mx-auto" />
                   </div>
 
                   <h1 className="text-sm font-bold text-black mt-2">
