@@ -30,6 +30,8 @@ import {
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
 import ConfirmModal from '../Components/ui/ConfirmModal';
+import Skeleton, { SkeletonTemplateCard, SkeletonContactItem, SkeletonMessageBubble } from '../Components/ui/Skeleton';
+
 
 export default function WhatsappMessage() {
   const [templates, setTemplates] = useState([]);
@@ -821,7 +823,19 @@ export default function WhatsappMessage() {
     }));
   };
 
-  const renderPreviewBody = (text) => text || '';
+  // Dynamic Template Category Filters (Show ALL categories without hiding any!)
+  const rawCatList = Array.from(new Set(templates.map(t => (t.category || '').toUpperCase()).filter(Boolean)));
+  ['MARKETING', 'UTILITY', 'AUTHENTICATION'].forEach(cat => {
+    if (!rawCatList.includes(cat)) rawCatList.push(cat);
+  });
+  const availableTemplateCategories = ['ALL', ...rawCatList];
+
+  // Dynamic Contact Segment / Identity Filters (Show ALL contact filters!)
+  const rawContactCatList = Array.from(new Set(contactsList.flatMap(c => [c.identity, c.segment]).filter(Boolean)));
+  ['SAP FICO', 'General', 'new'].forEach(cat => {
+    if (!rawContactCatList.includes(cat)) rawContactCatList.push(cat);
+  });
+  const availableContactFilters = ['ALL', ...rawContactCatList];
 
   const filteredTemplates = templates.filter(tmpl => {
     const matchesCat = filterCategory === 'ALL' || (tmpl.category || '').toUpperCase() === filterCategory.toUpperCase();
@@ -831,6 +845,7 @@ export default function WhatsappMessage() {
                           (tmpl.header_text || '').toLowerCase().includes(query);
     return matchesCat && matchesSearch;
   });
+
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 12;
@@ -994,7 +1009,7 @@ export default function WhatsappMessage() {
 
               {/* Segment & Identity Quick Filter Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-                {['ALL', 'SAP FICO', 'General', 'new'].map(filter => (
+                {availableContactFilters.map(filter => (
                   <button
                     key={filter}
                     onClick={() => setContactFilter(filter)}
@@ -1013,9 +1028,12 @@ export default function WhatsappMessage() {
             {/* Contacts List */}
             <div className="flex-1 overflow-y-auto max-h-[500px] divide-y divide-slate-100">
               {loadingContacts ? (
-                <div className="p-8 text-center text-xs text-slate-500 font-semibold">
-                  <RotateCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#00a884]" />
-                  Loading contacts...
+                <div className="p-3 space-y-1">
+                  <SkeletonContactItem />
+                  <SkeletonContactItem />
+                  <SkeletonContactItem />
+                  <SkeletonContactItem />
+                  <SkeletonContactItem />
                 </div>
               ) : contactsList.length === 0 ? (
                 <div className="p-8 text-center text-xs text-slate-500 font-medium">
@@ -1370,12 +1388,12 @@ export default function WhatsappMessage() {
         <>
           {/* Filter & Search Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
-              {['ALL', 'MARKETING', 'UTILITY', 'AUTHENTICATION'].map((cat) => (
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+              {availableTemplateCategories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setFilterCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 border ${
                     filterCategory === cat
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -1393,16 +1411,20 @@ export default function WhatsappMessage() {
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-xs"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#00a884] shadow-xs"
               />
             </div>
           </div>
 
           {/* Templates Grid */}
           {loading ? (
-            <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
-              <RotateCw className="w-6 h-6 animate-spin text-emerald-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-500 font-semibold">Loading Meta templates...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <SkeletonTemplateCard />
+              <SkeletonTemplateCard />
+              <SkeletonTemplateCard />
+              <SkeletonTemplateCard />
+              <SkeletonTemplateCard />
+              <SkeletonTemplateCard />
             </div>
           ) : filteredTemplates.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">

@@ -172,7 +172,7 @@ router.post('/webhook', async (req, res) => {
           // Auto-upsert Contact in MongoDB so incoming message senders appear in contacts list
           const Contact = require('../models/Contact');
           const updateObj = { lastStatus: 'received', updatedAt: new Date() };
-          if (senderName && senderName !== 'Customer') updateObj.name = senderName;
+          // Note: Bio Name is NOT added/overwritten as requested by user
 
           await Contact.findOneAndUpdate(
             { phone: cleanP },
@@ -263,10 +263,10 @@ router.get('/messages', async (req, res) => {
     const { phone } = req.query;
     const filter = {};
     if (phone) {
-      let cleanP = String(phone).replace(/\D/g, '');
-      let p10 = cleanP.length === 12 && cleanP.startsWith('91') ? cleanP.slice(2) : cleanP;
-      let p12 = cleanP.length === 10 ? '91' + cleanP : cleanP;
-      filter.phone = { $in: [p10, p12, cleanP] };
+      let digits = String(phone).replace(/\D/g, '');
+      let p10 = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+      let p12 = digits.length === 10 ? '91' + digits : digits;
+      filter.phone = { $in: [p10, p12, digits, `+${p12}`, `+91${p10}`] };
     }
     const logs = await MessageLog.find(filter).sort({ timestamp: 1 }).limit(200);
     res.json({ success: true, count: logs.length, logs });
