@@ -293,6 +293,21 @@ export default function PaySipGenerator({ onOpenBlast }) {
 
   const activeDoc = previewPayslip || formData;
 
+  const displayBasic = activeDoc.basic ?? 0;
+  const displayHra = activeDoc.hra ?? 0;
+  const displayConveyance = activeDoc.conveyance ?? 0;
+  const displayMedical = activeDoc.medicalAllowance ?? 0;
+  const displaySpecial = activeDoc.specialAllowance ?? 0;
+  const displayIncentive = activeDoc.incentive ?? 0;
+  const displayFood = activeDoc.foodAllowance ?? 0;
+  const displayProfTax = activeDoc.profTax ?? 0;
+  const displayOtherDeductions = activeDoc.otherDeductions ?? 0;
+
+  const activeTotalEarnings = activeDoc.totalEarnings ?? (displayBasic + displayHra + displayConveyance + displayMedical + displaySpecial + displayIncentive + displayFood);
+  const activeTotalDeductions = activeDoc.totalDeductions ?? (displayProfTax + displayOtherDeductions);
+  const activeNetPay = activeDoc.netPay ?? (activeTotalEarnings - activeTotalDeductions);
+  const activeNetPayWords = activeDoc.netPayWords || numberToWordsINR(activeNetPay);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-slate-800">
       
@@ -416,7 +431,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                           <span>{item.designation || 'Director'}</span>
                         </div>
                         <div className="text-xs font-extrabold text-emerald-700 mt-0.5">
-                          Net Pay: ₹{Number(item.netPay || item.sipAmount || 80000).toLocaleString('en-IN')}
+                          Net Pay: ₹{Number(item.netPay ?? item.sipAmount ?? 80000).toLocaleString('en-IN')}
                         </div>
                       </div>
 
@@ -578,7 +593,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">
-                        <span className="font-normal">Effective Work Days:</span> <span className="font-bold">{activeDoc.effectiveWorkDays || 31}</span>
+                        <span className="font-normal">Effective Work Days:</span> <span className="font-bold">{activeDoc.effectiveWorkDays ?? 31}</span>
                       </td>
                       <td className="border border-black p-1.5">
                         <span className="font-normal">PF UAN:</span> <span className="font-bold">{activeDoc.pfUan || '101127077159'}</span>
@@ -606,50 +621,50 @@ export default function PaySipGenerator({ onOpenBlast }) {
                   <tbody>
                     <tr>
                       <td className="border border-black p-1.5">BASIC</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.basic || 48120}</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.basic || 48120}</td>
+                      <td className="border border-black p-1.5 text-right">{displayBasic}</td>
+                      <td className="border border-black p-1.5 text-right">{displayBasic}</td>
                       <td className="border border-black p-1.5">PROF TAX</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.profTax || 200}</td>
+                      <td className="border border-black p-1.5 text-right">{displayProfTax}</td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">HRA</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.hra || 14436}</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.hra || 14436}</td>
+                      <td className="border border-black p-1.5 text-right">{displayHra}</td>
+                      <td className="border border-black p-1.5 text-right">{displayHra}</td>
                       <td className="border border-black p-1.5"></td>
                       <td className="border border-black p-1.5 text-right"></td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">CONVEYANCE</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.conveyance || 2500}</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.conveyance || 2500}</td>
+                      <td className="border border-black p-1.5 text-right">{displayConveyance}</td>
+                      <td className="border border-black p-1.5 text-right">{displayConveyance}</td>
                       <td className="border border-black p-1.5"></td>
                       <td className="border border-black p-1.5 text-right"></td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">MEDICAL ALLOWANCE</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.medicalAllowance || 2500}</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.medicalAllowance || 2500}</td>
+                      <td className="border border-black p-1.5 text-right">{displayMedical}</td>
+                      <td className="border border-black p-1.5 text-right">{displayMedical}</td>
                       <td className="border border-black p-1.5"></td>
                       <td className="border border-black p-1.5 text-right"></td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">SPECIAL ALLOWANCE</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.specialAllowance || 10644}</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.specialAllowance || 10644}</td>
+                      <td className="border border-black p-1.5 text-right">{displaySpecial}</td>
+                      <td className="border border-black p-1.5 text-right">{displaySpecial}</td>
                       <td className="border border-black p-1.5"></td>
                       <td className="border border-black p-1.5 text-right"></td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">INCENTIVE</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.incentive || 0}</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.incentive || 0}</td>
+                      <td className="border border-black p-1.5 text-right">{displayIncentive}</td>
+                      <td className="border border-black p-1.5 text-right">{displayIncentive}</td>
                       <td className="border border-black p-1.5"></td>
                       <td className="border border-black p-1.5 text-right"></td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">FOOD ALLOWANCE</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.foodAllowance || 2000}</td>
-                      <td className="border border-black p-1.5 text-right">{activeDoc.foodAllowance || 2000}</td>
+                      <td className="border border-black p-1.5 text-right">{displayFood}</td>
+                      <td className="border border-black p-1.5 text-right">{displayFood}</td>
                       <td className="border border-black p-1.5"></td>
                       <td className="border border-black p-1.5 text-right"></td>
                     </tr>
@@ -657,16 +672,10 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     {/* Totals Row */}
                     <tr className="font-bold border-t-2 border-black">
                       <td className="border border-black p-1.5">Total Earnings:INR.</td>
-                      <td className="border border-black p-1.5 text-right">
-                        {activeDoc.totalEarnings || totalEarnings}
-                      </td>
-                      <td className="border border-black p-1.5 text-right">
-                        {activeDoc.totalEarnings || totalEarnings}
-                      </td>
+                      <td className="border border-black p-1.5 text-right">{activeTotalEarnings}</td>
+                      <td className="border border-black p-1.5 text-right">{activeTotalEarnings}</td>
                       <td className="border border-black p-1.5">Total Deductions:INR.</td>
-                      <td className="border border-black p-1.5 text-right">
-                        {activeDoc.totalDeductions || totalDeductions}
-                      </td>
+                      <td className="border border-black p-1.5 text-right">{activeTotalDeductions}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -675,10 +684,10 @@ export default function PaySipGenerator({ onOpenBlast }) {
                 <div className="border border-black p-2 mb-4 space-y-1">
                   <div className="flex items-center justify-between font-bold">
                     <span>Net Pay for the month ( Total Earnings - Total Deductions):</span>
-                    <span className="text-sm font-bold">{activeDoc.netPay || netPay}</span>
+                    <span className="text-sm font-bold">{activeNetPay}</span>
                   </div>
                   <div className="font-bold italic">
-                    ({activeDoc.netPayWords || netPayWords})
+                    ({activeNetPayWords})
                   </div>
                 </div>
 
