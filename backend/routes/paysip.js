@@ -8,58 +8,41 @@ router.get('/', async (req, res) => {
   res.json({ success: true, paysips, count: paysips.length });
 });
 
-// POST /api/paysip - Create new Pay_SIP entry
+// POST /api/paysip - Create new Payslip entry
 router.post('/', async (req, res) => {
-  const { clientName, phone, folioNumber, sipAmount, monthlyDay, installmentCount, fundName, paymentStatus } = req.body;
-  if (!clientName || !phone || !folioNumber || !sipAmount) {
-    return res.status(400).json({ success: false, message: 'Client Name, Phone, Folio Number, and SIP Amount are required.' });
-  }
+  try {
+    const body = req.body;
+    const clientName = body.employeeName || body.clientName || 'Employee';
+    const phone = body.phone || '9876543210';
+    const folioNumber = body.employeeId || body.folioNumber || `EMP-${Date.now()}`;
+    const sipAmount = body.netPay || body.sipAmount || 80000;
 
-  let cleanPhone = String(phone).replace(/\D/g, '');
-  if (cleanPhone.startsWith('91') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
-
-  const cleanFolio = String(folioNumber).trim();
-
-  // Check duplicate folio number
-  const existing = await PaySip.findOne({ folioNumber: cleanFolio });
-  if (existing) {
-    return res.status(400).json({ success: false, message: `Pay_SIP with Folio Number '${cleanFolio}' already exists in database.` });
-  }
-
-  const paysip = await PaySip.create({
-    clientName: clientName.trim(),
-    phone: cleanPhone,
-    folioNumber: cleanFolio,
-    sipAmount: Number(sipAmount),
-    monthlyDay: monthlyDay ? Number(monthlyDay) : 10,
-    installmentCount: installmentCount ? Number(installmentCount) : 12,
-    fundName: fundName ? fundName.trim() : 'HDFC Flexi Cap Fund',
-    paymentStatus: paymentStatus || 'Active'
-  });
-
-  res.status(201).json({ success: true, paysip, message: 'Pay_SIP generated and saved in MongoDB!' });
-});
-
-// PUT /api/paysip/:id - Update Pay_SIP entry
-router.put('/:id', async (req, res) => {
-  const { clientName, phone, folioNumber, sipAmount, monthlyDay, installmentCount, fundName, paymentStatus } = req.body;
-  const updateData = {};
-  if (clientName !== undefined) updateData.clientName = clientName.trim();
-  if (phone !== undefined) {
     let cleanPhone = String(phone).replace(/\D/g, '');
     if (cleanPhone.startsWith('91') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
-    updateData.phone = cleanPhone;
-  }
-  if (folioNumber !== undefined) updateData.folioNumber = String(folioNumber).trim();
-  if (sipAmount !== undefined) updateData.sipAmount = Number(sipAmount);
-  if (monthlyDay !== undefined) updateData.monthlyDay = Number(monthlyDay);
-  if (installmentCount !== undefined) updateData.installmentCount = Number(installmentCount);
-  if (fundName !== undefined) updateData.fundName = fundName.trim();
-  if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;
 
-  const paysip = await PaySip.findByIdAndUpdate(req.params.id, updateData, { new: true });
-  if (!paysip) return res.status(404).json({ success: false, message: 'Pay_SIP record not found' });
-  res.json({ success: true, paysip, message: 'Pay_SIP record updated successfully' });
+    const paysip = await PaySip.create({
+      ...body,
+      clientName: String(clientName).trim(),
+      phone: cleanPhone,
+      folioNumber: String(folioNumber).trim(),
+      sipAmount: Number(sipAmount)
+    });
+
+    res.status(201).json({ success: true, paysip, message: 'Payslip generated and saved successfully in MongoDB! 🎉' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/paysip/:id - Update Payslip entry
+router.put('/:id', async (req, res) => {
+  try {
+    const paysip = await PaySip.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    if (!paysip) return res.status(404).json({ success: false, message: 'Payslip record not found' });
+    res.json({ success: true, paysip, message: 'Payslip record updated successfully! 🎉' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // DELETE /api/paysip/:id - Delete Pay_SIP entry
