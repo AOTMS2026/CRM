@@ -30,8 +30,6 @@ import {
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
 import ConfirmModal from '../Components/ui/ConfirmModal';
-import Skeleton, { SkeletonTemplateCard, SkeletonContactItem, SkeletonMessageBubble } from '../Components/ui/Skeleton';
-
 
 export default function WhatsappMessage() {
   const [templates, setTemplates] = useState([]);
@@ -60,7 +58,7 @@ export default function WhatsappMessage() {
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [sendingChatMsg, setSendingChatMsg] = useState(false);
   const [chatLogMap, setChatLogMap] = useState({});
-  const [unreadMap, setUnreadMap] = useState({}); // { [phone]: count }
+  const [unreadMap, setUnreadMap] = useState({}); // { [phone10]: count }
   const [lastSeenMap, setLastSeenMap] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('wa_read_timestamps') || '{}');
@@ -68,15 +66,14 @@ export default function WhatsappMessage() {
       return {};
     }
   });
-  const [latestMsgTimeMap, setLatestMsgTimeMap] = useState({}); // { [phone]: timestamp }
+  const [latestMsgTimeMap, setLatestMsgTimeMap] = useState({}); // { [phone10]: timestamp }
   const chatBottomRef = useRef(null);
 
   // Handle contact selection & automatically turn OFF unread badge
   const handleSelectContact = (c) => {
     setSelectedContact(c);
     if (c && c.phone) {
-      let cleanP = String(c.phone).replace(/\D/g, '');
-      if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
+      const cleanP = String(c.phone).replace(/\D/g, '').slice(-10);
 
       const now = Date.now();
       setLastSeenMap(prev => {
@@ -397,20 +394,18 @@ export default function WhatsappMessage() {
       if (res.ok && data.success && Array.isArray(data.logs)) {
         const counts = {};
         const latestTimes = {};
-        const currentActivePhone = selectedContact?.phone ? String(selectedContact.phone).replace(/\D/g, '').replace(/^91/, '') : '';
+        const currentActivePhone = selectedContact?.phone ? String(selectedContact.phone).replace(/\D/g, '').slice(-10) : '';
 
         let readStorage = {};
         try { readStorage = JSON.parse(localStorage.getItem('wa_read_timestamps') || '{}'); } catch {}
 
         data.logs.forEach(log => {
           if (log.phone) {
-            let cleanP = String(log.phone).replace(/\D/g, '');
-            if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
-
+            const cleanP = String(log.phone).replace(/\D/g, '').slice(-10);
             const logTime = new Date(log.timestamp).getTime();
             latestTimes[cleanP] = Math.max(latestTimes[cleanP] || 0, logTime);
 
-            const isIncoming = log.direction === 'INCOMING' || log.status === 'received';
+            const isIncoming = log.direction === 'INCOMING' || log.status === 'received' || (log.senderName && log.senderName !== 'Business');
             if (isIncoming) {
               const lastRead = readStorage[cleanP] || lastSeenMap[cleanP] || 0;
               if (cleanP !== currentActivePhone && logTime > lastRead) {
@@ -1028,12 +1023,9 @@ export default function WhatsappMessage() {
             {/* Contacts List */}
             <div className="flex-1 overflow-y-auto max-h-[500px] divide-y divide-slate-100">
               {loadingContacts ? (
-                <div className="p-3 space-y-1">
-                  <SkeletonContactItem />
-                  <SkeletonContactItem />
-                  <SkeletonContactItem />
-                  <SkeletonContactItem />
-                  <SkeletonContactItem />
+                <div className="p-8 text-center text-xs text-slate-500 font-semibold">
+                  <RotateCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#00a884]" />
+                  Loading contacts...
                 </div>
               ) : contactsList.length === 0 ? (
                 <div className="p-8 text-center text-xs text-slate-500 font-medium">
@@ -1050,8 +1042,8 @@ export default function WhatsappMessage() {
                     return matchesSearch && matchesFilter;
                   })
                   .sort((a, b) => {
-                    let cleanA = String(a.phone).replace(/\D/g, '').replace(/^91/, '');
-                    let cleanB = String(b.phone).replace(/\D/g, '').replace(/^91/, '');
+                    const cleanA = String(a.phone).replace(/\D/g, '').slice(-10);
+                    const cleanB = String(b.phone).replace(/\D/g, '').slice(-10);
 
                     const unreadA = unreadMap[cleanA] || 0;
                     const unreadB = unreadMap[cleanB] || 0;
@@ -1073,8 +1065,7 @@ export default function WhatsappMessage() {
                     const isSelected = selectedContact?._id === c._id || selectedContact?.phone === c.phone;
                     const initial = (c.name || c.phone || 'C')[0].toUpperCase();
 
-                    let cleanP = String(c.phone).replace(/\D/g, '');
-                    if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
+                    const cleanP = String(c.phone).replace(/\D/g, '').slice(-10);
                     const unreadCount = unreadMap[cleanP] || 0;
 
                     return (
@@ -1418,13 +1409,9 @@ export default function WhatsappMessage() {
 
           {/* Templates Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              <SkeletonTemplateCard />
-              <SkeletonTemplateCard />
-              <SkeletonTemplateCard />
-              <SkeletonTemplateCard />
-              <SkeletonTemplateCard />
-              <SkeletonTemplateCard />
+            <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+              <RotateCw className="w-6 h-6 animate-spin text-[#00a884] mx-auto mb-2" />
+              <p className="text-xs text-slate-500 font-semibold">Loading Meta templates...</p>
             </div>
           ) : filteredTemplates.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">

@@ -261,15 +261,19 @@ router.post('/webhook', async (req, res) => {
 router.get('/messages', async (req, res) => {
   try {
     const { phone } = req.query;
-    const filter = {};
     if (phone) {
       let digits = String(phone).replace(/\D/g, '');
-      let p10 = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
-      let p12 = digits.length === 10 ? '91' + digits : digits;
-      filter.phone = { $in: [p10, p12, digits, `+${p12}`, `+91${p10}`] };
+      let p10 = digits.slice(-10);
+      let p12 = '91' + p10;
+      const filter = { phone: { $in: [p10, p12, digits, `+${p12}`, `+91${p10}`] } };
+      const logs = await MessageLog.find(filter).sort({ timestamp: 1 }).limit(500);
+      return res.json({ success: true, count: logs.length, logs });
     }
-    const logs = await MessageLog.find(filter).sort({ timestamp: 1 }).limit(200);
-    res.json({ success: true, count: logs.length, logs });
+
+    // Fetch the MOST RECENT 1000 messages across all contacts for unread counts & top activity sorting
+    const logs = await MessageLog.find({}).sort({ timestamp: -1 }).limit(1000);
+    const sortedLogs = logs.reverse(); // put into chronological order
+    res.json({ success: true, count: sortedLogs.length, logs: sortedLogs });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -28,7 +28,6 @@ import * as XLSX from 'xlsx';
 import { IoLogoWhatsapp as WhatsApp } from 'react-icons/io5';
 
 import ConfirmModal from '../Components/ui/ConfirmModal';
-import Skeleton from '../Components/ui/Skeleton';
 
 
 export default function Contacts({ onOpenBlast }) {
@@ -613,24 +612,9 @@ export default function Contacts({ onOpenBlast }) {
 
       {/* CONTACTS CARDS GRID */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          {Array.from({ length: 8 }).map((_, idx) => (
-            <div key={idx} className="p-5 rounded-2xl bg-white border border-slate-200 space-y-4">
-              <div className="flex items-center gap-3">
-                <Skeleton className="w-10 h-10 rounded-2xl shrink-0" />
-                <div className="space-y-1.5 flex-1">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-              </div>
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-3/4" />
-              <div className="pt-2 border-t border-slate-100 flex justify-between">
-                <Skeleton className="h-6 w-16 rounded-md" />
-                <Skeleton className="h-6 w-20 rounded-md" />
-              </div>
-            </div>
-          ))}
+        <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <RotateCw className="w-6 h-6 animate-spin text-sky-600 mx-auto mb-2" />
+          <p className="text-xs text-slate-500 font-semibold">Loading Meta contacts from database...</p>
         </div>
       ) : filteredContacts.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
