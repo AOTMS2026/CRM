@@ -52,6 +52,7 @@ export default function WhatsappMessage() {
   const [chatLogMap, setChatLogMap] = useState({});
   const [unreadMap, setUnreadMap] = useState({}); // { [phone]: count }
   const [lastSeenMap, setLastSeenMap] = useState({}); // { [phone]: timestamp }
+  const [latestMsgTimeMap, setLatestMsgTimeMap] = useState({}); // { [phone]: timestamp }
   const chatBottomRef = useRef(null);
 
   // Handle contact selection & automatically turn OFF unread badge
@@ -184,7 +185,16 @@ export default function WhatsappMessage() {
     let headerContent = headerImageUrl || headerText || t.header_content || '';
     let bodyText = t.message || bodyComp?.text || t.body_text || t.title || 'Welcome to AOTMS!';
     let footerText = t.footer || footerComp?.text || t.footer_text || '';
-    let buttonsList = t.buttons || (buttonsComp?.buttons || []);
+
+    let buttonsList = [];
+    try {
+      buttonsList = typeof t.buttons === 'string' ? JSON.parse(t.buttons) : (t.buttons || buttonsComp?.buttons || []);
+    } catch (e) {
+      buttonsList = buttonsComp?.buttons || [];
+    }
+    if ((!buttonsList || buttonsList.length === 0) && buttonsComp?.buttons) {
+      buttonsList = buttonsComp.buttons;
+    }
 
     return {
       _id: t._id,
@@ -358,30 +368,35 @@ export default function WhatsappMessage() {
     }
   };
 
-  // Fetch unread incoming message counts across contacts for profile notification badges (1, 2, 3...)
+  // Fetch unread incoming message counts & latest activity timestamps for contact sorting (Top position!)
   const fetchAllUnreadCounts = async () => {
     try {
       const res = await fetch(`${getApiBase()}/api/whatsapp/messages`);
       const data = await res.json();
       if (res.ok && data.success && Array.isArray(data.logs)) {
         const counts = {};
+        const latestTimes = {};
         const currentActivePhone = selectedContact?.phone ? String(selectedContact.phone).replace(/\D/g, '').replace(/^91/, '') : '';
 
         data.logs.forEach(log => {
-          const isIncoming = log.direction === 'INCOMING' || log.status === 'received';
-          if (isIncoming && log.phone) {
+          if (log.phone) {
             let cleanP = String(log.phone).replace(/\D/g, '');
             if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
 
-            const lastSeen = lastSeenMap[cleanP] || 0;
             const logTime = new Date(log.timestamp).getTime();
+            latestTimes[cleanP] = Math.max(latestTimes[cleanP] || 0, logTime);
 
-            if (cleanP !== currentActivePhone && logTime > lastSeen) {
-              counts[cleanP] = (counts[cleanP] || 0) + 1;
+            const isIncoming = log.direction === 'INCOMING' || log.status === 'received';
+            if (isIncoming) {
+              const lastSeen = lastSeenMap[cleanP] || 0;
+              if (cleanP !== currentActivePhone && logTime > lastSeen) {
+                counts[cleanP] = (counts[cleanP] || 0) + 1;
+              }
             }
           }
         });
 
+        setLatestMsgTimeMap(latestTimes);
         setUnreadMap(counts);
       }
     } catch (err) {
@@ -994,6 +1009,23 @@ export default function WhatsappMessage() {
                       (c.segment || '').toLowerCase() === contactFilter.toLowerCase();
                     return matchesSearch && matchesFilter;
                   })
+                  .sort((a, b) => {
+                    let cleanA = String(a.phone).replace(/\D/g, '').replace(/^91/, '');
+                    let cleanB = String(b.phone).replace(/\D/g, '').replace(/^91/, '');
+
+                    const unreadA = unreadMap[cleanA] || 0;
+                    const unreadB = unreadMap[cleanB] || 0;
+
+                    // 1. Contacts with NEW UNREAD MESSAGES jump to TOP position!
+                    if (unreadA !== unreadB) {
+                      return unreadB - unreadA;
+                    }
+
+                    // 2. Sort by latest message activity time (most recent at top!)
+                    const timeA = latestMsgTimeMap[cleanA] || 0;
+                    const timeB = latestMsgTimeMap[cleanB] || 0;
+                    return timeB - timeA;
+                  })
                   .map((c) => {
                     const isSelected = selectedContact?._id === c._id || selectedContact?.phone === c.phone;
                     const initial = (c.name || c.phone || 'C')[0].toUpperCase();
@@ -1029,14 +1061,20 @@ export default function WhatsappMessage() {
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {unreadCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-[#00a884] text-white text-[10px] font-black flex items-center justify-center shadow-xs shrink-0 animate-bounce">
-                              {unreadCount}
+                          {unreadCount > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-extrabold bg-[#00a884] text-white animate-pulse">
+                                NEW MESSAGE
+                              </span>
+                              <span className="w-5 h-5 rounded-full bg-[#00a884] text-white text-[10px] font-black flex items-center justify-center shadow-xs shrink-0">
+                                {unreadCount}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#00a884] border border-emerald-200">
+                              {c.identity || 'Contact'}
                             </span>
                           )}
-                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#00a884] border border-emerald-200">
-                            {c.identity || 'Contact'}
-                          </span>
                         </div>
                       </div>
                     );
