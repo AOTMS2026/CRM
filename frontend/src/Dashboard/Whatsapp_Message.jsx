@@ -514,7 +514,6 @@ export default function WhatsappMessage() {
   };
 
   const renderPreviewBody = (text) => text || '';
-  };
 
   const filteredTemplates = templates.filter(tmpl => {
     const matchesCat = filterCategory === 'ALL' || (tmpl.category || '').toUpperCase() === filterCategory.toUpperCase();
