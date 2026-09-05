@@ -48,6 +48,7 @@ export default function WhatsappMessage() {
   const [chatMessageText, setChatMessageText] = useState('');
   const [selectedChatTemplate, setSelectedChatTemplate] = useState('');
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [sendingChatMsg, setSendingChatMsg] = useState(false);
   const [chatLogMap, setChatLogMap] = useState({});
   const [unreadMap, setUnreadMap] = useState({}); // { [phone]: count }
   const [lastSeenMap, setLastSeenMap] = useState({}); // { [phone]: timestamp }
