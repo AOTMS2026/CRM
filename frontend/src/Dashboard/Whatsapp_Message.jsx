@@ -48,9 +48,22 @@ export default function WhatsappMessage() {
   const [chatMessageText, setChatMessageText] = useState('');
   const [selectedChatTemplate, setSelectedChatTemplate] = useState('');
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
-  const [sendingChatMsg, setSendingChatMsg] = useState(false);
   const [chatLogMap, setChatLogMap] = useState({});
+  const [unreadMap, setUnreadMap] = useState({}); // { [phone]: count }
+  const [lastSeenMap, setLastSeenMap] = useState({}); // { [phone]: timestamp }
   const chatBottomRef = useRef(null);
+
+  // Handle contact selection & automatically turn OFF unread badge
+  const handleSelectContact = (c) => {
+    setSelectedContact(c);
+    if (c && c.phone) {
+      let cleanP = String(c.phone).replace(/\D/g, '');
+      if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
+
+      setUnreadMap(prev => ({ ...prev, [cleanP]: 0 }));
+      setLastSeenMap(prev => ({ ...prev, [cleanP]: Date.now() }));
+    }
+  };
 
   // Modal & Preview state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -344,23 +357,56 @@ export default function WhatsappMessage() {
     }
   };
 
-  // Real-time 3-second Polling Hook for Live Chat
+  // Fetch unread incoming message counts across contacts for profile notification badges (1, 2, 3...)
+  const fetchAllUnreadCounts = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/whatsapp/messages`);
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.logs)) {
+        const counts = {};
+        const currentActivePhone = selectedContact?.phone ? String(selectedContact.phone).replace(/\D/g, '').replace(/^91/, '') : '';
+
+        data.logs.forEach(log => {
+          const isIncoming = log.direction === 'INCOMING' || log.status === 'received';
+          if (isIncoming && log.phone) {
+            let cleanP = String(log.phone).replace(/\D/g, '');
+            if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
+
+            const lastSeen = lastSeenMap[cleanP] || 0;
+            const logTime = new Date(log.timestamp).getTime();
+
+            if (cleanP !== currentActivePhone && logTime > lastSeen) {
+              counts[cleanP] = (counts[cleanP] || 0) + 1;
+            }
+          }
+        });
+
+        setUnreadMap(counts);
+      }
+    } catch (err) {
+      // silent polling error catch
+    }
+  };
+
+  // Real-time 3-second Polling Hook for Live Chat & Unread Badges
   useEffect(() => {
     if (viewMode === 'LIVE_CHAT') {
       fetchContactsList();
       if (selectedContact?.phone) {
         fetchChatLogs(selectedContact.phone);
       }
+      fetchAllUnreadCounts();
 
       const pollInterval = setInterval(() => {
         if (selectedContact?.phone) {
           fetchChatLogs(selectedContact.phone);
         }
+        fetchAllUnreadCounts();
       }, 3000);
 
       return () => clearInterval(pollInterval);
     }
-  }, [viewMode, selectedContact?.phone]);
+  }, [viewMode, selectedContact?.phone, lastSeenMap]);
 
   // Scroll chat window to bottom ONLY when selecting a new contact or switching view mode (Auto-scroll turned OFF during background polling)
   useEffect(() => {
@@ -950,10 +996,15 @@ export default function WhatsappMessage() {
                   .map((c) => {
                     const isSelected = selectedContact?._id === c._id || selectedContact?.phone === c.phone;
                     const initial = (c.name || c.phone || 'C')[0].toUpperCase();
+
+                    let cleanP = String(c.phone).replace(/\D/g, '');
+                    if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
+                    const unreadCount = unreadMap[cleanP] || 0;
+
                     return (
                       <div
                         key={c._id || c.phone}
-                        onClick={() => setSelectedContact(c)}
+                        onClick={() => handleSelectContact(c)}
                         className={`p-3.5 flex items-center justify-between cursor-pointer transition-all ${
                           isSelected ? 'bg-[#f0f2f5] border-l-4 border-[#00a884]' : 'hover:bg-slate-50'
                         }`}
@@ -976,9 +1027,16 @@ export default function WhatsappMessage() {
                           </div>
                         </div>
 
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#00a884] border border-emerald-200">
-                          {c.identity || 'Contact'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {unreadCount > 0 && (
+                            <span className="w-5 h-5 rounded-full bg-[#00a884] text-white text-[10px] font-black flex items-center justify-center shadow-xs shrink-0 animate-bounce">
+                              {unreadCount}
+                            </span>
+                          )}
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#00a884] border border-emerald-200">
+                            {c.identity || 'Contact'}
+                          </span>
+                        </div>
                       </div>
                     );
                   })
@@ -1061,13 +1119,32 @@ export default function WhatsappMessage() {
                             {msg.text}
                           </p>
                           
+                          {/* Production Level WhatsApp Interactive Buttons */}
                           {Array.isArray(msg.buttons) && msg.buttons.length > 0 && (
-                            <div className="space-y-1 pt-1 border-t border-slate-200/80">
-                              {msg.buttons.map((b, i) => (
-                                <div key={i} className="px-3 py-1 rounded-lg bg-white text-[#00a884] text-[11px] font-bold text-center border border-slate-200 shadow-2xs">
-                                  {b.text || b.url || b.phone_number}
-                                </div>
-                              ))}
+                            <div className="pt-2 border-t border-slate-300/60 divide-y divide-slate-300/60 -mx-3.5 -mb-1 mt-2">
+                              {msg.buttons.map((b, i) => {
+                                const btnType = b.type || (b.url ? 'URL' : (b.phone_number ? 'PHONE_NUMBER' : 'QUICK_REPLY'));
+                                const btnLabel = b.text || b.displayText || b.title || b.url || b.phone_number || 'Interactive Button';
+
+                                return (
+                                  <a
+                                    key={i}
+                                    href={btnType === 'URL' ? (b.url || '#') : (btnType === 'PHONE_NUMBER' ? `tel:${b.phone_number}` : '#')}
+                                    target={btnType === 'URL' ? '_blank' : '_self'}
+                                    rel="noreferrer"
+                                    className="w-full py-2 px-3 text-center text-xs font-black text-[#00a884] hover:bg-slate-100/60 transition-colors flex items-center justify-center gap-1.5 cursor-pointer first:pt-2"
+                                  >
+                                    {btnType === 'PHONE_NUMBER' ? (
+                                      <Phone className="w-3.5 h-3.5 text-[#00a884]" />
+                                    ) : btnType === 'URL' ? (
+                                      <ExternalLink className="w-3.5 h-3.5 text-[#00a884]" />
+                                    ) : (
+                                      <Send className="w-3.5 h-3.5 text-[#00a884]" />
+                                    )}
+                                    <span>{btnLabel}</span>
+                                  </a>
+                                );
+                              })}
                             </div>
                           )}
 
