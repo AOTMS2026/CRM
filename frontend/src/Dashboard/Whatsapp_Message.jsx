@@ -394,7 +394,22 @@ export default function WhatsappMessage() {
       if (res.ok && data.success) {
         showToast(`Message sent to ${selectedContact.name || targetPhone}! 🎉`, "success");
         setChatMessageText('');
-        fetchChatLogs(targetPhone);
+
+        // Optimistic UI Update: Display message on screen immediately!
+        const tempMsg = {
+          id: `opt_${Date.now()}`,
+          type: 'OUTGOING',
+          text: msgText,
+          senderName: 'Business',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'sent'
+        };
+        setChatLogMap(prev => ({
+          ...prev,
+          [targetPhone]: [...(prev[targetPhone] || []), tempMsg]
+        }));
+
+        setTimeout(() => fetchChatLogs(targetPhone), 500);
       } else {
         throw new Error(data.message || "Failed to send message.");
       }
@@ -434,7 +449,23 @@ export default function WhatsappMessage() {
       if (res.ok && data.success) {
         showToast(`Template '${tmpl?.name || 'Meta Template'}' sent to ${selectedContact.name || targetPhone}! 🎉`, "success");
         setSelectedChatTemplate('');
-        fetchChatLogs(targetPhone);
+
+        // Optimistic UI Update: Display template message on screen immediately!
+        const tempMsg = {
+          id: `opt_tmpl_${Date.now()}`,
+          type: 'OUTGOING_TEMPLATE',
+          text: tmpl?.body_text || 'Template Message Sent',
+          templateName: tmpl?.name || '',
+          senderName: 'Business',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'sent'
+        };
+        setChatLogMap(prev => ({
+          ...prev,
+          [targetPhone]: [...(prev[targetPhone] || []), tempMsg]
+        }));
+
+        setTimeout(() => fetchChatLogs(targetPhone), 500);
       } else {
         throw new Error(data.message || "Failed to send template.");
       }

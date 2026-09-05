@@ -173,8 +173,33 @@ router.post('/send-message', async (req, res) => {
   const { phone, message } = req.body;
   if (!phone || !message) return res.status(400).json({ success: false, message: 'phone and message required' });
   try {
-    await sendTextMessage(phone, message);
-    res.json({ success: true, message: 'Message sent!' });
+    const metaRes = await sendTextMessage(phone, message);
+    const wamid = metaRes?.messages?.[0]?.id || `direct_${Date.now()}`;
+
+    let cleanP = String(phone).replace(/\D/g, '');
+    if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
+
+    try {
+      const MessageLog = require('../models/MessageLog');
+      await MessageLog.findOneAndUpdate(
+        { wamid },
+        {
+          $set: {
+            wamid,
+            phone: cleanP,
+            direction: 'OUTGOING',
+            status: 'sent',
+            text: message,
+            timestamp: new Date()
+          }
+        },
+        { upsert: true, new: true }
+      );
+    } catch (logErr) {
+      console.error('Failed to log outbound direct message to MessageLog:', logErr);
+    }
+
+    res.json({ success: true, message: 'Message sent!', metaRes });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
