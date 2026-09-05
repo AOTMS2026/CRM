@@ -433,7 +433,7 @@ export default function WhatsappMessage() {
       return;
     }
 
-    const tmpl = templates.find(t => (t._id === tmplId || t.id === tmplId || t.metaTemplateId === tmplId));
+    const tmpl = templates.find(t => (t._id === tmplId || t.id === tmplId || t.metaTemplateId === tmplId || t.name === tmplId));
     const targetPhone = selectedContact.phone;
     setSendingChatMsg(true);
 
@@ -451,12 +451,21 @@ export default function WhatsappMessage() {
         showToast(`Template '${tmpl?.name || 'Meta Template'}' sent to ${selectedContact.name || targetPhone}! 🎉`, "success");
         setSelectedChatTemplate('');
 
-        // Optimistic UI Update: Display template message on screen immediately!
+        let parsedButtons = [];
+        try {
+          parsedButtons = typeof tmpl?.buttons === 'string' ? JSON.parse(tmpl.buttons) : (tmpl?.buttons || []);
+        } catch (e) {
+          parsedButtons = [];
+        }
+
+        // Optimistic UI Update: Display rich template message on screen immediately!
         const tempMsg = {
           id: `opt_tmpl_${Date.now()}`,
           type: 'OUTGOING_TEMPLATE',
-          text: tmpl?.body_text || 'Template Message Sent',
-          templateName: tmpl?.name || '',
+          text: tmpl?.body_text || tmpl?.message || 'Template Message Sent',
+          templateName: tmpl?.name || 'Meta Template',
+          header_image_url: tmpl?.header_image_url || tmpl?.imageUrl || '',
+          buttons: parsedButtons,
           senderName: 'Business',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: 'sent'
@@ -466,7 +475,7 @@ export default function WhatsappMessage() {
           [targetPhone]: [...(prev[targetPhone] || []), tempMsg]
         }));
 
-        setTimeout(() => fetchChatLogs(targetPhone), 500);
+        setTimeout(() => fetchChatLogs(targetPhone), 1000);
       } else {
         throw new Error(data.message || "Failed to send template.");
       }
