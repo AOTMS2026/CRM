@@ -39,40 +39,40 @@ export default function PaySipGenerator({ onOpenBlast }) {
   // Print Ref
   const printRef = useRef(null);
 
-  // Default Payslip Form State (Empty by default with clean placeholders)
+  // Default Payslip Form State (Preset to Academy of Tech Masters March 2026 Payslip style)
   const defaultFormData = {
     companyName: 'Academy Of Tech Masters',
     companyAddress: '2nd Floor, Sri Pothuri Towers, MG Road, Near DV Manor, Vijayawada – 520010',
-    monthYear: '',
+    monthYear: 'March 2026',
 
-    employeeName: '',
-    employeeId: '',
-    joiningDate: '',
-    designation: '',
-    department: '',
+    employeeName: 'Ameenuddin Sayyed',
+    employeeId: 'AOTMS-01',
+    joiningDate: '05 Sept 2025',
+    designation: 'Director',
+    department: 'IT',
     location: 'Vijayawada',
-    effectiveWorkDays: '',
-    lop: '',
+    effectiveWorkDays: 31,
+    lop: 0,
 
-    bankName: '',
-    bankAccountNo: '',
-    panNumber: '',
-    pfNo: '',
-    pfUan: '',
-    phone: '',
+    bankName: 'ICICI Bank',
+    bankAccountNo: '630601562564',
+    panNumber: 'GSAPS2603R',
+    pfNo: 'AP/HYD/1784665/000/0010050',
+    pfUan: '101127077159',
+    phone: '9876543210',
 
     // Earnings
-    basic: '',
-    hra: '',
-    conveyance: '',
-    medicalAllowance: '',
-    specialAllowance: '',
-    incentive: '',
-    foodAllowance: '',
+    basic: 48120,
+    hra: 14436,
+    conveyance: 2500,
+    medicalAllowance: 2500,
+    specialAllowance: 10644,
+    incentive: 0,
+    foodAllowance: 2000,
 
     // Deductions
-    profTax: '',
-    otherDeductions: ''
+    profTax: 200,
+    otherDeductions: 0
   };
 
   const [formData, setFormData] = useState(defaultFormData);
@@ -293,15 +293,15 @@ export default function PaySipGenerator({ onOpenBlast }) {
 
   const activeDoc = previewPayslip || formData;
 
-  const displayBasic = Number(activeDoc.basic || 0);
-  const displayHra = Number(activeDoc.hra || 0);
-  const displayConveyance = Number(activeDoc.conveyance || 0);
-  const displayMedical = Number(activeDoc.medicalAllowance || 0);
-  const displaySpecial = Number(activeDoc.specialAllowance || 0);
-  const displayIncentive = Number(activeDoc.incentive || 0);
-  const displayFood = Number(activeDoc.foodAllowance || 0);
-  const displayProfTax = Number(activeDoc.profTax || 0);
-  const displayOtherDeductions = Number(activeDoc.otherDeductions || 0);
+  const displayBasic = activeDoc.basic ?? 0;
+  const displayHra = activeDoc.hra ?? 0;
+  const displayConveyance = activeDoc.conveyance ?? 0;
+  const displayMedical = activeDoc.medicalAllowance ?? 0;
+  const displaySpecial = activeDoc.specialAllowance ?? 0;
+  const displayIncentive = activeDoc.incentive ?? 0;
+  const displayFood = activeDoc.foodAllowance ?? 0;
+  const displayProfTax = activeDoc.profTax ?? 0;
+  const displayOtherDeductions = activeDoc.otherDeductions ?? 0;
 
   const activeTotalEarnings = activeDoc.totalEarnings ?? (displayBasic + displayHra + displayConveyance + displayMedical + displaySpecial + displayIncentive + displayFood);
   const activeTotalDeductions = activeDoc.totalDeductions ?? (displayProfTax + displayOtherDeductions);
@@ -431,7 +431,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                           <span>{item.designation || 'Director'}</span>
                         </div>
                         <div className="text-xs font-extrabold text-emerald-700 mt-0.5">
-                          Net Pay: ₹{Number(item.netPay ?? item.sipAmount ?? 0).toLocaleString('en-IN')}
+                          Net Pay: ₹{Number(item.netPay ?? item.sipAmount ?? 80000).toLocaleString('en-IN')}
                         </div>
                       </div>
 
@@ -537,14 +537,14 @@ export default function PaySipGenerator({ onOpenBlast }) {
                   </div>
 
                   <h1 className="text-sm font-bold text-black mt-2">
-                    {activeDoc.companyName || ''}
+                    {activeDoc.companyName || 'Academy Of Tech Masters'}
                   </h1>
                   <p className="text-[11px] text-black">
-                    {activeDoc.companyAddress || ''}
+                    {activeDoc.companyAddress || '2nd Floor, Sri Pothuri Towers, MG Road, Near DV Manor, Vijayawada – 520010'}
                   </p>
 
                   <h3 className="text-xs font-bold text-black pt-1">
-                    Payslip for the month of {activeDoc.monthYear || ''}
+                    Payslip for the month of {activeDoc.monthYear || 'March 2026'}
                   </h3>
                 </div>
 
@@ -553,50 +553,50 @@ export default function PaySipGenerator({ onOpenBlast }) {
                   <tbody>
                     <tr>
                       <td className="border border-black p-1.5 w-1/2">
-                        <span className="font-normal">Name:</span> <span className="font-bold">{activeDoc.employeeName || activeDoc.clientName || ''}</span>
+                        <span className="font-normal">Name:</span> <span className="font-bold">{activeDoc.employeeName || activeDoc.clientName || 'Ameenuddin Sayyed'}</span>
                       </td>
                       <td className="border border-black p-1.5 w-1/2">
-                        <span className="font-normal">Employee No:</span> <span className="font-bold">{activeDoc.employeeId || activeDoc.folioNumber || ''}</span>
+                        <span className="font-normal">Employee No:</span> <span className="font-bold">{activeDoc.employeeId || activeDoc.folioNumber || 'AOTMS-01'}</span>
                       </td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">
-                        <span className="font-normal">Joining Date:</span> <span className="font-bold">{activeDoc.joiningDate || ''}</span>
+                        <span className="font-normal">Joining Date:</span> <span className="font-bold">{activeDoc.joiningDate || '05 Sept 2025'}</span>
                       </td>
                       <td className="border border-black p-1.5">
-                        <span className="font-normal">Bank Name:</span> <span className="font-bold">{activeDoc.bankName || ''}</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="border border-black p-1.5">
-                        <span className="font-normal">Designation:</span> <span className="font-bold">{activeDoc.designation || ''}</span>
-                      </td>
-                      <td className="border border-black p-1.5">
-                        <span className="font-normal">Bank Account No:</span> <span className="font-bold">{activeDoc.bankAccountNo || ''}</span>
+                        <span className="font-normal">Bank Name:</span> <span className="font-bold">{activeDoc.bankName || 'ICICI Bank'}</span>
                       </td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">
-                        <span className="font-normal">Department:</span> <span className="font-bold">{activeDoc.department || ''}</span>
+                        <span className="font-normal">Designation:</span> <span className="font-bold">{activeDoc.designation || 'Director'}</span>
                       </td>
                       <td className="border border-black p-1.5">
-                        <span className="font-normal">PAN Number:</span> <span className="font-bold">{activeDoc.panNumber || ''}</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="border border-black p-1.5">
-                        <span className="font-normal">Location:</span> <span className="font-bold">{activeDoc.location || ''}</span>
-                      </td>
-                      <td className="border border-black p-1.5">
-                        <span className="font-normal">PF No:</span> <span className="font-bold">{activeDoc.pfNo || ''}</span>
+                        <span className="font-normal">Bank Account No:</span> <span className="font-bold">{activeDoc.bankAccountNo || '630601562564'}</span>
                       </td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">
-                        <span className="font-normal">Effective Work Days:</span> <span className="font-bold">{activeDoc.effectiveWorkDays ?? 0}</span>
+                        <span className="font-normal">Department:</span> <span className="font-bold">{activeDoc.department || 'IT'}</span>
                       </td>
                       <td className="border border-black p-1.5">
-                        <span className="font-normal">PF UAN:</span> <span className="font-bold">{activeDoc.pfUan || ''}</span>
+                        <span className="font-normal">PAN Number:</span> <span className="font-bold">{activeDoc.panNumber || 'GSAPS2603R'}</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-black p-1.5">
+                        <span className="font-normal">Location:</span> <span className="font-bold">{activeDoc.location || 'Vijayawada'}</span>
+                      </td>
+                      <td className="border border-black p-1.5">
+                        <span className="font-normal">PF No:</span> <span className="font-bold">{activeDoc.pfNo || 'AP/HYD/1784665/000/0010050'}</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-black p-1.5">
+                        <span className="font-normal">Effective Work Days:</span> <span className="font-bold">{activeDoc.effectiveWorkDays ?? 31}</span>
+                      </td>
+                      <td className="border border-black p-1.5">
+                        <span className="font-normal">PF UAN:</span> <span className="font-bold">{activeDoc.pfUan || '101127077159'}</span>
                       </td>
                     </tr>
                     <tr>
@@ -630,8 +630,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <td className="border border-black p-1.5">HRA</td>
                       <td className="border border-black p-1.5 text-right">{displayHra}</td>
                       <td className="border border-black p-1.5 text-right">{displayHra}</td>
-                      <td className="border border-black p-1.5">OTHER DEDUCTIONS</td>
-                      <td className="border border-black p-1.5 text-right">{displayOtherDeductions}</td>
+                      <td className="border border-black p-1.5"></td>
+                      <td className="border border-black p-1.5 text-right"></td>
                     </tr>
                     <tr>
                       <td className="border border-black p-1.5">CONVEYANCE</td>
@@ -750,7 +750,6 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Company Name</label>
                     <input
                       type="text"
-                      placeholder="e.g. Academy Of Tech Masters"
                       value={formData.companyName}
                       onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold focus:border-emerald-500"
@@ -761,7 +760,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Payslip Month & Year</label>
                     <input
                       type="text"
-                      placeholder="e.g. March 2026"
+                      placeholder="March 2026"
                       value={formData.monthYear}
                       onChange={(e) => setFormData({ ...formData, monthYear: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold focus:border-emerald-500"
@@ -772,7 +771,6 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Company Location</label>
                     <input
                       type="text"
-                      placeholder="e.g. Vijayawada"
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:border-emerald-500"
@@ -784,7 +782,6 @@ export default function PaySipGenerator({ onOpenBlast }) {
                   <label className="block text-xs font-bold text-slate-700 mb-1">Company Address</label>
                   <input
                     type="text"
-                    placeholder="e.g. 2nd Floor, Sri Pothuri Towers, MG Road, Vijayawada – 520010"
                     value={formData.companyAddress}
                     onChange={(e) => setFormData({ ...formData, companyAddress: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:border-emerald-500"
@@ -820,7 +817,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. AOTMS-01"
+                      placeholder="AOTMS-01"
                       value={formData.employeeId}
                       onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs font-bold focus:border-emerald-500"
@@ -831,7 +828,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Designation</label>
                     <input
                       type="text"
-                      placeholder="e.g. Director / Developer"
+                      placeholder="Director"
                       value={formData.designation}
                       onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:border-emerald-500"
@@ -842,7 +839,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Department</label>
                     <input
                       type="text"
-                      placeholder="e.g. IT / Operations"
+                      placeholder="IT"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:border-emerald-500"
@@ -855,7 +852,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Joining Date</label>
                     <input
                       type="text"
-                      placeholder="e.g. 05 Sept 2025"
+                      placeholder="05 Sept 2025"
                       value={formData.joiningDate}
                       onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:border-emerald-500"
@@ -866,9 +863,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Effective Work Days</label>
                     <input
                       type="number"
-                      placeholder="e.g. 31"
                       value={formData.effectiveWorkDays}
-                      onChange={(e) => setFormData({ ...formData, effectiveWorkDays: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, effectiveWorkDays: Number(e.target.value) })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold focus:border-emerald-500"
                     />
                   </div>
@@ -877,9 +873,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">LOP (Loss of Pay Days)</label>
                     <input
                       type="number"
-                      placeholder="e.g. 0"
                       value={formData.lop}
-                      onChange={(e) => setFormData({ ...formData, lop: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, lop: Number(e.target.value) })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold focus:border-emerald-500"
                     />
                   </div>
@@ -897,7 +892,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Bank Name</label>
                     <input
                       type="text"
-                      placeholder="e.g. ICICI Bank"
+                      placeholder="ICICI Bank"
                       value={formData.bankName}
                       onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:border-emerald-500"
@@ -908,7 +903,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">Bank Account No</label>
                     <input
                       type="text"
-                      placeholder="e.g. 630601562564"
+                      placeholder="630601562564"
                       value={formData.bankAccountNo}
                       onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs focus:border-emerald-500"
@@ -919,7 +914,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">PAN Number</label>
                     <input
                       type="text"
-                      placeholder="e.g. GSAPS2603R"
+                      placeholder="GSAPS2603R"
                       value={formData.panNumber}
                       onChange={(e) => setFormData({ ...formData, panNumber: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs uppercase focus:border-emerald-500"
@@ -932,7 +927,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">PF Number</label>
                     <input
                       type="text"
-                      placeholder="e.g. AP/HYD/1784665/000/0010050"
+                      placeholder="AP/HYD/1784665/000/0010050"
                       value={formData.pfNo}
                       onChange={(e) => setFormData({ ...formData, pfNo: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs focus:border-emerald-500"
@@ -943,7 +938,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1">PF UAN</label>
                     <input
                       type="text"
-                      placeholder="e.g. 101127077159"
+                      placeholder="101127077159"
                       value={formData.pfUan}
                       onChange={(e) => setFormData({ ...formData, pfUan: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs focus:border-emerald-500"
@@ -966,9 +961,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">BASIC</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.basic}
-                        onChange={(e) => setFormData({ ...formData, basic: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, basic: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -977,9 +971,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">HRA</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.hra}
-                        onChange={(e) => setFormData({ ...formData, hra: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, hra: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -988,9 +981,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">CONVEYANCE</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.conveyance}
-                        onChange={(e) => setFormData({ ...formData, conveyance: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, conveyance: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -999,9 +991,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">MEDICAL ALLOWANCE</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.medicalAllowance}
-                        onChange={(e) => setFormData({ ...formData, medicalAllowance: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, medicalAllowance: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -1010,9 +1001,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">SPECIAL ALLOWANCE</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.specialAllowance}
-                        onChange={(e) => setFormData({ ...formData, specialAllowance: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, specialAllowance: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -1021,9 +1011,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">INCENTIVE</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.incentive}
-                        onChange={(e) => setFormData({ ...formData, incentive: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, incentive: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -1032,9 +1021,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">FOOD ALLOWANCE</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.foodAllowance}
-                        onChange={(e) => setFormData({ ...formData, foodAllowance: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, foodAllowance: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -1057,9 +1045,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">PROF TAX</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.profTax}
-                        onChange={(e) => setFormData({ ...formData, profTax: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, profTax: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-rose-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
@@ -1068,9 +1055,8 @@ export default function PaySipGenerator({ onOpenBlast }) {
                       <label className="text-xs text-slate-700 font-bold">OTHER DEDUCTIONS</label>
                       <input
                         type="number"
-                        placeholder="0"
                         value={formData.otherDeductions}
-                        onChange={(e) => setFormData({ ...formData, otherDeductions: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, otherDeductions: Number(e.target.value) })}
                         className="w-32 px-3 py-1.5 rounded-lg bg-white border border-rose-300 font-mono font-bold text-right text-xs"
                       />
                     </div>
