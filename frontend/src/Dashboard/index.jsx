@@ -72,7 +72,19 @@ export default function DashboardPage() {
     return 'users';
   };
 
-  const [activeTab, setActiveTab] = useState(() => getDefaultTabForRole(panelParam));
+  const [activeTab, setActiveTabState] = useState(() => {
+    const tabFromUrl = searchParams.get('tab');
+    const tabFromStorage = localStorage.getItem('crm_active_tab');
+    return tabFromUrl || tabFromStorage || getDefaultTabForRole(panelParam);
+  });
+
+  const setActiveTab = (newTab) => {
+    setActiveTabState(newTab);
+    localStorage.setItem('crm_active_tab', newTab);
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', newTab);
+    navigate(`/dashboard?${params.toString()}`, { replace: true });
+  };
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);

@@ -38,8 +38,16 @@ export default function WhatsappMessage() {
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // View Mode: 'TEMPLATES' vs 'LIVE_CHAT' (WhatsApp Web dual-pane)
-  const [viewMode, setViewMode] = useState('TEMPLATES');
+  // View Mode: 'TEMPLATES' vs 'LIVE_CHAT' (WhatsApp Web dual-pane - Default to LIVE_CHAT)
+  const [viewMode, setViewModeState] = useState(() => {
+    return localStorage.getItem('wa_view_mode') || 'LIVE_CHAT';
+  });
+
+  const setViewMode = (mode) => {
+    setViewModeState(mode);
+    localStorage.setItem('wa_view_mode', mode);
+  };
+
   const [contactsList, setContactsList] = useState([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
@@ -51,7 +59,13 @@ export default function WhatsappMessage() {
   const [sendingChatMsg, setSendingChatMsg] = useState(false);
   const [chatLogMap, setChatLogMap] = useState({});
   const [unreadMap, setUnreadMap] = useState({}); // { [phone]: count }
-  const [lastSeenMap, setLastSeenMap] = useState({}); // { [phone]: timestamp }
+  const [lastSeenMap, setLastSeenMap] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('wa_read_timestamps') || '{}');
+    } catch {
+      return {};
+    }
+  });
   const [latestMsgTimeMap, setLatestMsgTimeMap] = useState({}); // { [phone]: timestamp }
   const chatBottomRef = useRef(null);
 
@@ -62,8 +76,13 @@ export default function WhatsappMessage() {
       let cleanP = String(c.phone).replace(/\D/g, '');
       if (cleanP.startsWith('91') && cleanP.length === 12) cleanP = cleanP.slice(2);
 
+      const now = Date.now();
+      setLastSeenMap(prev => {
+        const updated = { ...prev, [cleanP]: now };
+        localStorage.setItem('wa_read_timestamps', JSON.stringify(updated));
+        return updated;
+      });
       setUnreadMap(prev => ({ ...prev, [cleanP]: 0 }));
-      setLastSeenMap(prev => ({ ...prev, [cleanP]: Date.now() }));
     }
   };
 
@@ -378,6 +397,9 @@ export default function WhatsappMessage() {
         const latestTimes = {};
         const currentActivePhone = selectedContact?.phone ? String(selectedContact.phone).replace(/\D/g, '').replace(/^91/, '') : '';
 
+        let readStorage = {};
+        try { readStorage = JSON.parse(localStorage.getItem('wa_read_timestamps') || '{}'); } catch {}
+
         data.logs.forEach(log => {
           if (log.phone) {
             let cleanP = String(log.phone).replace(/\D/g, '');
@@ -388,8 +410,8 @@ export default function WhatsappMessage() {
 
             const isIncoming = log.direction === 'INCOMING' || log.status === 'received';
             if (isIncoming) {
-              const lastSeen = lastSeenMap[cleanP] || 0;
-              if (cleanP !== currentActivePhone && logTime > lastSeen) {
+              const lastRead = readStorage[cleanP] || lastSeenMap[cleanP] || 0;
+              if (cleanP !== currentActivePhone && logTime > lastRead) {
                 counts[cleanP] = (counts[cleanP] || 0) + 1;
               }
             }
