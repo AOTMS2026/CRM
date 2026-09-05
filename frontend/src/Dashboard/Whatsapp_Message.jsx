@@ -279,7 +279,7 @@ export default function WhatsappMessage() {
     const components = [];
     if (data.header_type === 'TEXT' && data.header_text) {
       components.push({ type: 'HEADER', format: 'TEXT', text: data.header_text });
-    } else if ((data.header_type === 'IMAGE' || data.header_image_url) && selectedFile) {
+    } else if (data.header_type === 'IMAGE' && (selectedFile || data.header_image_url)) {
       components.push({ type: 'HEADER', format: 'IMAGE' });
     }
     const bodyComp = { type: 'BODY', text: data.body_text || 'Hello {{1}}!' };
@@ -304,15 +304,19 @@ export default function WhatsappMessage() {
   // Real-time API: Create or Update template directly via API
   const handleCreateTemplate = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
 
     const formattedName = formData.name.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
     if (!formattedName) {
       showToast("Please enter a valid template name (lowercase + underscores).", "error");
-      setSubmitting(false);
       return;
     }
 
+    if (formData.header_type === 'IMAGE' && !selectedFile && !formData.header_image_url) {
+      showToast("Please select an Image file for your Header Image template.", "error");
+      return;
+    }
+
+    setSubmitting(true);
     const components = buildMetaComponents(formData);
 
     const endpoints = editingTemplateId
@@ -372,7 +376,7 @@ export default function WhatsappMessage() {
           successResult = result;
           break;
         } else {
-          lastError = new Error(result.detail || result.message || "Failed to process template on Meta Cloud API.");
+          lastError = new Error(result.message || result.detail || "Failed to process template on Meta Cloud API.");
           break;
         }
       } catch (err) {
