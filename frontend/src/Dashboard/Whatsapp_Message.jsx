@@ -200,23 +200,41 @@ export default function WhatsappMessage() {
   // Real-time API: Sync live templates from Meta WhatsApp Business Account
   const handleSyncMeta = async () => {
     setSyncingMeta(true);
-    try {
-      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates/sync`, {
-        method: 'POST'
-      });
-      const data = await res.json();
-      if (res.ok && data && data.success && Array.isArray(data.templates)) {
-        const mapped = data.templates.map(mapTemplateFromDb);
-        setTemplates(mapped);
-        showToast(`Real-time Sync: Fetched ${mapped.length} templates from Meta Account!`, "success");
-      } else {
-        throw new Error(data.message || data.detail || "Failed to sync templates from Meta.");
+    const syncEndpoints = [
+      `${getApiBase()}/api/integrations/whatsapp/templates/sync`,
+      `${getApiBase()}/api/integrations/whatsapp/templates/sync-meta`,
+      `${getApiBase()}/api/template/sync`,
+      `${getApiBase()}/api/template/sync-meta`
+    ];
+
+    let lastError = null;
+    let successResult = null;
+
+    for (const url of syncEndpoints) {
+      try {
+        const res = await fetch(url, { method: 'POST' });
+        if (res.status === 404) continue;
+        const data = await res.json();
+        if (res.ok && data && data.success) {
+          successResult = data;
+          break;
+        } else {
+          lastError = new Error(data.message || data.detail || "Failed to sync templates from Meta.");
+          break;
+        }
+      } catch (err) {
+        lastError = err;
       }
-    } catch (err) {
-      showToast(err.message || "Error syncing templates with Meta API", "error");
-    } finally {
-      setSyncingMeta(false);
     }
+
+    if (successResult && Array.isArray(successResult.templates)) {
+      const mapped = successResult.templates.map(mapTemplateFromDb);
+      setTemplates(mapped);
+      showToast(`Real-time Sync: Fetched ${mapped.length} templates from Meta Account!`, "success");
+    } else {
+      showToast(lastError?.message || "Error syncing templates with Meta API", "error");
+    }
+    setSyncingMeta(false);
   };
 
   // Update Template Status live in MongoDB
