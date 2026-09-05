@@ -390,7 +390,7 @@ export default function PaySipGenerator({ onOpenBlast }) {
               </div>
             ) : (
               <div className="divide-y divide-slate-100 max-h-[580px] overflow-y-auto pr-1">
-                {paginatedPaysips.map((item) => {
+                {paginatedPayslips.map((item) => {
                   const empName = item.employeeName || item.clientName || 'Employee';
                   const empId = item.employeeId || item.folioNumber || 'AOTMS-01';
                   const isPreview = previewPayslip?._id === item._id;
