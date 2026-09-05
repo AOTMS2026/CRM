@@ -66,17 +66,16 @@ export default function WhatsappMessage() {
   const [formData, setFormData] = useState({
     name: '',
     category: 'MARKETING',
-    language: 'en_US',
+    language: 'en',
     header_type: 'IMAGE', // 'NONE', 'TEXT', 'IMAGE'
     header_text: '',
     header_image_url: '',
-    body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
+    body_text: 'Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount on all WhatsApp automation tools.',
     footer_text: 'Reply STOP to unsubscribe • AOTMS',
     buttons: [
-      { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918121016848', url: '', contact_name: '' },
-      { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.aotms.com', contact_name: '' }
-    ],
-    sample_values: ['John', 'AOTMS2026']
+      { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918019942233', url: '', contact_name: '' },
+      { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.academyoftechmasters.com/', contact_name: '' }
+    ]
   });
 
   const openCreateModal = () => {
@@ -85,17 +84,16 @@ export default function WhatsappMessage() {
     setFormData({
       name: '',
       category: 'MARKETING',
-      language: 'en_US',
+      language: 'en',
       header_type: 'IMAGE',
       header_text: '',
       header_image_url: '',
-      body_text: 'Hello {{1}}! Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount code {{2}} on all WhatsApp automation tools.',
+      body_text: 'Welcome to AOTMS Enterprise Solutions. Claim your exclusive discount on all WhatsApp automation tools.',
       footer_text: 'Reply STOP to unsubscribe • AOTMS',
       buttons: [
-        { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918121016848', url: '', contact_name: '' },
-        { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.aotms.com', contact_name: '' }
-      ],
-      sample_values: ['John', 'AOTMS2026']
+        { type: 'PHONE_NUMBER', text: 'Call Support', phone_number: '+918019942233', url: '', contact_name: '' },
+        { type: 'URL', text: 'Visit Website', phone_number: '', url: 'https://www.academyoftechmasters.com/', contact_name: '' }
+      ]
     });
     setShowCreateModal(true);
   };
@@ -156,7 +154,7 @@ export default function WhatsappMessage() {
     let headerText = t.header_text || (headerComp?.format === 'TEXT' ? (headerComp.text || '') : '');
     let headerImageUrl = t.imageUrl || t.header_image_url || (headerComp?.example?.header_handle?.[0] || '');
     let headerContent = headerImageUrl || headerText || t.header_content || '';
-    let bodyText = t.message || bodyComp?.text || t.body_text || t.title || 'Hello {{1}}!';
+    let bodyText = t.message || bodyComp?.text || t.body_text || t.title || 'Welcome to AOTMS!';
     let footerText = t.footer || footerComp?.text || t.footer_text || '';
     let buttonsList = t.buttons || (buttonsComp?.buttons || []);
 
@@ -165,7 +163,7 @@ export default function WhatsappMessage() {
       id: t.metaTemplateId || t._id,
       name: t.name || t.title || 'template',
       category: t.category || 'MARKETING',
-      language: t.language || 'en_US',
+      language: t.language || 'en',
       status: t.metaStatus || t.status || 'APPROVED',
       header_type: headerType,
       header_text: headerText,
@@ -282,10 +280,7 @@ export default function WhatsappMessage() {
     } else if (data.header_type === 'IMAGE' && (selectedFile || data.header_image_url)) {
       components.push({ type: 'HEADER', format: 'IMAGE' });
     }
-    const bodyComp = { type: 'BODY', text: data.body_text || 'Hello {{1}}!' };
-    if (Array.isArray(data.sample_values) && data.sample_values.length > 0) {
-      bodyComp.example = { body_text: [data.sample_values] };
-    }
+    const bodyComp = { type: 'BODY', text: data.body_text || 'Welcome to AOTMS!' };
     components.push(bodyComp);
     if (data.footer_text) {
       components.push({ type: 'FOOTER', text: data.footer_text });
@@ -343,16 +338,13 @@ export default function WhatsappMessage() {
           bodyData.append('media', selectedFile);
           bodyData.append('name', formattedName);
           bodyData.append('category', formData.category || 'MARKETING');
-          bodyData.append('language', formData.language || 'en_US');
+          bodyData.append('language', formData.language || 'en');
           bodyData.append('header_type', formData.header_type || 'IMAGE');
           bodyData.append('header_text', formData.header_text || '');
           bodyData.append('body_text', formData.body_text || '');
           bodyData.append('footer_text', formData.footer_text || '');
           bodyData.append('message', formData.body_text || '');
           bodyData.append('components', JSON.stringify(components));
-          if (Array.isArray(formData.sample_values)) {
-            bodyData.append('sample_values', JSON.stringify(formData.sample_values));
-          }
           options = {
             method: httpMethod,
             body: bodyData
@@ -447,26 +439,15 @@ export default function WhatsappMessage() {
     setFormData({
       name: tmpl.name,
       category: tmpl.category || 'MARKETING',
-      language: tmpl.language || 'en_US',
+      language: tmpl.language || 'en',
       header_type: headerComp ? headerComp.format : (tmpl.header_type || 'NONE'),
       header_text: headerComp?.text || tmpl.header_text || '',
       header_image_url: tmpl.imageUrl || tmpl.header_image_url || '',
       body_text: bodyComp?.text || tmpl.body_text || tmpl.message || '',
       footer_text: footerComp?.text || tmpl.footer_text || tmpl.footer || '',
-      buttons: parsedButtons,
-      sample_values: ['Customer', 'AOTMS2026']
+      buttons: parsedButtons
     });
     setShowCreateModal(true);
-  };
-
-  const addVariableToBody = () => {
-    const matches = formData.body_text.match(/\{\{(\d+)\}\}/g) || [];
-    const nextIndex = matches.length + 1;
-    setFormData(prev => ({
-      ...prev,
-      body_text: prev.body_text + ` {{${nextIndex}}}`,
-      sample_values: [...(prev.sample_values || []), `Value${nextIndex}`]
-    }));
   };
 
   // Button types configuration
@@ -514,12 +495,7 @@ export default function WhatsappMessage() {
     }));
   };
 
-  const renderPreviewBody = (text, samples = []) => {
-    let output = text;
-    (samples || []).forEach((val, idx) => {
-      output = output.replace(new RegExp(`\\{\\{${idx + 1}\\}\\}`, 'g'), val || `[Param ${idx + 1}]`);
-    });
-    return output;
+  const renderPreviewBody = (text) => text || '';
   };
 
   const filteredTemplates = templates.filter(tmpl => {
@@ -924,8 +900,8 @@ export default function WhatsappMessage() {
                       onChange={(e) => setFormData({ ...formData, language: e.target.value })}
                       className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
-                      <option value="en_US">English (US) - en_US</option>
                       <option value="en">English - en</option>
+                      <option value="en_US">English (US) - en_US</option>
                       <option value="hi">Hindi - hi</option>
                       <option value="te">Telugu - te</option>
                     </select>
@@ -1038,21 +1014,11 @@ export default function WhatsappMessage() {
                   )}
                 </div>
 
-                {/* 4. Body Text with Variable Buttons */}
+                {/* 4. Body Text */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-800">
-                      4. Message Body <span className="text-rose-500">*</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addVariableToBody}
-                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 cursor-pointer flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Insert Variable</span>
-                    </button>
-                  </div>
+                  <label className="block text-xs font-bold text-slate-800">
+                    4. Message Body <span className="text-rose-500">*</span>
+                  </label>
 
                   <textarea
                     rows={4}
@@ -1061,9 +1027,6 @@ export default function WhatsappMessage() {
                     onChange={(e) => setFormData({ ...formData, body_text: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-normal leading-relaxed"
                   />
-                  <p className="text-[10px] text-slate-400">
-                    Use <code className="font-bold text-slate-700 font-mono">{'{{1}}'}</code>, <code className="font-bold text-slate-700 font-mono">{'{{2}}'}</code> for client variables (Name, Amount, Promo Code).
-                  </p>
                 </div>
 
                 {/* 5. Footer Text */}
