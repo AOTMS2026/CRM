@@ -1,52 +1,102 @@
 const express = require('express');
 const router  = express.Router();
 const { getStatus } = require('../utils/whatsappService');
+const { getMetaCredentials, updateMetaCredentials, verifyMetaConnection } = require('../utils/metaConfigHelper');
 const MessageLog = require('../models/MessageLog');
 
 // ── GET current status ────────────────────────────────────────────────────────
-router.get('/status', (req, res) => {
-  res.json({ status: getStatus(), qr: null });
+router.get('/status', async (req, res) => {
+  try {
+    const creds = await getMetaCredentials();
+    const testRes = await verifyMetaConnection(creds);
+    res.json({
+      status: testRes.reachable ? 'CONNECTED' : 'DISCONNECTED',
+      reachable: testRes.reachable,
+      wabaName: testRes.name || null,
+      error: testRes.error || null,
+      qr: null
+    });
+  } catch (err) {
+    res.json({ status: 'DISCONNECTED', reachable: false, error: err.message, qr: null });
+  }
 });
 
-// ── Connect / Disconnect (No-ops for Meta API) ────────────────────────────────
+// ── Connect / Disconnect ──────────────────────────────────────────────────────
 router.post('/connect', (req, res) => {
-  res.json({ success: true, message: 'Meta API uses static tokens. No connection required.' });
+  res.json({ success: true, message: 'Meta API uses static tokens. Configure credentials below.' });
 });
 
 router.post('/disconnect', (req, res) => {
-  res.json({ success: true, message: 'Meta API uses static tokens. No disconnection possible.' });
+  res.json({ success: true, message: 'Meta API disconnected.' });
 });
 
-router.get('/host-info', (req, res) => {
-  res.json({ success: true, phone: process.env.META_WA_PHONE_NUMBER_ID, name: 'Meta WhatsApp App', id: process.env.META_WA_PHONE_NUMBER_ID });
+router.get('/host-info', async (req, res) => {
+  const creds = await getMetaCredentials();
+  res.json({ success: true, phone: creds.phoneId, name: 'Meta WhatsApp App', id: creds.phoneId });
 });
 
-router.get('/config', (req, res) => {
-  const phoneId = process.env.META_WA_PHONE_NUMBER_ID || '';
-  const wabaId = process.env.META_WA_BUSINESS_ACCOUNT_ID || '';
-  const verifyToken = process.env.META_WA_VERIFY_TOKEN || '';
-  const token = process.env.META_WA_ACCESS_TOKEN || '';
-  const hasToken = token.length > 20;
+router.get('/config', async (req, res) => {
+  try {
+    const creds = await getMetaCredentials();
+    const phoneId = creds.phoneId || '';
+    const maskedPhone = phoneId.length > 4 ? `**********${phoneId.slice(-4)}` : phoneId;
+    const token = creds.token || '';
+    const maskedToken = token.length > 8 ? `${token.slice(0, 8)}...${token.slice(-6)}` : token;
 
-  res.json({
-    success: true,
-    status: getStatus(),
-    wabaId: wabaId || '1026026910332703',
-    phoneId: phoneId || '1340972425758369',
-    verifyToken: verifyToken || 'zest_eat_meta_verify_8f9q2a',
-    version: process.env.META_GRAPH_VERSION || 'v19.0',
-    hasToken,
-    cloudinaryCloud: process.env.CLOUDINARY_CLOUD_NAME || 'dlxveseav',
-    maskedToken: hasToken ? `${token.slice(0, 8)}...${token.slice(-6)}` : 'Not Configured',
-    mode: 'Meta Cloud API v19.0 (Stateless Direct Direct Graph Engine)'
-  });
+    res.json({
+      success: true,
+      wabaId: creds.wabaId || '',
+      phoneId: creds.phoneId || '',
+      maskedPhone,
+      maskedToken,
+      hasToken: Boolean(creds.token),
+      version: creds.version || 'v19.0',
+      verifyToken: creds.verifyToken || 'zest_eat_meta_verify_8f9q2a'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/config', async (req, res) => {
+  const { wabaId, phoneId, accessToken, verifyToken, graphVersion } = req.body;
+
+  if (!wabaId || !phoneId || !accessToken) {
+    return res.status(400).json({
+      success: false,
+      message: 'WABA ID, Phone Number ID, and Access Token are required.'
+    });
+  }
+
+  try {
+    const result = await updateMetaCredentials({
+      wabaId,
+      phoneId,
+      accessToken,
+      verifyToken,
+      graphVersion
+    });
+
+    res.json({
+      success: true,
+      message: `Meta credentials verified & saved successfully for account: ${result.metaInfo.name}! 🎉`,
+      config: result.config
+    });
+  } catch (err) {
+    console.error('❌ Failed to update Meta Config:', err.message);
+    res.status(400).json({
+      success: false,
+      message: err.message || 'Failed to verify and save Meta credentials'
+    });
+  }
 });
 
 // ── Webhooks ──────────────────────────────────────────────────────────────────
 
 // Webhook Verification (Required by Meta)
-router.get('/webhook', (req, res) => {
-  const verify_token = process.env.META_WA_VERIFY_TOKEN;
+router.get('/webhook', async (req, res) => {
+  const creds = await getMetaCredentials();
+  const verify_token = creds.verifyToken || process.env.META_WA_VERIFY_TOKEN || 'zest_eat_meta_verify_8f9q2a';
 
   let mode = req.query['hub.mode'];
   let token = req.query['hub.verify_token'];
@@ -70,7 +120,6 @@ router.post('/webhook', async (req, res) => {
     let body = req.body;
 
     if (body.object) {
-      // 1. Acknowledge incoming messages silently so Meta doesn't retry
       if (
         body.entry &&
         body.entry[0].changes &&
@@ -78,11 +127,9 @@ router.post('/webhook', async (req, res) => {
         body.entry[0].changes[0].value.messages &&
         body.entry[0].changes[0].value.messages[0]
       ) {
-        // We only acknowledge the payload, we do not auto-reply or process chat messages
-        // console.log("Received incoming message (Ignored as per one-way broadcasting logic)");
+        // Acknowledge payload
       }
       
-      // 2. Process delivery statuses (sent/delivered/read/failed)
       if (
         body.entry &&
         body.entry[0].changes &&
@@ -106,19 +153,11 @@ router.post('/webhook', async (req, res) => {
         }
         
         console.log(`\n📊 [WEBHOOK STATUS] ${phone} | ${status.toUpperCase()} | wamid: ${wamid}`);
-        if (errorCode) {
-          console.error(`❌ Meta Error: [${errorCode}] ${errorMessage}`);
-          if (errorCode === 131049) {
-            console.warn(`⚠️ [Meta Marketing Limit - Error 131049] Number ${phone} reached Meta's daily marketing limit.\n👉 HOW TO UNBLOCK:\n 1) Ask ${phone} to reply 'HI' or click a link to message your WhatsApp number (resets restriction immediately).\n 2) Use UTILITY category template (delivered & read successfully).\n 3) Wait 24-48h for Meta limit reset.`);
-          } else if (errorCode === 131026) {
-            console.warn(`⚠️ [Meta Undelivered] Number ${phone} cannot receive messages (invalid number or recipient disabled messages).`);
-          } else if (errorCode === 131047) {
-            console.warn(`⚠️ [24h Window Expired] Freeform message failed because 24-hour customer service window closed. Use an approved Meta Template.`);
-          }
-        }
+        if (errorCode) console.error(`❌ Meta Error: [${errorCode}] ${errorMessage}`);
         
-        const incomingPhoneId = body.entry[0].changes[0].value.metadata?.phone_number_id || process.env.META_WA_PHONE_NUMBER_ID;
-        const incomingWabaId = body.entry[0].id || process.env.META_WA_BUSINESS_ACCOUNT_ID;
+        const creds = await getMetaCredentials();
+        const incomingPhoneId = body.entry[0].changes[0].value.metadata?.phone_number_id || creds.phoneId;
+        const incomingWabaId = body.entry[0].id || creds.wabaId;
 
         try {
           await MessageLog.findOneAndUpdate(

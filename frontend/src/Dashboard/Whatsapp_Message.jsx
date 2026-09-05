@@ -279,7 +279,7 @@ export default function WhatsappMessage() {
     const components = [];
     if (data.header_type === 'TEXT' && data.header_text) {
       components.push({ type: 'HEADER', format: 'TEXT', text: data.header_text });
-    } else if (data.header_type === 'IMAGE' || data.header_image_url) {
+    } else if ((data.header_type === 'IMAGE' || data.header_image_url) && selectedFile) {
       components.push({ type: 'HEADER', format: 'IMAGE' });
     }
     const bodyComp = { type: 'BODY', text: data.body_text || 'Hello {{1}}!' };

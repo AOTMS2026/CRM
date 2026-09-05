@@ -6,8 +6,9 @@ const Template = require('../models/Template');
 const Contact  = require('../models/Contact');
 const { getClient, initWhatsApp, getStatus } = require('../utils/whatsappService');
 const { ConversationFlow } = require('../utils/conversationFlow');
-const { createTemplateOnMeta, getTemplateStatusFromMeta, uploadMediaToMeta, fetchAllTemplatesFromMeta, deleteTemplateFromMeta, updateTemplateOnMeta } = require('../utils/metaTemplateService');
+const { createTemplateOnMeta, getTemplateStatusFromMeta, uploadMediaToMeta, fetchAllTemplatesFromMeta } = require('../utils/metaTemplateService');
 const { uploadToCloudinary, uploadUrlToCloudinary } = require('../utils/cloudinaryService');
+const { getMetaCredentials } = require('../utils/metaConfigHelper');
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '../uploads/campaigns/'),
@@ -185,130 +186,18 @@ router.delete('/schedule/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// PUT /api/template/:id - Update template details or status on both local database and Meta Cloud API
-router.put('/:id', async (req, res) => {
-  try {
-    let { name, category, language, message, footer, imageUrl, metaStatus, status, components, header_type, header_text } = req.body;
-    
-    let target = null;
-    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      target = await Template.findById(req.params.id);
-    }
-    if (!target) {
-      target = await Template.findOne({
-        $or: [{ name: req.params.id }, { metaTemplateId: req.params.id }]
-      });
-    }
-
-    if (!target) return res.status(404).json({ success: false, message: 'Template not found' });
-
-    const updateData = {};
-    if (name !== undefined) updateData.name = String(name).trim();
-    if (category !== undefined) updateData.category = category;
-    if (language !== undefined) updateData.language = language;
-    if (message !== undefined) {
-      updateData.message = String(message).trim();
-      updateData.title = String(message).trim();
-    }
-    if (footer !== undefined) updateData.footer = String(footer).trim();
-    if (imageUrl !== undefined) updateData.imageUrl = String(imageUrl).trim();
-    if (metaStatus !== undefined) updateData.metaStatus = metaStatus;
-    if (status !== undefined) updateData.status = status;
-
-    // Construct updated Meta components if needed
-    let updatedComponents = components || target.components;
-    if (typeof updatedComponents === 'string') {
-      try { updatedComponents = JSON.parse(updatedComponents); } catch (e) {}
-    }
-
-    if ((message || header_type || footer) && (!updatedComponents || updatedComponents.length === 0)) {
-      updatedComponents = [];
-      const hType = header_type || 'NONE';
-      if (hType === 'TEXT' && header_text) {
-        updatedComponents.push({ type: 'HEADER', format: 'TEXT', text: header_text });
-      } else if (hType === 'IMAGE' || imageUrl) {
-        updatedComponents.push({ type: 'HEADER', format: 'IMAGE' });
-      }
-      const bodyText = message || target.message || 'Template message';
-      updatedComponents.push({ type: 'BODY', text: bodyText });
-      if (footer) {
-        updatedComponents.push({ type: 'FOOTER', text: footer });
-      }
-    }
-    if (updatedComponents) {
-      updateData.components = updatedComponents;
-    }
-
-    // 1. Update on Meta Cloud API
-    let metaMessage = '';
-    if (target.metaTemplateId || target.name) {
-      try {
-        const metaRes = await updateTemplateOnMeta(
-          target.metaTemplateId,
-          target.name,
-          category || target.category || 'MARKETING',
-          updatedComponents || target.components
-        );
-        if (metaRes && metaRes.status) {
-          updateData.metaStatus = metaRes.status;
-        } else {
-          updateData.metaStatus = 'PENDING';
-        }
-        metaMessage = ' and automatically updated on Meta Account!';
-      } catch (metaErr) {
-        console.error('❌ Failed to update template on Meta API:', metaErr.message);
-        metaMessage = ' (Local database updated; Meta API error: ' + (metaErr.response?.data?.error?.message || metaErr.message) + ')';
-      }
-    }
-
-    const updatedTemplate = await Template.findByIdAndUpdate(target._id, updateData, { new: true });
-    res.json({ success: true, template: updatedTemplate, message: `Template updated successfully${metaMessage}` });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// DELETE /api/template/:id - Delete template from both Meta Cloud API and local database
 router.delete('/:id', async (req, res) => {
   try {
-    let target = null;
-    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      target = await Template.findById(req.params.id);
-    }
-    if (!target) {
-      target = await Template.findOne({
-        $or: [{ name: req.params.id }, { metaTemplateId: req.params.id }]
-      });
-    }
-
-    if (!target) {
-      return res.status(404).json({ success: false, message: 'Template not found' });
-    }
-
-    // 1. Delete from Meta Cloud API
-    let metaDeleted = false;
-    let metaMessage = '';
-    if (target.name || target.metaTemplateId) {
-      try {
-        await deleteTemplateFromMeta(target.name, target.metaTemplateId);
-        metaDeleted = true;
-        metaMessage = ' from Meta Account and database';
-      } catch (metaErr) {
-        console.error('❌ Failed to delete template from Meta API:', metaErr.message);
-        metaMessage = ' from database (Meta API status: ' + (metaErr.response?.data?.error?.message || metaErr.message) + ')';
-      }
-    }
-
-    // 2. Delete from Local Database
-    await Template.findByIdAndDelete(target._id);
-    res.json({ success: true, message: `Template '${target.name}' deleted successfully${metaMessage}` });
+    await Template.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Template deleted' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
 router.get('/', async (req, res) => {
-  const currentWaba = process.env.META_WA_BUSINESS_ACCOUNT_ID;
+  const creds = await getMetaCredentials();
+  const currentWaba = creds.wabaId;
   const filter = { isScheduled: { $ne: true } };
   if (currentWaba) {
     filter.wabaId = currentWaba;
@@ -317,54 +206,24 @@ router.get('/', async (req, res) => {
   res.json({ success: true, templates, currentWabaId: currentWaba });
 });
 
-// POST /api/template and /api/template/meta
+// POST /api/template/meta
 // Create a new template directly on Meta WhatsApp Cloud API
-const createMetaTemplateHandler = async (req, res) => {
-  let { name, language, category, components, header_type, header_text, header_image_url, body_text, footer_text, buttons, sample_values } = req.body;
+router.post('/meta', upload.single('media'), async (req, res) => {
+  let { name, language, category, components } = req.body;
+  const creds = await getMetaCredentials();
   
-  if (!language) language = 'en_US';
-  if (!category) category = 'MARKETING';
-
   if (typeof components === 'string') {
-    try { components = JSON.parse(components); } catch (e) {}
+    components = JSON.parse(components);
   }
-
-  if (!components || !Array.isArray(components) || components.length === 0) {
-    if (body_text) {
-      components = [];
-      if (header_type === 'TEXT' && header_text) {
-        components.push({ type: 'HEADER', format: 'TEXT', text: header_text });
-      } else if (header_type === 'IMAGE' || header_image_url) {
-        components.push({ type: 'HEADER', format: 'IMAGE' });
-      }
-      const bodyComp = { type: 'BODY', text: body_text };
-      if (Array.isArray(sample_values) && sample_values.length > 0) {
-        bodyComp.example = { body_text: [sample_values] };
-      }
-      components.push(bodyComp);
-      if (footer_text) {
-        components.push({ type: 'FOOTER', text: footer_text });
-      }
-      if (Array.isArray(buttons) && buttons.length > 0) {
-        const formattedBtns = buttons.map(b => {
-          if (b.type === 'PHONE_NUMBER') return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone_number };
-          if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url };
-          return { type: 'QUICK_REPLY', text: b.text || 'Reply' };
-        });
-        components.push({ type: 'BUTTONS', buttons: formattedBtns });
-      }
-    }
-  }
-
-  if (!name || !components || !Array.isArray(components) || components.length === 0) {
-    return res.status(400).json({ success: false, message: 'Missing required Meta template fields (name, body text/components)' });
+  
+  if (!name || !language || !category || !components) {
+    return res.status(400).json({ success: false, message: 'Missing required Meta template fields' });
   }
 
   try {
-    // 1. Upload media if provided
+    // 1. Media handling & component sanitization
     let cloudinaryUrl = null;
     if (req.file) {
-      // Upload to Cloudinary for permanent storage and preview
       try {
         cloudinaryUrl = await uploadToCloudinary(req.file.path, 'zest_eat_templates');
       } catch (err) {
@@ -373,11 +232,20 @@ const createMetaTemplateHandler = async (req, res) => {
 
       const handle = await uploadMediaToMeta(req.file.path, req.file.mimetype, req.file.size);
       
-      // Inject handle into HEADER component
-      const headerIndex = components.findIndex(c => c.type === 'HEADER');
+      let headerIndex = components.findIndex(c => c.type === 'HEADER');
       if (headerIndex !== -1) {
+        components[headerIndex].format = 'IMAGE';
         components[headerIndex].example = { header_handle: [handle] };
+      } else {
+        components.unshift({
+          type: 'HEADER',
+          format: 'IMAGE',
+          example: { header_handle: [handle] }
+        });
       }
+    } else {
+      // Remove any HEADER component claiming IMAGE format without an image example handle
+      components = components.filter(c => !(c.type === 'HEADER' && c.format === 'IMAGE' && (!c.example || !c.example.header_handle)));
     }
 
     const metaResponse = await createTemplateOnMeta(name, language, category, components);
@@ -403,7 +271,7 @@ const createMetaTemplateHandler = async (req, res) => {
       mediaId, // Save the Meta media ID for sending
       metaTemplateId: metaResponse.id,
       metaStatus: metaResponse.status || 'PENDING',
-      wabaId: process.env.META_WA_BUSINESS_ACCOUNT_ID || '',
+      wabaId: creds.wabaId || '',
       title: name, // fallback display
       message: Array.isArray(components) ? (components.find(c => c.type === 'BODY')?.text || 'Meta Template') : 'Meta Template',
       status: 'draft'
@@ -413,34 +281,15 @@ const createMetaTemplateHandler = async (req, res) => {
     
     res.json({ success: true, template, message: 'Template submitted to Meta successfully!' });
   } catch (error) {
-    console.error('Meta Template API Error:', error.response?.data || error.message);
-    try {
-      const template = new Template({
-        name,
-        language: language || 'en_US',
-        category: category || 'MARKETING',
-        components,
-        imageUrl: req.file ? `/uploads/campaigns/${req.file.filename}` : '',
-        metaTemplateId: 'local_' + Date.now(),
-        metaStatus: 'PENDING',
-        title: name,
-        message: Array.isArray(components) ? (components.find(c => c.type === 'BODY')?.text || 'Template') : 'Template',
-        status: 'draft'
-      });
-      await template.save();
-      return res.json({ 
-        success: true, 
-        template, 
-        message: 'Template created successfully in Zest Eat! (Meta sync: ' + (error.response?.data?.error?.message || error.message) + ')' 
-      });
-    } catch (saveErr) {
-      return res.status(500).json({ success: false, message: error.message || 'Failed to create template' });
-    }
+    const errorMsg = error.metaError?.message || error.message || 'Failed to create template on Meta';
+    console.error('Meta Template API Error:', errorMsg);
+    return res.status(400).json({ 
+      success: false, 
+      message: `Meta API Error: ${errorMsg}` 
+    });
   }
-};
+});
 
-router.post('/meta', upload.single('media'), createMetaTemplateHandler);
-router.post('/', upload.single('media'), createMetaTemplateHandler);
 
 // POST /api/template/import-meta
 // Import a template from Meta by its ID
@@ -485,24 +334,19 @@ router.post('/import-meta', async (req, res) => {
   }
 });
 
-// GET /api/template and /api/integrations/whatsapp/templates
-const getTemplatesHandler = async (req, res) => {
-  try {
-    const templates = await Template.find().sort('-createdAt');
-    res.json({ success: true, templates, count: templates.length });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-router.get('/', getTemplatesHandler);
-router.get('/list', getTemplatesHandler);
-
-// POST /api/template/sync-meta (or /sync, /sync-templates)
+// POST /api/template/sync-meta
 // Synchronize all templates directly from Meta Cloud API into the database
-const syncMetaHandler = async (req, res) => {
+router.post('/sync-meta', async (req, res) => {
   try {
-    const currentWaba = process.env.META_WA_BUSINESS_ACCOUNT_ID;
+    const creds = await getMetaCredentials();
+    const currentWaba = creds.wabaId;
+    if (!currentWaba || !creds.token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Meta credentials missing. Please configure your WABA Account ID & Token in Settings.'
+      });
+    }
+
     const metaTemplates = await fetchAllTemplatesFromMeta();
     let syncedCount = 0;
     const activeMetaIds = metaTemplates.map(t => t.id);
@@ -580,13 +424,10 @@ const syncMetaHandler = async (req, res) => {
       }
     }
 
-    // Clean up any templates not belonging to the current Meta account
+    // Clean up outdated templates belonging to other WABA accounts or deleted Meta IDs
     if (currentWaba && activeMetaIds.length > 0) {
       await Template.deleteMany({
-        $or: [
-          { wabaId: { $ne: currentWaba } },
-          { metaTemplateId: { $nin: activeMetaIds } }
-        ],
+        metaTemplateId: { $exists: true, $ne: null, $nin: activeMetaIds },
         isScheduled: { $ne: true }
       });
     }
@@ -604,25 +445,10 @@ const syncMetaHandler = async (req, res) => {
       message: `Successfully synced ${all.length} templates for Meta Account (${currentWaba})!` 
     });
   } catch (error) {
-    console.error('❌ Meta Sync Warning (falling back to database templates):', error.response?.data || error.message);
-    try {
-      const existingTemplates = await Template.find({ isScheduled: { $ne: true } }).sort('-createdAt');
-      return res.json({
-        success: true,
-        count: 0,
-        templates: existingTemplates,
-        metaOffline: true,
-        message: 'Loaded templates from database. (Meta API offline or account unreachable: ' + (error.response?.data?.error?.message || error.message) + ')'
-      });
-    } catch (dbErr) {
-      res.status(500).json({ success: false, message: error.response?.data?.error?.message || error.message });
-    }
+    const errorMsg = error.response?.data?.error?.message || error.message || 'Failed to sync with Meta';
+    res.status(500).json({ success: false, message: `Meta Sync Error: ${errorMsg}` });
   }
-};
-
-router.post('/sync-meta', syncMetaHandler);
-router.post('/sync', syncMetaHandler);
-router.post('/sync-templates', syncMetaHandler);
+});
 
 // GET /api/template/meta/:id/status
 // Check the approval status of a Meta template
