@@ -1016,14 +1016,17 @@ export default function WhatsappMessage() {
                     const unreadA = unreadMap[cleanA] || 0;
                     const unreadB = unreadMap[cleanB] || 0;
 
-                    // 1. Contacts with NEW UNREAD MESSAGES jump to TOP position!
-                    if (unreadA !== unreadB) {
-                      return unreadB - unreadA;
-                    }
-
-                    // 2. Sort by latest message activity time (most recent at top!)
                     const timeA = latestMsgTimeMap[cleanA] || 0;
                     const timeB = latestMsgTimeMap[cleanB] || 0;
+
+                    // 1. Contacts with NEW UNREAD MESSAGES jump to ABSOLUTE #1 FIRST TOP POSITION!
+                    if (unreadA > 0 || unreadB > 0) {
+                      if (unreadA > 0 && unreadB === 0) return -1;
+                      if (unreadB > 0 && unreadA === 0) return 1;
+                      return timeB - timeA;
+                    }
+
+                    // 2. Sort remaining contacts by latest message activity timestamp (most recent at top!)
                     return timeB - timeA;
                   })
                   .map((c) => {
