@@ -189,25 +189,44 @@ export default function WhatsappMessage() {
     };
   };
 
+  // Initial mount useEffect to load templates & prevent infinite loading
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
   // Real-time API: Fetch templates directly from backend API
   const fetchTemplates = async () => {
+    setLoading(true);
     setRefreshing(true);
-    try {
-      const res = await fetch(`${getApiBase()}/api/integrations/whatsapp/templates`);
-      const data = await res.json();
-      if (res.ok && data && data.success && Array.isArray(data.templates)) {
-        const mapped = data.templates.map(mapTemplateFromDb);
-        setTemplates(mapped);
-      } else {
-        setTemplates([]);
+    const endpoints = [
+      `${getApiBase()}/api/integrations/whatsapp/templates`,
+      `${getApiBase()}/api/template`,
+      `${getApiBase()}/api/integrations/whatsapp/templates/meta`
+    ];
+
+    let success = false;
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url);
+        if (res.status === 404) continue;
+        const data = await res.json();
+        if (res.ok && data && (data.success || Array.isArray(data.templates) || Array.isArray(data))) {
+          const rawList = Array.isArray(data.templates) ? data.templates : (Array.isArray(data) ? data : []);
+          const mapped = rawList.map(mapTemplateFromDb);
+          setTemplates(mapped);
+          success = true;
+          break;
+        }
+      } catch (err) {
+        console.error("Failed to fetch templates from API endpoint:", url, err);
       }
-    } catch (err) {
-      console.error("Failed to fetch templates from API:", err);
-      setTemplates([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
+
+    if (!success) {
+      setTemplates([]);
+    }
+    setLoading(false);
+    setRefreshing(false);
   };
 
   // Real-time API: Sync live templates from Meta WhatsApp Business Account
@@ -807,28 +826,28 @@ export default function WhatsappMessage() {
         </button>
       </div>
 
-      {/* VIEW MODE 1: LIVE WHATSAPP WEB CHAT (Left Contacts & Right Chat Window) */}
+      {/* VIEW MODE 1: LIVE WHATSAPP WEB CHAT (Left Contacts & Right Chat Window - White WhatsApp Theme) */}
       {viewMode === 'LIVE_CHAT' ? (
-        <div className="bg-[#0b141a] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden min-h-[640px] flex flex-col md:flex-row text-slate-100">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden min-h-[640px] flex flex-col md:flex-row text-slate-800">
           
-          {/* LEFT PANEL: CONTACTS LIST (WhatsApp Dark Theme) */}
-          <div className="w-full md:w-80 lg:w-96 border-r border-slate-800 bg-[#111b21] flex flex-col shrink-0">
+          {/* LEFT PANEL: CONTACTS LIST (White WhatsApp Theme) */}
+          <div className="w-full md:w-80 lg:w-96 border-r border-slate-200 bg-white flex flex-col shrink-0">
             
             {/* Contacts Header */}
-            <div className="p-4 bg-[#202c33] text-white flex items-center justify-between border-b border-slate-800">
+            <div className="p-4 bg-[#f0f2f5] text-slate-800 flex items-center justify-between border-b border-slate-200">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#00a884] text-slate-950 font-black flex items-center justify-center text-xs shadow-xs">
+                <div className="w-9 h-9 rounded-xl bg-[#00a884] text-white font-black flex items-center justify-center text-xs shadow-xs">
                   WA
                 </div>
                 <div>
-                  <h3 className="text-xs font-black tracking-tight text-slate-100">WhatsApp Contacts</h3>
+                  <h3 className="text-xs font-black tracking-tight text-slate-900">WhatsApp Contacts</h3>
                   <span className="text-[10px] text-[#00a884] font-mono font-bold">{contactsList.length} Active Contacts</span>
                 </div>
               </div>
 
               <button
                 onClick={fetchContactsList}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700"
+                className="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 transition-colors border border-slate-200 shadow-2xs"
                 title="Refresh Contacts"
               >
                 <RotateCw className={`w-3.5 h-3.5 ${loadingContacts ? 'animate-spin text-[#00a884]' : ''}`} />
@@ -836,7 +855,7 @@ export default function WhatsappMessage() {
             </div>
 
             {/* Contacts Filter & Search */}
-            <div className="p-3 bg-[#111b21] border-b border-slate-800 space-y-2.5">
+            <div className="p-3 bg-[#f0f2f5]/60 border-b border-slate-200 space-y-2.5">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <input
@@ -844,7 +863,7 @@ export default function WhatsappMessage() {
                   placeholder="Search by name or phone..."
                   value={chatSearch}
                   onChange={(e) => setChatSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#202c33] border border-slate-700/70 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#00a884]"
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#00a884] shadow-2xs"
                 />
               </div>
 
@@ -856,8 +875,8 @@ export default function WhatsappMessage() {
                     onClick={() => setContactFilter(filter)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all shrink-0 cursor-pointer border ${
                       contactFilter === filter
-                        ? 'bg-[#00a884] text-slate-950 border-[#00a884] shadow-xs'
-                        : 'bg-[#202c33] text-slate-300 border-slate-700 hover:bg-slate-800'
+                        ? 'bg-[#00a884] text-white border-[#00a884] shadow-2xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     {filter === 'ALL' ? 'All Contacts' : filter}
@@ -867,14 +886,14 @@ export default function WhatsappMessage() {
             </div>
 
             {/* Contacts List */}
-            <div className="flex-1 overflow-y-auto max-h-[500px] divide-y divide-slate-800/60">
+            <div className="flex-1 overflow-y-auto max-h-[500px] divide-y divide-slate-100">
               {loadingContacts ? (
-                <div className="p-8 text-center text-xs text-slate-400 font-semibold">
+                <div className="p-8 text-center text-xs text-slate-500 font-semibold">
                   <RotateCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#00a884]" />
                   Loading contacts...
                 </div>
               ) : contactsList.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400 font-medium">
+                <div className="p-8 text-center text-xs text-slate-500 font-medium">
                   No contacts match your filter.
                 </div>
               ) : (
@@ -895,28 +914,28 @@ export default function WhatsappMessage() {
                         key={c._id || c.phone}
                         onClick={() => setSelectedContact(c)}
                         className={`p-3.5 flex items-center justify-between cursor-pointer transition-all ${
-                          isSelected ? 'bg-[#2a3942] border-l-4 border-[#00a884]' : 'hover:bg-[#202c33]/70'
+                          isSelected ? 'bg-[#f0f2f5] border-l-4 border-[#00a884]' : 'hover:bg-slate-50'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`w-10 h-10 rounded-xl font-black text-xs flex items-center justify-center shrink-0 shadow-2xs border ${
-                            isSelected ? 'bg-[#00a884] text-slate-950 border-[#00a884]' : 'bg-[#202c33] text-slate-200 border-slate-700'
+                            isSelected ? 'bg-[#00a884] text-white border-[#00a884]' : 'bg-slate-100 text-slate-700 border-slate-200'
                           }`}>
                             {initial}
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-1">
-                              <h4 className="text-xs font-extrabold text-slate-100 truncate">
+                              <h4 className="text-xs font-extrabold text-slate-900 truncate">
                                 {c.name || `Contact +91 ${c.phone}`}
                               </h4>
                             </div>
-                            <p className="text-[11px] text-slate-400 font-mono truncate">
+                            <p className="text-[11px] text-slate-500 font-mono truncate">
                               +91 {c.phone}
                             </p>
                           </div>
                         </div>
 
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-[#202c33] text-[#00a884] border border-slate-700">
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#00a884] border border-emerald-200">
                           {c.identity || 'Contact'}
                         </span>
                       </div>
@@ -926,23 +945,23 @@ export default function WhatsappMessage() {
             </div>
           </div>
 
-          {/* RIGHT PANEL: WHATSAPP WEB CHAT WINDOW */}
-          <div className="flex-1 flex flex-col bg-[#0b141a] relative min-h-[540px]">
+          {/* RIGHT PANEL: WHATSAPP WEB CHAT WINDOW (White Theme) */}
+          <div className="flex-1 flex flex-col bg-[#efeae2] relative min-h-[540px]">
             
             {selectedContact ? (
               <>
                 {/* Chat Header */}
-                <div className="p-3.5 bg-[#202c33] text-white flex items-center justify-between border-b border-slate-800 shadow-xs z-10">
+                <div className="p-3.5 bg-[#f0f2f5] text-slate-900 flex items-center justify-between border-b border-slate-200 shadow-xs z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#00a884] text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
+                    <div className="w-10 h-10 rounded-xl bg-[#00a884] text-white font-black text-xs flex items-center justify-center shadow-xs">
                       {(selectedContact.name || selectedContact.phone || 'C')[0].toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="text-xs font-black flex items-center gap-1.5">
+                      <h3 className="text-xs font-black flex items-center gap-1.5 text-slate-900">
                         <span>{selectedContact.name || `+91 ${selectedContact.phone}`}</span>
-                        <span className="text-[9px] text-[#00a884] bg-emerald-950/80 px-1.5 py-0.2 rounded font-mono font-bold border border-emerald-800/60">✓ WhatsApp Business</span>
+                        <span className="text-[9px] text-[#00a884] bg-emerald-50 px-1.5 py-0.2 rounded font-mono font-bold border border-emerald-200">✓ WhatsApp Business</span>
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-mono">
+                      <p className="text-[10px] text-slate-500 font-mono">
                         +91 {selectedContact.phone} • {selectedContact.email || 'No email attached'}
                       </p>
                     </div>
@@ -951,7 +970,7 @@ export default function WhatsappMessage() {
                   <div className="flex items-center gap-2">
                     <a
                       href={`tel:+91${selectedContact.phone}`}
-                      className="p-2 rounded-xl bg-[#111b21] hover:bg-slate-800 text-[#00a884] border border-slate-700 transition-colors"
+                      className="p-2 rounded-xl bg-white hover:bg-slate-100 text-[#00a884] border border-slate-200 transition-colors shadow-2xs"
                       title="Call Contact"
                     >
                       <Phone className="w-4 h-4" />
@@ -959,25 +978,14 @@ export default function WhatsappMessage() {
                   </div>
                 </div>
 
-                {/* Chat Messages Canvas */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-3.5 max-h-[460px] scroll-smooth bg-radial from-[#111b21] to-[#0b141a]">
+                {/* Chat Messages Canvas (WhatsApp Light Pattern Background) */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-3.5 max-h-[480px] scroll-smooth bg-[#efeae2]">
                   {/* System Info Security Banner */}
                   <div className="text-center my-2">
-                    <span className="px-3 py-1 rounded-lg bg-[#182229] text-slate-300 text-[10px] font-bold shadow-2xs border border-slate-700 font-mono">
-                      🔒 Official Meta WhatsApp Cloud API • Real-Time Socket Connection Active
+                    <span className="px-3 py-1 rounded-lg bg-white/90 text-slate-600 text-[10px] font-bold shadow-2xs border border-slate-200/80 font-mono">
+                      🔒 Official Meta WhatsApp Cloud API • Live Connection
                     </span>
                   </div>
-
-                  {/* Initial Welcome Bubble if no sent logs */}
-                  {(!chatLogMap[selectedContact.phone] || chatLogMap[selectedContact.phone].length === 0) && (
-                    <div className="bg-[#202c33] rounded-2xl rounded-tl-none p-3.5 shadow-xs border border-slate-700 max-w-[85%] text-xs space-y-1 text-slate-200">
-                      <div className="font-extrabold text-[#00a884] text-[11px]">System Connected</div>
-                      <p className="leading-relaxed text-slate-300">
-                        Start chat with {selectedContact.name || selectedContact.phone}. Select an approved Meta Template or type a direct WhatsApp message below.
-                      </p>
-                      <span className="text-[9px] text-slate-500 font-mono flex justify-end">Just now ✓✓</span>
-                    </div>
-                  )}
 
                   {/* Chat Messages (Sender Outgoing vs Receiver Incoming) */}
                   {(chatLogMap[selectedContact.phone] || []).map((msg) => {
@@ -987,35 +995,35 @@ export default function WhatsappMessage() {
                       <div key={msg.id} className={`flex flex-col ${isIncoming ? 'items-start' : 'items-end'}`}>
                         <div className={`p-3.5 rounded-2xl max-w-[85%] text-xs space-y-2 border shadow-xs ${
                           isIncoming
-                            ? 'bg-[#202c33] rounded-tl-none border-slate-700 text-slate-100'
-                            : 'bg-[#005c4b] rounded-tr-none border-emerald-700/60 text-white'
+                            ? 'bg-white rounded-tl-none border-slate-200/80 text-slate-900'
+                            : 'bg-[#d9fdd3] rounded-tr-none border-[#b4f5a9] text-slate-900'
                         }`}>
                           {/* Sender Name badge for incoming messages */}
                           {isIncoming && (
                             <div className="text-[10px] font-extrabold text-[#00a884] flex items-center gap-1 font-mono">
                               <span>👤 {msg.senderName || selectedContact.name || 'Customer'}</span>
-                              <span className="text-[9px] text-slate-400">(Received Reply)</span>
+                              <span className="text-[9px] text-slate-500">(Received Reply)</span>
                             </div>
                           )}
 
                           {msg.header_image_url && (
-                            <img src={msg.header_image_url} alt="Header" className="w-full h-36 object-cover rounded-xl border border-slate-700" />
+                            <img src={msg.header_image_url} alt="Header" className="w-full h-36 object-cover rounded-xl border border-slate-200" />
                           )}
 
                           {msg.templateName && (
-                            <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#111b21] text-[#00a884] border border-emerald-800 uppercase inline-block">
+                            <span className="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-100/80 text-emerald-800 border border-emerald-300 uppercase inline-block">
                               {msg.templateName}
                             </span>
                           )}
 
-                          <p className="font-medium whitespace-pre-wrap leading-relaxed">
+                          <p className="font-medium whitespace-pre-wrap leading-relaxed text-slate-900">
                             {msg.text}
                           </p>
                           
                           {Array.isArray(msg.buttons) && msg.buttons.length > 0 && (
-                            <div className="space-y-1 pt-1 border-t border-slate-700/60">
+                            <div className="space-y-1 pt-1 border-t border-slate-200/80">
                               {msg.buttons.map((b, i) => (
-                                <div key={i} className="px-3 py-1 rounded-lg bg-[#111b21] text-[#00a884] text-[11px] font-bold text-center border border-slate-700 shadow-2xs">
+                                <div key={i} className="px-3 py-1 rounded-lg bg-white text-[#00a884] text-[11px] font-bold text-center border border-slate-200 shadow-2xs">
                                   {b.text || b.url || b.phone_number}
                                 </div>
                               ))}
@@ -1023,14 +1031,14 @@ export default function WhatsappMessage() {
                           )}
 
                           {/* Message Status and Double Checkmarks */}
-                          <div className="flex items-center justify-end gap-1.5 text-[9px] font-mono text-slate-300">
+                          <div className="flex items-center justify-end gap-1.5 text-[9px] font-mono text-slate-500">
                             <span>{msg.time}</span>
                             {!isIncoming && (
                               <span className={`font-bold ${
-                                msg.status === 'read' ? 'text-sky-400' :
-                                msg.status === 'delivered' ? 'text-slate-300' :
-                                msg.status === 'failed' ? 'text-rose-400' :
-                                'text-slate-400'
+                                msg.status === 'read' ? 'text-sky-600' :
+                                msg.status === 'delivered' ? 'text-slate-500' :
+                                msg.status === 'failed' ? 'text-rose-500' :
+                                'text-slate-500'
                               }`}>
                                 {msg.status === 'read' ? '✓✓ Read' :
                                  msg.status === 'delivered' ? '✓✓ Delivered' :
@@ -1046,65 +1054,8 @@ export default function WhatsappMessage() {
                   <div ref={chatBottomRef} />
                 </div>
 
-                {/* WhatsApp Web Bottom Action Bar */}
-                <div className="p-3.5 bg-[#202c33] border-t border-slate-800 space-y-2.5">
-                  
-                  {/* Select Template Fix: Quick Approved Template Selector & Preview Card */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <span className="text-[11px] font-extrabold text-[#00a884] shrink-0 font-mono">
-                      Selected Approved Template:
-                    </span>
-
-                    <select
-                      value={selectedChatTemplate}
-                      onChange={(e) => setSelectedChatTemplate(e.target.value)}
-                      disabled={sendingChatMsg}
-                      className="flex-1 px-3 py-1.5 rounded-xl bg-[#111b21] border border-slate-700 text-xs font-bold text-slate-100 focus:outline-none focus:border-[#00a884] cursor-pointer disabled:opacity-50"
-                    >
-                      <option value="">-- Choose Approved Template to Send --</option>
-                      {templates.map(t => (
-                        <option key={t._id || t.id || t.metaTemplateId || t.name} value={t._id || t.id || t.metaTemplateId || t.name}>
-                          {t.name} ({t.category} • {t.status})
-                        </option>
-                      ))}
-                    </select>
-
-                    {selectedChatTemplate && (
-                      <button
-                        type="button"
-                        onClick={() => handleSendTemplateInChat(selectedChatTemplate)}
-                        disabled={sendingChatMsg}
-                        className="px-4 py-1.5 rounded-xl bg-[#00a884] hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Send Selected Template</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Selected Template Live Details Pill */}
-                  {selectedChatTemplate && (() => {
-                    const tmpl = templates.find(t => (t._id === selectedChatTemplate || t.id === selectedChatTemplate || t.metaTemplateId === selectedChatTemplate || t.name === selectedChatTemplate));
-                    return tmpl ? (
-                      <div className="p-2.5 rounded-xl bg-[#111b21] border border-[#00a884]/60 text-xs flex items-center justify-between gap-3 text-slate-200">
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#00a884] text-slate-950 uppercase">
-                            {tmpl.category}
-                          </span>
-                          <span className="font-extrabold text-slate-100">{tmpl.name}</span>
-                          <span className="text-[11px] text-slate-400 truncate max-w-xs">{tmpl.body_text}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedChatTemplate('')}
-                          className="text-slate-400 hover:text-slate-100 p-1"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : null;
-                  })()}
-
+                {/* WhatsApp Web Bottom Action Bar (Clean White WhatsApp Theme) */}
+                <div className="p-3.5 bg-[#f0f2f5] border-t border-slate-200">
                   {/* Direct Text Message Form */}
                   <form onSubmit={handleSendDirectChatMessage} className="flex items-center gap-2">
                     <input
@@ -1113,13 +1064,13 @@ export default function WhatsappMessage() {
                       value={chatMessageText}
                       onChange={(e) => setChatMessageText(e.target.value)}
                       disabled={sendingChatMsg}
-                      className="flex-1 px-4 py-2.5 rounded-xl bg-[#111b21] border border-slate-700 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#00a884] font-medium"
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#00a884] font-medium shadow-2xs"
                     />
                     
                     <button
                       type="submit"
                       disabled={sendingChatMsg || !chatMessageText.trim()}
-                      className="px-5 py-2.5 rounded-xl bg-[#00a884] hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-40"
+                      className="px-5 py-2.5 rounded-xl bg-[#00a884] hover:bg-emerald-600 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-40"
                     >
                       {sendingChatMsg ? <RotateCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       <span>Send</span>
@@ -1129,11 +1080,11 @@ export default function WhatsappMessage() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 bg-[#0b141a]">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 bg-[#efeae2]">
                 <WhatsApp className="w-16 h-16 text-[#00a884] opacity-80" />
-                <h3 className="text-sm font-extrabold text-slate-100">Select a Contact to Start Chat</h3>
-                <p className="text-xs text-slate-400 max-w-xs">
-                  Choose a contact from the left list to view details, real-time message statuses (`✓✓ Read`), or send Meta approved templates.
+                <h3 className="text-sm font-extrabold text-slate-800">Select a Contact to Start Chat</h3>
+                <p className="text-xs text-slate-500 max-w-xs">
+                  Choose a contact from the left list to view live message history and real-time status indicators (`✓✓ Read`).
                 </p>
               </div>
             )}
